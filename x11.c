@@ -25,6 +25,14 @@ typedef struct triangle{
   point c;
 } triangle;
 
+point camera_pos = {0.0, 0.0, 0.0};
+double camera_angle = 0.0;
+triangle camera_basis = {
+  {1.0, 0.0, 0.0},
+  {0.0, 1.0, 0.0},
+  {0.0, 0.0, 1.0}
+};
+
 triangle tri0 = {
   {0, 0, 100},
   {0, 100, 100},
@@ -86,6 +94,29 @@ triangle tri11 = {
   {100, 100, 200}
 };
 
+point translatePoint(point p, double x, double y, double z){
+  point newPoint = {p.x + x, p.y + y, p.z + z};
+  return newPoint;
+}
+
+triangle translateTriangle(triangle tri, double x, double y, double z){
+  triangle translated_tri = {
+    {tri.a.x + x, tri.a.y + y, tri.a.z + z},
+    {tri.b.x + x, tri.b.y + y, tri.b.z + z},
+    {tri.c.x + x, tri.c.y + y, tri.c.z + z}
+  };
+  return translated_tri;
+}
+
+void rotCamera(double rad){
+  point newBasisX = {sin(M_PI/2 + rad + camera_angle), 0.0, cos(M_PI/2 + rad + camera_angle)};
+  point newBasisZ = {sin(rad + camera_angle), 0.0, cos(rad + camera_angle)};
+  camera_basis.a = newBasisX;
+  camera_basis.c = newBasisZ;
+  camera_angle += rad;
+  
+}
+
 point calcCenter(triangle tri){
   double x = tri.a.x + tri.b.x + tri.c.x / 3;
   double y = tri.a.y + tri.b.y + tri.c.y / 3;
@@ -98,15 +129,6 @@ void drawTriangle(Display* dsp, Window win, GC gc, triangle tri){
   XDrawLine(dsp, win, gc, tri.a.x, tri.a.y, tri.b.x, tri.b.y);
   XDrawLine(dsp, win, gc, tri.b.x, tri.b.y, tri.c.x, tri.c.y);
   XDrawLine(dsp, win, gc, tri.c.x, tri.c.y, tri.a.x, tri.a.y);
-}
-
-triangle translateTriangle(triangle tri, double x, double y, double z){
-  triangle translated_tri = {
-    {tri.a.x + x, tri.a.y + y, tri.a.z + z},
-    {tri.b.x + x, tri.b.y + y, tri.b.z + z},
-    {tri.c.x + x, tri.c.y + y, tri.c.z + z}
-  };
-  return translated_tri;
 }
 
 triangle rotateX(triangle tri, double angle, double x, double y, double z){
@@ -172,14 +194,55 @@ triangle rotateZ(triangle tri, double angle, double x, double y, double z){
   return rotated_tri;
 }
 
-triangle projectTriangle(triangle tri, int camera_distance){
+/*int projectX(point p){
+  point o = {0.0, 0.0, 1.0}; //original cam pos vector
+  point v = {.x = o.x*cos(camera_angle)-o.z*sin(camera_angle), .y = 0.0, .z = o.x*sin(camera_angle)+o.z*cos(camera_angle)};
+  point u = {camera_pos.x - p.x, 0.0, camera_pos.z - p.z};
+  
+  double proj_const = (v.x*u.x + v.z*u.z) / sqrt(pow(v.x, 2) + pow(v.z, 2));
+  point u_proj = {v.x*proj_const ,0.0 , v.z*proj_const};
+  point w = {u.x - u_proj.x, 0.0, u.z - u_proj.z};
+  signed int sign = w.x >= 0 ? -1 : 1;
+
+  int x_screen = sign * CAM_DIST * sqrt(pow(w.x, 2) + pow(w.z, 2)) / sqrt(pow(u_proj.x, 2) + pow(u_proj.z, 2)) + WIDTH/2;
+
+  return x_screen;
+}
+
+int projectY(point p){
+  point o = {0.0, 0.0, 1.0}; //original cam pos vector
+  point v = o;//{.x = 0.0, .y = o.y*cos(camera_angle)-o.z*sin(camera_angle), .z = o.y*sin(camera_angle)+o.z*cos(camera_angle)};
+  point u = {0.0, camera_pos.y - p.y, camera_pos.z - p.z};
+  double proj_const = (v.y*u.y + v.z*u.z) / sqrt(pow(v.y, 2) + pow(v.z, 2));
+  point u_proj = {0.0, v.y*proj_const, v.z*proj_const};
+  point w = {0.0, u.y - u_proj.y, u.z - u_proj.z};
+  signed int sign = w.y >= 0 ? -1 : 1;
+
+  int y_screen = sign * CAM_DIST * sqrt(pow(w.y, 2) + pow(w.z, 2)) / sqrt(pow(u_proj.y, 2) + pow(u_proj.z, 2)) + HEIGHT/2;
+
+  return y_screen;
+}*/
+
+point toCameraBasis(point p){
+  point new_p = {
+    camera_pos.x + camera_basis.a.x*p.x + camera_basis.b.x*p.y + camera_basis.c.x*p.z,
+    camera_pos.y + camera_basis.a.y*p.x + camera_basis.b.y*p.y + camera_basis.c.y*p.z,
+    camera_pos.z + camera_basis.a.z*p.x + camera_basis.b.z*p.y + camera_basis.c.z*p.z
+  };
+  return new_p;
+}
+
+triangle projectTriangle(triangle tri){
+  //point old_camera_pos = camera_pos;
+  //camera_pos = (point) {0.0, 0.0, 0.0};
   int xp1, yp1, xp2, yp2, xp3, yp3;
-  xp1 = camera_distance * tri.a.x / tri.a.z + WIDTH/2;
-  xp2 = camera_distance * tri.b.x / tri.b.z + WIDTH/2;
-  xp3 = camera_distance * tri.c.x / tri.c.z + WIDTH/2;
-  yp1 = camera_distance * tri.a.y / tri.a.z + HEIGHT/2;
-  yp2 = camera_distance * tri.b.y / tri.b.z + HEIGHT/2;
-  yp3 = camera_distance * tri.c.y / tri.c.z + HEIGHT/2;
+  xp1 = CAM_DIST * toCameraBasis(tri.a).x / toCameraBasis(tri.a).z + WIDTH/2;//projectX(tri.a);//
+  xp2 = CAM_DIST * toCameraBasis(tri.b).x / toCameraBasis(tri.b).z + WIDTH/2;//projectX(tri.b);//
+  xp3 = CAM_DIST * toCameraBasis(tri.c).x / toCameraBasis(tri.c).z + WIDTH/2;//projectX(tri.c);//
+  yp1 = CAM_DIST * toCameraBasis(tri.a).y / toCameraBasis(tri.a).z + WIDTH/2;//projectY(tri.a);//
+  yp2 = CAM_DIST * toCameraBasis(tri.b).y / toCameraBasis(tri.b).z + WIDTH/2;//projectY(tri.b);//
+  yp3 = CAM_DIST * toCameraBasis(tri.c).y / toCameraBasis(tri.c).z + WIDTH/2;//projectY(tri.c);//
+  //camera_pos = old_camera_pos;
   triangle projected_tri = {
     {xp1, yp1, tri.a.z},
     {xp2, yp2, tri.b.z},
@@ -187,6 +250,8 @@ triangle projectTriangle(triangle tri, int camera_distance){
   };
   return projected_tri;
 }
+
+
 
 int main(){
 
@@ -218,8 +283,8 @@ int main(){
   centers[10] = calcCenter(tris[10]);
   centers[11] = calcCenter(tris[11]);
 
-  for(int i = 0; i < 12; i++)
-    tris[i] = translateTriangle(tris[i], 0, -200, 700);
+  //for(int i = 0; i < 12; i++)
+  //  tris[i] = translateTriangle(tris[i], 0, -200, 700);
 
   Display *dsp = XOpenDisplay( NULL );
   if( !dsp ){ return 1; }
@@ -262,44 +327,53 @@ int main(){
     XClearWindow(dsp, win);
     XDrawString(dsp, win, gc, WIDTH-70, HEIGHT-10, "GGE v0.0.1", 10);
     for(int i = 0; i < 12; i++){
-      triangle projected_tri = projectTriangle(tris[i], CAM_DIST);
+      triangle projected_tri = projectTriangle(tris[i]);
       drawTriangle(dsp, win, gc, projected_tri);
       //tris[i] = rotateX(tris[i], 0.012, 0, 0, 700);
-      tris[i] = rotateY(tris[i], 0.013, 0, 0, 700);
-      tris[i] = rotateZ(tris[i], 0.003, 0, 0, 700);
+      //tris[i] = rotateY(tris[i], 0.013, 0, 0, 700);
+      //tris[i] = rotateZ(tris[i], 0.003, 0, 0, 700);
     }
     XSync(dsp, 0);
     usleep(10000);
     XCheckWindowEvent( dsp, win, eventMask, &evt);
 
     if(evt.type == KeyPress){  //Handle Input
-      printf("%u\n", evt.xkey.keycode);
+      //printf("%u\n", evt.xkey.keycode);
       if(evt.xkey.keycode == 25){       //w
-        for(int i = 0; i < 12; i++)
-          tris[i] = translateTriangle(tris[i], 0, 0, -1);
+        //for(int i = 0; i < 12; i++)
+        //  tris[i] = translateTriangle(tris[i], 0, 0, -1);
+        camera_pos.z--;
       } else if(evt.xkey.keycode == 38){//a
-        for(int i = 0; i < 12; i++)
-          tris[i] = translateTriangle(tris[i], -1, 0, 0);
+        //for(int i = 0; i < 12; i++)
+        //  tris[i] = translateTriangle(tris[i], -1, 0, 0);
+        camera_pos.x++;
       } else if(evt.xkey.keycode == 39){//s
-        for(int i = 0; i < 12; i++)
-          tris[i] = translateTriangle(tris[i], 0, 0, 1);
+        //for(int i = 0; i < 12; i++)
+        //  tris[i] = translateTriangle(tris[i], 0, 0, 1);
+        camera_pos.z++;
       } else if(evt.xkey.keycode == 40){//d
-        for(int i = 0; i < 12; i++)
-          tris[i] = translateTriangle(tris[i], 1, 0, 0);
+        //for(int i = 0; i < 12; i++)
+        //  tris[i] = translateTriangle(tris[i], 1, 0, 0);
+        camera_pos.x--;
       } else if(evt.xkey.keycode == 27){//r
-        for(int i = 0; i < 12; i++)
-          tris[i] = translateTriangle(tris[i], 0, 1, 0);
+        //for(int i = 0; i < 12; i++)
+        //  tris[i] = translateTriangle(tris[i], 0, 1, 0);
+        camera_pos.y++;
       } else if(evt.xkey.keycode == 41){//f
-        for(int i = 0; i < 12; i++)
-          tris[i] = translateTriangle(tris[i], 0, -1, 0);
+        //for(int i = 0; i < 12; i++)
+        //  tris[i] = translateTriangle(tris[i], 0, -1, 0);
+        camera_pos.y--;
       } else if(evt.xkey.keycode == 24){//q
-        for(int i = 0; i < 12; i++)
-          tris[i] = rotateY(tris[i], 0.01, 0, 0, 700);
+        //for(int i = 0; i < 12; i++)
+        //  tris[i] = rotateY(tris[i], 0.01, 0, 0, 700);
+        rotCamera(0.01);
       } else if(evt.xkey.keycode == 26){//e
-        for(int i = 0; i < 12; i++)
-          tris[i] = rotateY(tris[i], -0.01, 0, 0, 700);
+        //for(int i = 0; i < 12; i++)
+        //  tris[i] = rotateY(tris[i], -0.01, 0, 0, 700);
+        rotCamera(-0.01);
       }
     }
+    printf("cam:(%lf,%lf,%lf)\n", camera_pos.x, camera_pos.y, camera_pos.z);
   }while( evt.xkey.keycode != ESC );
   
 

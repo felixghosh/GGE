@@ -9,6 +9,8 @@
 
 #define WIDTH 640
 #define HEIGHT 480
+#define ESC 9
+#define CAM_DIST 640
 
 
 typedef struct point{
@@ -91,7 +93,38 @@ void drawTriangle(Display* dsp, Window win, GC gc, triangle tri){
   XDrawLine(dsp, win, gc, tri.c.x, tri.c.y, tri.a.x, tri.a.y);
 }
 
-triangle rotateY(triangle tri, double angle){
+triangle translateTriangle(triangle tri, double x, double y, double z){
+  triangle translated_tri = {
+    {tri.a.x + x, tri.a.y + y, tri.a.z + z},
+    {tri.b.x + x, tri.b.y + y, tri.b.z + z},
+    {tri.c.x + x, tri.c.y + y, tri.c.z + z}
+  };
+  return translated_tri;
+}
+
+triangle rotateX(triangle tri, double angle, double x, double y, double z){
+  tri = translateTriangle(tri, -x, -y, -z);
+  double x1, y1, x2, y2, x3, y3, z1, z2, z3;
+  x1 = tri.a.x;
+  x2 = tri.b.x;
+  x3 = tri.c.x;
+  y1 = cos(angle)*tri.a.y - sin(angle)*tri.a.z;
+  y2 = cos(angle)*tri.b.y - sin(angle)*tri.b.z;
+  y3 = cos(angle)*tri.c.y - sin(angle)*tri.c.z;
+  z1 = sin(angle)*tri.a.y + cos(angle)*tri.a.z;
+  z2 = sin(angle)*tri.b.y + cos(angle)*tri.b.z;
+  z3 = sin(angle)*tri.c.y + cos(angle)*tri.c.z;
+  triangle rotated_tri = {
+    {x1, y1, z1},
+    {x2, y2, z2},
+    {x3, y3, z3}
+  };
+  rotated_tri = translateTriangle(rotated_tri, x, y, z);
+  return rotated_tri;
+}
+
+triangle rotateY(triangle tri, double angle, double x, double y, double z){
+  tri = translateTriangle(tri, -x, -y, -z);
   double x1, y1, x2, y2, x3, y3, z1, z2, z3;
   x1 = cos(angle)*tri.a.x + sin(angle)*tri.a.z;
   x2 = cos(angle)*tri.b.x + sin(angle)*tri.b.z;
@@ -107,19 +140,12 @@ triangle rotateY(triangle tri, double angle){
     {x2, y2, z2},
     {x3, y3, z3}
   };
+  rotated_tri = translateTriangle(rotated_tri, x, y, z);
   return rotated_tri;
 }
 
-triangle translateTriangle(triangle tri, int x, int y, int z){
-  triangle translated_tri = {
-    {tri.a.x + x, tri.a.y + y, tri.a.z + z},
-    {tri.b.x + x, tri.b.y + y, tri.b.z + z},
-    {tri.c.x + x, tri.c.y + y, tri.c.z + z}
-  };
-  return translated_tri;
-}
-
-triangle rotateZ(triangle tri, double angle){
+triangle rotateZ(triangle tri, double angle, double x, double y, double z){
+  tri = translateTriangle(tri, -x, -y, -z);
   double x1, y1, x2, y2, x3, y3, z1, z2, z3;
   x1 = cos(angle)*tri.a.x - sin(angle)*tri.a.y;
   x2 = cos(angle)*tri.b.x - sin(angle)*tri.b.y;
@@ -135,6 +161,7 @@ triangle rotateZ(triangle tri, double angle){
     {x2, y2, z2},
     {x3, y3, z3}
   };
+  rotated_tri = translateTriangle(rotated_tri, x, y, z);
   return rotated_tri;
 }
 
@@ -154,8 +181,6 @@ triangle projectTriangle(triangle tri, int camera_distance){
   return projected_tri;
 }
 
-int cam_dist = 100;
-
 int main(){
 
   triangle* tris = malloc(12*sizeof(triangle));
@@ -173,7 +198,7 @@ int main(){
   tris[11] = tri11;
 
   for(int i = 0; i < 12; i++)
-    tris[i] = translateTriangle(tris[i], 100, 100, 0);
+    tris[i] = translateTriangle(tris[i], 0, 0, 600);
 
   Display *dsp = XOpenDisplay( NULL );
   if( !dsp ){ return 1; }
@@ -188,8 +213,8 @@ int main(){
                                DefaultRootWindow(dsp),
                                50, 50,   // origin
                                 WIDTH, HEIGHT, // size
-                               0, black, // border
-                               white );  // backgd
+                               0, white, // border
+                               black );  // backgd
 
   XMapWindow( dsp, win );
 
@@ -206,33 +231,49 @@ int main(){
   GC gc = XCreateGC( dsp, win,
                      0,        // mask of values
                      NULL );   // array of values
-  XSetForeground( dsp, gc, black );
+  XSetForeground( dsp, gc, white );
 
 
-  
-
-  eventMask = ButtonPressMask|ButtonReleaseMask|NoEventMask;
+  eventMask = KeyPressMask|KeyReleaseMask;
   XSelectInput(dsp,win,eventMask); // override prev
    
-  int pos = 0; 
-  double x = 1.0;
-  double y = 1.0;
   do{
     XClearWindow(dsp, win);
+    XDrawString(dsp, win, gc, WIDTH-70, HEIGHT-10, "GGE v0.0.1", 10);
     for(int i = 0; i < 12; i++){
-      //triangle projected_tri = projectTriangle(tris[i], cam_dist);
-      triangle projected_tri = tris[i];
+      triangle projected_tri = projectTriangle(tris[i], CAM_DIST);
       drawTriangle(dsp, win, gc, projected_tri);
-      tris[i] = translateTriangle(tris[i], -100, -100, -100);
-      tris[i] = rotateY(tris[i], 0.005);
-      tris[i] = rotateZ(tris[i], 0.002);
-      tris[i] = translateTriangle(tris[i], 100, 100, 100);
-      
+      //tris[i] = rotateX(tris[i], 0.012, 0, 0, 700);
+      tris[i] = rotateY(tris[i], 0.013, 0, 0, 700);
+      tris[i] = rotateZ(tris[i], 0.007, 0, 0, 700);
     }
     XSync(dsp, 0);
     usleep(10000);
-    int e = XCheckWindowEvent( dsp, win, eventMask, &evt);
-  }while( evt.type != ButtonRelease );
+    XCheckWindowEvent( dsp, win, eventMask, &evt);
+
+    if(evt.type == KeyPress){  //Handle Input
+      printf("%u\n", evt.xkey.keycode);
+      if(evt.xkey.keycode == 25){       //w
+        for(int i = 0; i < 12; i++)
+          tris[i] = translateTriangle(tris[i], 0, 0, 1);
+      } else if(evt.xkey.keycode == 38){//a
+        for(int i = 0; i < 12; i++)
+          tris[i] = translateTriangle(tris[i], -1, 0, 0);
+      } else if(evt.xkey.keycode == 39){//s
+        for(int i = 0; i < 12; i++)
+          tris[i] = translateTriangle(tris[i], 0, 0, -1);
+      } else if(evt.xkey.keycode == 40){//d
+        for(int i = 0; i < 12; i++)
+          tris[i] = translateTriangle(tris[i], 1, 0, 0);
+      } else if(evt.xkey.keycode == 27){//r
+        for(int i = 0; i < 12; i++)
+          tris[i] = translateTriangle(tris[i], 0, 1, 0);
+      } else if(evt.xkey.keycode == 41){//f
+        for(int i = 0; i < 12; i++)
+          tris[i] = translateTriangle(tris[i], 0, -1, 0);
+      }
+    }
+  }while( evt.xkey.keycode != ESC );
   
 
   XDestroyWindow( dsp, win );

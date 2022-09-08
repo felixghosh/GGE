@@ -86,6 +86,13 @@ triangle tri11 = {
   {100, 100, 200}
 };
 
+point calcCenter(triangle tri){
+  double x = tri.a.x + tri.b.x + tri.c.x / 3;
+  double y = tri.a.y + tri.b.y + tri.c.y / 3;
+  double z = tri.a.z + tri.b.z + tri.c.z / 3;
+  point p = {x, y, z};
+  return p;
+}
 
 void drawTriangle(Display* dsp, Window win, GC gc, triangle tri){
   XDrawLine(dsp, win, gc, tri.a.x, tri.a.y, tri.b.x, tri.b.y);
@@ -197,8 +204,22 @@ int main(){
   tris[10] = tri10;
   tris[11] = tri11;
 
+  point* centers = malloc(12*sizeof(point));
+  centers[0] = calcCenter(tris[0]);
+  centers[1] = calcCenter(tris[1]);
+  centers[2] = calcCenter(tris[2]);
+  centers[3] = calcCenter(tris[3]);
+  centers[4] = calcCenter(tris[4]);
+  centers[5] = calcCenter(tris[5]);
+  centers[6] = calcCenter(tris[6]);
+  centers[7] = calcCenter(tris[7]);
+  centers[8] = calcCenter(tris[8]);
+  centers[9] = calcCenter(tris[9]);
+  centers[10] = calcCenter(tris[10]);
+  centers[11] = calcCenter(tris[11]);
+
   for(int i = 0; i < 12; i++)
-    tris[i] = translateTriangle(tris[i], 0, 0, 600);
+    tris[i] = translateTriangle(tris[i], 0, -200, 700);
 
   Display *dsp = XOpenDisplay( NULL );
   if( !dsp ){ return 1; }
@@ -245,7 +266,7 @@ int main(){
       drawTriangle(dsp, win, gc, projected_tri);
       //tris[i] = rotateX(tris[i], 0.012, 0, 0, 700);
       tris[i] = rotateY(tris[i], 0.013, 0, 0, 700);
-      tris[i] = rotateZ(tris[i], 0.007, 0, 0, 700);
+      tris[i] = rotateZ(tris[i], 0.003, 0, 0, 700);
     }
     XSync(dsp, 0);
     usleep(10000);
@@ -255,13 +276,13 @@ int main(){
       printf("%u\n", evt.xkey.keycode);
       if(evt.xkey.keycode == 25){       //w
         for(int i = 0; i < 12; i++)
-          tris[i] = translateTriangle(tris[i], 0, 0, 1);
+          tris[i] = translateTriangle(tris[i], 0, 0, -1);
       } else if(evt.xkey.keycode == 38){//a
         for(int i = 0; i < 12; i++)
           tris[i] = translateTriangle(tris[i], -1, 0, 0);
       } else if(evt.xkey.keycode == 39){//s
         for(int i = 0; i < 12; i++)
-          tris[i] = translateTriangle(tris[i], 0, 0, -1);
+          tris[i] = translateTriangle(tris[i], 0, 0, 1);
       } else if(evt.xkey.keycode == 40){//d
         for(int i = 0; i < 12; i++)
           tris[i] = translateTriangle(tris[i], 1, 0, 0);
@@ -271,6 +292,12 @@ int main(){
       } else if(evt.xkey.keycode == 41){//f
         for(int i = 0; i < 12; i++)
           tris[i] = translateTriangle(tris[i], 0, -1, 0);
+      } else if(evt.xkey.keycode == 24){//q
+        for(int i = 0; i < 12; i++)
+          tris[i] = rotateY(tris[i], 0.01, 0, 0, 700);
+      } else if(evt.xkey.keycode == 26){//e
+        for(int i = 0; i < 12; i++)
+          tris[i] = rotateY(tris[i], -0.01, 0, 0, 700);
       }
     }
   }while( evt.xkey.keycode != ESC );

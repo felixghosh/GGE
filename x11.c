@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <math.h>
+#include <stdbool.h>
 
 #define WIDTH 640
 #define HEIGHT 480
@@ -138,9 +139,50 @@ point calcCenter(triangle tri){
 }
 
 void drawTriangle(Display* dsp, Window win, GC gc, triangle tri){
-  XDrawLine(dsp, win, gc, tri.a.x, tri.a.y, tri.b.x, tri.b.y);
-  XDrawLine(dsp, win, gc, tri.b.x, tri.b.y, tri.c.x, tri.c.y);
-  XDrawLine(dsp, win, gc, tri.c.x, tri.c.y, tri.a.x, tri.a.y);
+  point center = calcCenter(tri);
+  if(center.z > 0){
+    XDrawLine(dsp, win, gc, tri.a.x, tri.a.y, tri.b.x, tri.b.y);
+    XDrawLine(dsp, win, gc, tri.b.x, tri.b.y, tri.c.x, tri.c.y);
+    XDrawLine(dsp, win, gc, tri.c.x, tri.c.y, tri.a.x, tri.a.y);
+  }
+}
+
+void rasterizeTriangle(Display* dsp, Window win, GC gc, triangle tri){
+  //sort points by height
+  point p[3];
+  p[0] = tri.a;
+  p[1] = tri.b;
+  p[2] = tri.c;
+  sortPoints(p, 0, 1);
+  sortPoints(p, 1, 2);
+  sortPoints(p, 0, 1);
+
+  if(p[0].y == p[2].y)
+    return;
+
+  bool shortSide = (p[1].y - p[0].y) * (p[2].x - p[0].x) < (p[1].x - p[0].x) * (p[2].y - p[0].y); //false = left, true = right
+  int dy = (p[2].y - p[0].y);
+  int slope[dy][2];
+  for(int i = 0; i < dy; i++){
+
+  }
+}
+
+void sortPoints(point points[], int a, int b){
+  point temp;
+  if(points[a].y != points[b].y){
+    if(points[a].y > points[b].y){
+      temp = points[a];
+      points[a] = points[b];
+      points[b] = temp;
+    }
+  } else {
+    if(points[a].x > points[b].x){
+      temp = points[a];
+      points[a] = points[b];
+      points[b] = temp;
+    }
+  }
 }
 
 triangle rotateX(triangle tri, double angle, double x, double y, double z){
@@ -233,9 +275,9 @@ triangle projectTriangle(triangle tri){
   yp2 = CAM_DIST * b_cam.y / b_cam.z + WIDTH/2;//projectY(tri.b);//
   yp3 = CAM_DIST * c_cam.y / c_cam.z + WIDTH/2;//projectY(tri.c);//
   triangle projected_tri = {
-    {xp1, yp1, tri.a.z},
-    {xp2, yp2, tri.b.z},
-    {xp3, yp3, tri.c.z}
+    {xp1, yp1, a_cam.z},
+    {xp2, yp2, b_cam.z},
+    {xp3, yp3, c_cam.z}
   };
   return projected_tri;
 }
@@ -292,6 +334,7 @@ int main(){
 
   long eventMask = StructureNotifyMask;
   XSelectInput( dsp, win, eventMask );
+
 
   XEvent evt;
   do{

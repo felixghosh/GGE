@@ -26,7 +26,8 @@ typedef struct triangle{
 } triangle;
 
 point camera_pos = {0.0, 0.0, 0.0};
-double camera_angle = 0.0;
+double camera_angle_y = 0.0;
+double camera_angle_x = 0.0;
 triangle camera_basis = { //Currently not used
   {1.0, 0.0, 0.0},
   {0.0, 1.0, 0.0},
@@ -109,20 +110,23 @@ triangle translateTriangle(triangle tri, double x, double y, double z){
 }
 
 void rotCamera(double rad){
-  point newBasisX = {sin(M_PI/2 + rad + camera_angle), 0.0, cos(M_PI/2 + rad + camera_angle)};
-  point newBasisZ = {sin(rad + camera_angle), 0.0, cos(rad + camera_angle)};
+  point newBasisX = {sin(M_PI/2 + rad + camera_angle_y), 0.0, cos(M_PI/2 + rad + camera_angle_y)};
+  point newBasisZ = {sin(rad + camera_angle_y), 0.0, cos(rad + camera_angle_y)};
   camera_basis.a = newBasisX;
   camera_basis.c = newBasisZ;
-  camera_angle += rad;
-  
+  camera_angle_y += rad;
+}
+
+void pitchCamera(double rad){
+  camera_angle_x += rad;
 }
 
 void movCamera(double distZ, double distX){
-  camera_pos.z += cos(camera_angle)*distZ;
-  camera_pos.x += sin(camera_angle)*distZ;
+  camera_pos.z += cos(camera_angle_y)*distZ;
+  camera_pos.x += sin(camera_angle_y)*distZ;
 
-  camera_pos.z += cos(camera_angle + M_PI/2)*distX;
-  camera_pos.x += sin(camera_angle + M_PI/2)*distX;
+  camera_pos.z += cos(camera_angle_y + M_PI/2)*distX;
+  camera_pos.x += sin(camera_angle_y + M_PI/2)*distX;
 }
 
 point calcCenter(triangle tri){
@@ -203,14 +207,18 @@ triangle rotateZ(triangle tri, double angle, double x, double y, double z){
 }
 
 point toCameraBasis(point p){
-  point new_p = {
+  point camToPoint = {
     p.x - camera_pos.x, p.y - camera_pos.y, p.z - camera_pos.z
   };
-  double xr = cos(-camera_angle)*new_p.x + sin(-camera_angle)*new_p.z;
-  double yr = new_p.y;
-  double zr = -sin(-camera_angle)*new_p.x + cos(-camera_angle)*new_p.z;
-  point rotated_p = {xr, yr, zr};
-  return rotated_p;
+  double xr = cos(-camera_angle_y)*camToPoint.x + sin(-camera_angle_y)*camToPoint.z;
+  double yr = camToPoint.y;
+  double zr = -sin(-camera_angle_y)*camToPoint.x + cos(-camera_angle_y)*camToPoint.z;
+  point rotated_py = {xr, yr, zr};
+  xr = rotated_py.x;
+  yr = cos(-camera_angle_x)*rotated_py.y - sin(-camera_angle_x)*rotated_py.z;
+  zr = sin(-camera_angle_x)*rotated_py.y + cos(-camera_angle_x)*rotated_py.z;
+  point(rotated_pyx) = {xr, yr, zr};
+  return rotated_pyx;
 }
 
 triangle projectTriangle(triangle tri){
@@ -332,7 +340,11 @@ int main(){
         rotCamera(-0.01);
       } else if(evt.xkey.keycode == 26){//e
         rotCamera(0.01);
-      }
+      } else if(evt.xkey.keycode == 42){//g
+        pitchCamera(-0.01);
+      } else if(evt.xkey.keycode == 28){//t
+        pitchCamera(0.01);
+      } 
     }
   }while( evt.xkey.keycode != ESC );
   

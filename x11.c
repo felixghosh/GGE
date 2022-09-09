@@ -117,6 +117,14 @@ void rotCamera(double rad){
   
 }
 
+void movCamera(double distZ, double distX){
+  camera_pos.z += cos(camera_angle)*distZ;
+  camera_pos.x += sin(camera_angle)*distZ;
+
+  camera_pos.z += cos(camera_angle + M_PI/2)*distX;
+  camera_pos.x += sin(camera_angle + M_PI/2)*distX;
+}
+
 point calcCenter(triangle tri){
   double x = tri.a.x + tri.b.x + tri.c.x / 3;
   double y = tri.a.y + tri.b.y + tri.c.y / 3;
@@ -225,24 +233,26 @@ int projectY(point p){
 
 point toCameraBasis(point p){
   point new_p = {
-    camera_pos.x + camera_basis.a.x*p.x + camera_basis.b.x*p.y + camera_basis.c.x*p.z,
-    camera_pos.y + camera_basis.a.y*p.x + camera_basis.b.y*p.y + camera_basis.c.y*p.z,
-    camera_pos.z + camera_basis.a.z*p.x + camera_basis.b.z*p.y + camera_basis.c.z*p.z
+    p.x - camera_pos.x, p.y - camera_pos.y, p.z - camera_pos.z
   };
-  return new_p;
+  double xr = cos(-camera_angle)*new_p.x + sin(-camera_angle)*new_p.z;
+  double yr = new_p.y;
+  double zr = -sin(-camera_angle)*new_p.x + cos(-camera_angle)*new_p.z;
+  point rotated_p = {xr, yr, zr};
+  return rotated_p;
 }
 
 triangle projectTriangle(triangle tri){
-  //point old_camera_pos = camera_pos;
-  //camera_pos = (point) {0.0, 0.0, 0.0};
   int xp1, yp1, xp2, yp2, xp3, yp3;
-  xp1 = CAM_DIST * toCameraBasis(tri.a).x / toCameraBasis(tri.a).z + WIDTH/2;//projectX(tri.a);//
-  xp2 = CAM_DIST * toCameraBasis(tri.b).x / toCameraBasis(tri.b).z + WIDTH/2;//projectX(tri.b);//
-  xp3 = CAM_DIST * toCameraBasis(tri.c).x / toCameraBasis(tri.c).z + WIDTH/2;//projectX(tri.c);//
-  yp1 = CAM_DIST * toCameraBasis(tri.a).y / toCameraBasis(tri.a).z + WIDTH/2;//projectY(tri.a);//
-  yp2 = CAM_DIST * toCameraBasis(tri.b).y / toCameraBasis(tri.b).z + WIDTH/2;//projectY(tri.b);//
-  yp3 = CAM_DIST * toCameraBasis(tri.c).y / toCameraBasis(tri.c).z + WIDTH/2;//projectY(tri.c);//
-  //camera_pos = old_camera_pos;
+  point a_cam = toCameraBasis(tri.a);
+  point b_cam = toCameraBasis(tri.b);
+  point c_cam = toCameraBasis(tri.c);
+  xp1 = CAM_DIST * a_cam.x / a_cam.z + WIDTH/2;//projectX(tri.a);//
+  xp2 = CAM_DIST * b_cam.x / b_cam.z + WIDTH/2;//projectX(tri.b);//
+  xp3 = CAM_DIST * c_cam.x / c_cam.z + WIDTH/2;//projectX(tri.c);//
+  yp1 = CAM_DIST * a_cam.y / a_cam.z + WIDTH/2;//projectY(tri.a);//
+  yp2 = CAM_DIST * b_cam.y / b_cam.z + WIDTH/2;//projectY(tri.b);//
+  yp3 = CAM_DIST * c_cam.y / c_cam.z + WIDTH/2;//projectY(tri.c);//
   triangle projected_tri = {
     {xp1, yp1, tri.a.z},
     {xp2, yp2, tri.b.z},
@@ -283,8 +293,8 @@ int main(){
   centers[10] = calcCenter(tris[10]);
   centers[11] = calcCenter(tris[11]);
 
-  //for(int i = 0; i < 12; i++)
-  //  tris[i] = translateTriangle(tris[i], 0, -200, 700);
+  for(int i = 0; i < 12; i++)
+    tris[i] = translateTriangle(tris[i], 0, -100, 700);
 
   Display *dsp = XOpenDisplay( NULL );
   if( !dsp ){ return 1; }
@@ -330,8 +340,8 @@ int main(){
       triangle projected_tri = projectTriangle(tris[i]);
       drawTriangle(dsp, win, gc, projected_tri);
       //tris[i] = rotateX(tris[i], 0.012, 0, 0, 700);
-      //tris[i] = rotateY(tris[i], 0.013, 0, 0, 700);
-      //tris[i] = rotateZ(tris[i], 0.003, 0, 0, 700);
+      //tris[i] = rotateY(tris[i], 0.013, 0, -100, 800);
+      //tris[i] = rotateZ(tris[i], 0.003, 0, -100, 800);
     }
     XSync(dsp, 0);
     usleep(10000);
@@ -342,35 +352,35 @@ int main(){
       if(evt.xkey.keycode == 25){       //w
         //for(int i = 0; i < 12; i++)
         //  tris[i] = translateTriangle(tris[i], 0, 0, -1);
-        camera_pos.z--;
+        movCamera(2.0, 0.0);
       } else if(evt.xkey.keycode == 38){//a
         //for(int i = 0; i < 12; i++)
         //  tris[i] = translateTriangle(tris[i], -1, 0, 0);
-        camera_pos.x++;
+        movCamera(0.0, -2.0);
       } else if(evt.xkey.keycode == 39){//s
         //for(int i = 0; i < 12; i++)
         //  tris[i] = translateTriangle(tris[i], 0, 0, 1);
-        camera_pos.z++;
+        movCamera(-2.0, 0.0);
       } else if(evt.xkey.keycode == 40){//d
         //for(int i = 0; i < 12; i++)
         //  tris[i] = translateTriangle(tris[i], 1, 0, 0);
-        camera_pos.x--;
+        movCamera(0.0, 2.0);
       } else if(evt.xkey.keycode == 27){//r
         //for(int i = 0; i < 12; i++)
         //  tris[i] = translateTriangle(tris[i], 0, 1, 0);
-        camera_pos.y++;
+        camera_pos.y -= 2.0;
       } else if(evt.xkey.keycode == 41){//f
         //for(int i = 0; i < 12; i++)
         //  tris[i] = translateTriangle(tris[i], 0, -1, 0);
-        camera_pos.y--;
+        camera_pos.y += 2.0;
       } else if(evt.xkey.keycode == 24){//q
         //for(int i = 0; i < 12; i++)
         //  tris[i] = rotateY(tris[i], 0.01, 0, 0, 700);
-        rotCamera(0.01);
+        rotCamera(-0.01);
       } else if(evt.xkey.keycode == 26){//e
         //for(int i = 0; i < 12; i++)
         //  tris[i] = rotateY(tris[i], -0.01, 0, 0, 700);
-        rotCamera(-0.01);
+        rotCamera(0.01);
       }
     }
     printf("cam:(%lf,%lf,%lf)\n", camera_pos.x, camera_pos.y, camera_pos.z);

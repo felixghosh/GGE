@@ -27,7 +27,7 @@ typedef struct triangle{
 
 point camera_pos = {0.0, 0.0, 0.0};
 double camera_angle = 0.0;
-triangle camera_basis = {
+triangle camera_basis = { //Currently not used
   {1.0, 0.0, 0.0},
   {0.0, 1.0, 0.0},
   {0.0, 0.0, 1.0}
@@ -202,35 +202,6 @@ triangle rotateZ(triangle tri, double angle, double x, double y, double z){
   return rotated_tri;
 }
 
-/*int projectX(point p){
-  point o = {0.0, 0.0, 1.0}; //original cam pos vector
-  point v = {.x = o.x*cos(camera_angle)-o.z*sin(camera_angle), .y = 0.0, .z = o.x*sin(camera_angle)+o.z*cos(camera_angle)};
-  point u = {camera_pos.x - p.x, 0.0, camera_pos.z - p.z};
-  
-  double proj_const = (v.x*u.x + v.z*u.z) / sqrt(pow(v.x, 2) + pow(v.z, 2));
-  point u_proj = {v.x*proj_const ,0.0 , v.z*proj_const};
-  point w = {u.x - u_proj.x, 0.0, u.z - u_proj.z};
-  signed int sign = w.x >= 0 ? -1 : 1;
-
-  int x_screen = sign * CAM_DIST * sqrt(pow(w.x, 2) + pow(w.z, 2)) / sqrt(pow(u_proj.x, 2) + pow(u_proj.z, 2)) + WIDTH/2;
-
-  return x_screen;
-}
-
-int projectY(point p){
-  point o = {0.0, 0.0, 1.0}; //original cam pos vector
-  point v = o;//{.x = 0.0, .y = o.y*cos(camera_angle)-o.z*sin(camera_angle), .z = o.y*sin(camera_angle)+o.z*cos(camera_angle)};
-  point u = {0.0, camera_pos.y - p.y, camera_pos.z - p.z};
-  double proj_const = (v.y*u.y + v.z*u.z) / sqrt(pow(v.y, 2) + pow(v.z, 2));
-  point u_proj = {0.0, v.y*proj_const, v.z*proj_const};
-  point w = {0.0, u.y - u_proj.y, u.z - u_proj.z};
-  signed int sign = w.y >= 0 ? -1 : 1;
-
-  int y_screen = sign * CAM_DIST * sqrt(pow(w.y, 2) + pow(w.z, 2)) / sqrt(pow(u_proj.y, 2) + pow(u_proj.z, 2)) + HEIGHT/2;
-
-  return y_screen;
-}*/
-
 point toCameraBasis(point p){
   point new_p = {
     p.x - camera_pos.x, p.y - camera_pos.y, p.z - camera_pos.z
@@ -260,7 +231,6 @@ triangle projectTriangle(triangle tri){
   };
   return projected_tri;
 }
-
 
 
 int main(){
@@ -299,11 +269,9 @@ int main(){
   Display *dsp = XOpenDisplay( NULL );
   if( !dsp ){ return 1; }
 
-
   int screenNumber = DefaultScreen(dsp);
   unsigned long white = WhitePixel(dsp,screenNumber);
   unsigned long black = BlackPixel(dsp,screenNumber);
-
 
   Window win = XCreateSimpleWindow(dsp,
                                DefaultRootWindow(dsp),
@@ -313,7 +281,6 @@ int main(){
                                black );  // backgd
 
   XMapWindow( dsp, win );
-
 
   long eventMask = StructureNotifyMask;
   XSelectInput( dsp, win, eventMask );
@@ -350,40 +317,23 @@ int main(){
     if(evt.type == KeyPress){  //Handle Input
       //printf("%u\n", evt.xkey.keycode);
       if(evt.xkey.keycode == 25){       //w
-        //for(int i = 0; i < 12; i++)
-        //  tris[i] = translateTriangle(tris[i], 0, 0, -1);
         movCamera(2.0, 0.0);
       } else if(evt.xkey.keycode == 38){//a
-        //for(int i = 0; i < 12; i++)
-        //  tris[i] = translateTriangle(tris[i], -1, 0, 0);
         movCamera(0.0, -2.0);
       } else if(evt.xkey.keycode == 39){//s
-        //for(int i = 0; i < 12; i++)
-        //  tris[i] = translateTriangle(tris[i], 0, 0, 1);
         movCamera(-2.0, 0.0);
       } else if(evt.xkey.keycode == 40){//d
-        //for(int i = 0; i < 12; i++)
-        //  tris[i] = translateTriangle(tris[i], 1, 0, 0);
         movCamera(0.0, 2.0);
       } else if(evt.xkey.keycode == 27){//r
-        //for(int i = 0; i < 12; i++)
-        //  tris[i] = translateTriangle(tris[i], 0, 1, 0);
         camera_pos.y -= 2.0;
       } else if(evt.xkey.keycode == 41){//f
-        //for(int i = 0; i < 12; i++)
-        //  tris[i] = translateTriangle(tris[i], 0, -1, 0);
         camera_pos.y += 2.0;
       } else if(evt.xkey.keycode == 24){//q
-        //for(int i = 0; i < 12; i++)
-        //  tris[i] = rotateY(tris[i], 0.01, 0, 0, 700);
         rotCamera(-0.01);
       } else if(evt.xkey.keycode == 26){//e
-        //for(int i = 0; i < 12; i++)
-        //  tris[i] = rotateY(tris[i], -0.01, 0, 0, 700);
         rotCamera(0.01);
       }
     }
-    printf("cam:(%lf,%lf,%lf)\n", camera_pos.x, camera_pos.y, camera_pos.z);
   }while( evt.xkey.keycode != ESC );
   
 

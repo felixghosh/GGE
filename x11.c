@@ -12,13 +12,13 @@
 #define HEIGHT 480.0
 #define ESC 9
 
-double camera_dist = 554.0; //For FOV 60
+float camera_dist = 554.0; //For FOV 60
 
 
 typedef struct point{
-  double x;
-  double y;
-  double z;
+  float x;
+  float y;
+  float z;
 } point;
 
 typedef struct triangle{
@@ -28,8 +28,15 @@ typedef struct triangle{
 } triangle;
 
 point camera_pos = {0.0, 0.0, 0.0};
-double camera_angle_y = 0.0;
-double camera_angle_x = -0.1;
+float camera_angle_y = 0.0;
+float camera_angle_x = -0.1;
+
+point light_direction = {0.0, 0.0, 1.0};
+
+unsigned int cubeColor = 0x60E0E0;
+
+bool wireframe = false;
+
 triangle camera_basis = { //Currently not used
   {1.0, 0.0, 0.0},
   {0.0, 1.0, 0.0},
@@ -109,22 +116,40 @@ triangle test = {
   {4, 11, 100}
 };
 
-double radToDeg(double rad){
-  double deg = (rad * 360.0) / (2*M_PI);
+float radToDeg(float rad){
+  float deg = (rad * 360.0) / (2*M_PI);
   return deg;
 }
 
-double calcFOV(){
-  double fov = 2 * atan((WIDTH/2)/camera_dist);
+float calcFOV(){
+  float fov = 2 * atan((WIDTH/2)/camera_dist);
   return radToDeg(fov);
 }
 
-point translatePoint(point p, double x, double y, double z){
+unsigned int colorLightness(float value, unsigned int color){
+  unsigned int r, g, b, rValue, gValue, bValue;
+  r = 0x00FF0000 & color;
+  g = 0x0000FF00 & color;
+  b = 0x000000FF & color;
+
+  r = (int)(r * value);
+  g = (int)(g * value);
+  b = (int)(b * value);
+
+  r &= 0x00FF0000;
+  g &= 0x0000FF00;
+  b &= 0x000000FF;
+
+  unsigned int newColor = 0x00FFFFFF & (r | g | b);
+  return newColor;
+}
+
+point translatePoint(point p, float x, float y, float z){
   point newPoint = {p.x + x, p.y + y, p.z + z};
   return newPoint;
 }
 
-triangle translateTriangle(triangle tri, double x, double y, double z){
+triangle translateTriangle(triangle tri, float x, float y, float z){
   triangle translated_tri = {
     {tri.a.x + x, tri.a.y + y, tri.a.z + z},
     {tri.b.x + x, tri.b.y + y, tri.b.z + z},
@@ -133,7 +158,7 @@ triangle translateTriangle(triangle tri, double x, double y, double z){
   return translated_tri;
 }
 
-void yawCamera(double rad){
+void yawCamera(float rad){
   point newBasisX = {sin(M_PI/2 + rad + camera_angle_y), 0.0, cos(M_PI/2 + rad + camera_angle_y)};
   point newBasisZ = {sin(rad + camera_angle_y), 0.0, cos(rad + camera_angle_y)};
   camera_basis.a = newBasisX;
@@ -141,11 +166,11 @@ void yawCamera(double rad){
   camera_angle_y += rad;
 }
 
-void pitchCamera(double rad){
+void pitchCamera(float rad){
   camera_angle_x += rad;
 }
 
-void movCamera(double distZ, double distX){
+void movCamera(float distZ, float distX){
   camera_pos.z += cos(camera_angle_y)*distZ;
   camera_pos.x += sin(camera_angle_y)*distZ;
 
@@ -154,9 +179,9 @@ void movCamera(double distZ, double distX){
 }
 
 point calcCenter(triangle tri){
-  double x = tri.a.x + tri.b.x + tri.c.x / 3;
-  double y = tri.a.y + tri.b.y + tri.c.y / 3;
-  double z = tri.a.z + tri.b.z + tri.c.z / 3;
+  float x = tri.a.x + tri.b.x + tri.c.x / 3;
+  float y = tri.a.y + tri.b.y + tri.c.y / 3;
+  float z = tri.a.z + tri.b.z + tri.c.z / 3;
   point p = {x, y, z};
   return p;
 }
@@ -204,15 +229,15 @@ void rasterizeTriangle(Display* dsp, Window win, GC gc, triangle tri){
   bool shortSide = (p[1].y - p[0].y) * (p[2].x - p[0].x) < (p[1].x - p[0].x) * (p[2].y - p[0].y); //false = left, true = right
   
   int dy_long = (p[2].y - p[0].y);
-  double denominator = 1 / dy_long;
-  double slope_long[dy_long];
+  float denominator = 1 / dy_long;
+  float slope_long[dy_long];
   for(i = 0; i < dy_long; i++){
     slope_long[i] = p[0].x + (p[2].x-p[0].x)*(i)/dy_long;
     //XDrawPoint(dsp, win, gc, slope_long[i], (int)i+p[0].y);
   }
   int dy_short = (p[1].y - p[0].y);
   denominator = 1 / dy_short;
-  double slope_short[dy_short];
+  float slope_short[dy_short];
   if(dy_short != 0){
     for(i = 0; i < dy_short; i++){
       slope_short[i] = p[0].x + (p[1].x-p[0].x)*i/dy_short;
@@ -221,7 +246,7 @@ void rasterizeTriangle(Display* dsp, Window win, GC gc, triangle tri){
   }
   int dy_last = (p[2].y - p[1].y);
   denominator = 1 / dy_last;
-  double slope_last[dy_last];
+  float slope_last[dy_last];
   if(dy_last != 0){
     for(i = 0; i < dy_last; i++){
       slope_last[i] = p[1].x + (p[2].x-p[1].x)*i/dy_last;
@@ -246,9 +271,9 @@ void rasterizeTriangle(Display* dsp, Window win, GC gc, triangle tri){
   //XFlush(dsp);
 }
 
-triangle rotateX(triangle tri, double angle, double x, double y, double z){
+triangle rotateX(triangle tri, float angle, float x, float y, float z){
   tri = translateTriangle(tri, -x, -y, -z);
-  double x1, y1, x2, y2, x3, y3, z1, z2, z3;
+  float x1, y1, x2, y2, x3, y3, z1, z2, z3;
   x1 = tri.a.x;
   x2 = tri.b.x;
   x3 = tri.c.x;
@@ -267,9 +292,9 @@ triangle rotateX(triangle tri, double angle, double x, double y, double z){
   return rotated_tri;
 }
 
-triangle rotateY(triangle tri, double angle, double x, double y, double z){
+triangle rotateY(triangle tri, float angle, float x, float y, float z){
   tri = translateTriangle(tri, -x, -y, -z);
-  double x1, y1, x2, y2, x3, y3, z1, z2, z3;
+  float x1, y1, x2, y2, x3, y3, z1, z2, z3;
   x1 = cos(angle)*tri.a.x + sin(angle)*tri.a.z;
   x2 = cos(angle)*tri.b.x + sin(angle)*tri.b.z;
   x3 = cos(angle)*tri.c.x + sin(angle)*tri.c.z;
@@ -288,9 +313,9 @@ triangle rotateY(triangle tri, double angle, double x, double y, double z){
   return rotated_tri;
 }
 
-triangle rotateZ(triangle tri, double angle, double x, double y, double z){
+triangle rotateZ(triangle tri, float angle, float x, float y, float z){
   tri = translateTriangle(tri, -x, -y, -z);
-  double x1, y1, x2, y2, x3, y3, z1, z2, z3;
+  float x1, y1, x2, y2, x3, y3, z1, z2, z3;
   x1 = cos(angle)*tri.a.x - sin(angle)*tri.a.y;
   x2 = cos(angle)*tri.b.x - sin(angle)*tri.b.y;
   x3 = cos(angle)*tri.c.x - sin(angle)*tri.c.y;
@@ -313,15 +338,28 @@ point toCameraBasis(point p){
   point camToPoint = {
     p.x - camera_pos.x, p.y - camera_pos.y, p.z - camera_pos.z
   };
-  double xr = cos(-camera_angle_y)*camToPoint.x + sin(-camera_angle_y)*camToPoint.z;
-  double yr = camToPoint.y;
-  double zr = -sin(-camera_angle_y)*camToPoint.x + cos(-camera_angle_y)*camToPoint.z;
+  float xr = cos(-camera_angle_y)*camToPoint.x + sin(-camera_angle_y)*camToPoint.z;
+  float yr = camToPoint.y;
+  float zr = -sin(-camera_angle_y)*camToPoint.x + cos(-camera_angle_y)*camToPoint.z;
   point rotated_py = {xr, yr, zr};
   xr = rotated_py.x;
   yr = cos(-camera_angle_x)*rotated_py.y - sin(-camera_angle_x)*rotated_py.z;
   zr = sin(-camera_angle_x)*rotated_py.y + cos(-camera_angle_x)*rotated_py.z;
   point(rotated_pyx) = {xr, yr, zr};
   return rotated_pyx;
+}
+
+triangle roundTriangle(triangle tri){
+  tri.a.x = round(tri.a.x);
+  tri.a.y = round(tri.a.y);
+  tri.a.z = round(tri.a.z);
+  tri.b.x = round(tri.b.x);
+  tri.b.x = round(tri.b.x);
+  tri.b.x = round(tri.b.x);
+  tri.c.x = round(tri.c.x);
+  tri.c.x = round(tri.c.x);
+  tri.c.x = round(tri.c.x);
+  return tri;
 }
 
 triangle projectTriangle(triangle tri){
@@ -406,7 +444,9 @@ int main(){
   GC gc = XCreateGC( dsp, win,
                      0,        // mask of values
                      NULL );   // array of values
-  XSetForeground( dsp, gc, 0xA4FFB8 );
+  XSetForeground( dsp, gc, white);
+
+  Pixmap double_buffer = XCreatePixmap(dsp, win, WIDTH, HEIGHT, 24);
 
 
   eventMask = KeyPressMask|KeyReleaseMask;
@@ -414,10 +454,10 @@ int main(){
    
   do{
     XClearWindow(dsp, win);
-
+    XSetForeground( dsp, gc, white);
     XDrawString(dsp, win, gc, WIDTH-70, HEIGHT-10, "GGE v0.0.1", 10);
     char fov[11];
-    double currentFOV = calcFOV();
+    float currentFOV = calcFOV();
     if(currentFOV < 100.0){
       snprintf(fov, sizeof fov-1, "FOV: %3.1lf", currentFOV);
       XDrawString(dsp, win, gc, 10, HEIGHT-10, fov, 9);
@@ -426,9 +466,6 @@ int main(){
       snprintf(fov, sizeof fov, "FOV: %3.1lf", currentFOV);
       XDrawString(dsp, win, gc, 10, HEIGHT-10, fov, 10);
     }
-    //triangle projected_tri = projectTriangle(test);
-    //rasterizeTriangle(dsp, win, gc, projected_tri);
-    //drawTriangle(dsp, win, gc, projected_tri);
     for(int i = 0; i < 12; i++){
       //Check normal
       triangle projected_tri = projectTriangle(tris[i]);
@@ -444,16 +481,26 @@ int main(){
       normal.x = line1.y*line2.z - line1.z*line2.y;
       normal.y = line1.z*line2.x - line1.x*line2.z;
       normal.z = line1.x*line2.y - line1.y*line2.x;
-      double l = sqrt(normal.x*normal.x + normal.y*normal.y + normal.z*normal.z);
-      normal.x /= l; normal.y /= l; normal.z /= l;
+      float normalLength = sqrt(normal.x*normal.x + normal.y*normal.y + normal.z*normal.z);
+      normal.x /= normalLength; normal.y /= normalLength; normal.z /= normalLength;
       if(normal.z > 0){
-        rasterizeTriangle(dsp, win, gc, projected_tri);
-        //drawTriangle(dsp, win, gc, projected_tri);
+        
+        float lightLength = sqrt(light_direction.x*light_direction.x + light_direction.y*light_direction.y + light_direction.z*light_direction.z);
+        light_direction.x /= lightLength; light_direction.y /= lightLength; light_direction.z /= lightLength;
+        float dp = normal.x * light_direction.x + normal.y*light_direction.y + normal.z*light_direction.z;
+
+        unsigned int color = colorLightness(dp, cubeColor);
+        XSetForeground( dsp, gc, color);
+
+        if(!wireframe)
+          rasterizeTriangle(dsp, win, gc, projected_tri);
+        else
+          drawTriangle(dsp, win, gc, projected_tri);
       }
       
       
-      //tris[i] = rotateX(tris[i], 0.012, 0, 0, 700);
-      //tris[i] = rotateY(tris[i], 0.013, 0, -100, 800);
+      tris[i] = rotateX(tris[i], 0.012, 0, -100, 800);
+      tris[i] = rotateY(tris[i], 0.013, 0, -100, 800);
       //tris[i] = rotateZ(tris[i], 0.003, 0, -100, 800);
     }
     //XSync(dsp, 0);
@@ -486,6 +533,9 @@ int main(){
         camera_dist++;
       } else if(evt.xkey.keycode == 45){//k
         camera_dist--;
+      } else if(evt.xkey.keycode == 46){//l
+        wireframe = !wireframe;
+        usleep(100000);
       }
     }
   }while( evt.xkey.keycode != ESC );

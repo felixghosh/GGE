@@ -454,17 +454,19 @@ int main(){
    
   do{
     XClearWindow(dsp, win);
+    XSetForeground( dsp, gc, black);
+    XFillRectangle(dsp, double_buffer, gc, 0, 0, WIDTH, HEIGHT);
     XSetForeground( dsp, gc, white);
-    XDrawString(dsp, win, gc, WIDTH-70, HEIGHT-10, "GGE v0.0.1", 10);
+    XDrawString(dsp, double_buffer, gc, WIDTH-70, HEIGHT-10, "GGE v0.0.1", 10);
     char fov[11];
     float currentFOV = calcFOV();
     if(currentFOV < 100.0){
       snprintf(fov, sizeof fov-1, "FOV: %3.1lf", currentFOV);
-      XDrawString(dsp, win, gc, 10, HEIGHT-10, fov, 9);
+      XDrawString(dsp, double_buffer, gc, 10, HEIGHT-10, fov, 9);
     }
     else{
       snprintf(fov, sizeof fov, "FOV: %3.1lf", currentFOV);
-      XDrawString(dsp, win, gc, 10, HEIGHT-10, fov, 10);
+      XDrawString(dsp, double_buffer, gc, 10, HEIGHT-10, fov, 10);
     }
     for(int i = 0; i < 12; i++){
       //Check normal
@@ -483,27 +485,29 @@ int main(){
       normal.z = line1.x*line2.y - line1.y*line2.x;
       float normalLength = sqrt(normal.x*normal.x + normal.y*normal.y + normal.z*normal.z);
       normal.x /= normalLength; normal.y /= normalLength; normal.z /= normalLength;
+      normal.x = roundf(normal.x*100)/100; normal.y = roundf(normal.y*100)/100; normal.z = roundf(normal.z*100)/100;
       if(normal.z > 0){
         
         float lightLength = sqrt(light_direction.x*light_direction.x + light_direction.y*light_direction.y + light_direction.z*light_direction.z);
         light_direction.x /= lightLength; light_direction.y /= lightLength; light_direction.z /= lightLength;
+        light_direction.x = roundf(light_direction.x*100)/100; light_direction.y = roundf(light_direction.y*100)/100; light_direction.z = roundf(light_direction.z*100)/100;
         float dp = normal.x * light_direction.x + normal.y*light_direction.y + normal.z*light_direction.z;
 
         unsigned int color = colorLightness(dp, cubeColor);
         XSetForeground( dsp, gc, color);
 
         if(!wireframe)
-          rasterizeTriangle(dsp, win, gc, projected_tri);
+          rasterizeTriangle(dsp, double_buffer, gc, projected_tri);
         else
-          drawTriangle(dsp, win, gc, projected_tri);
+          drawTriangle(dsp, double_buffer, gc, projected_tri);
       }
       
-      
-      tris[i] = rotateX(tris[i], 0.012, 0, -100, 800);
-      tris[i] = rotateY(tris[i], 0.013, 0, -100, 800);
+      //tris[i] = rotateX(tris[i], 0.012, 0, -100, 800);
+      //tris[i] = rotateY(tris[i], 0.013, 0, -100, 800);
       //tris[i] = rotateZ(tris[i], 0.003, 0, -100, 800);
     }
     //XSync(dsp, 0);
+    XCopyArea(dsp, double_buffer, win, gc, 0, 0, WIDTH, HEIGHT, 0, 0);
     usleep(10000);
     XCheckWindowEvent( dsp, win, eventMask, &evt);
 

@@ -11,7 +11,8 @@ triangle translateTriangle(triangle tri, double x, double y, double z){
   triangle translated_tri = {
     {tri.a.x + x, tri.a.y + y, tri.a.z + z},
     {tri.b.x + x, tri.b.y + y, tri.b.z + z},
-    {tri.c.x + x, tri.c.y + y, tri.c.z + z}
+    {tri.c.x + x, tri.c.y + y, tri.c.z + z},
+    tri.color
   };
   return translated_tri;
 }
@@ -32,7 +33,8 @@ triangle rotateX(triangle tri, double angle, double x, double y, double z){
   triangle rotated_tri = {
     {x1, y1, z1},
     {x2, y2, z2},
-    {x3, y3, z3}
+    {x3, y3, z3},
+    tri.color
   };
   rotated_tri = translateTriangle(rotated_tri, x, y, z);
   return rotated_tri;
@@ -54,7 +56,8 @@ triangle rotateY(triangle tri, double angle, double x, double y, double z){
   triangle rotated_tri = {
     {x1, y1, z1},
     {x2, y2, z2},
-    {x3, y3, z3}
+    {x3, y3, z3},
+    tri.color
   };
   rotated_tri = translateTriangle(rotated_tri, x, y, z);
   return rotated_tri;
@@ -76,7 +79,8 @@ triangle rotateZ(triangle tri, double angle, double x, double y, double z){
   triangle rotated_tri = {
     {x1, y1, z1},
     {x2, y2, z2},
-    {x3, y3, z3}
+    {x3, y3, z3},
+    tri.color
   };
   rotated_tri = translateTriangle(rotated_tri, x, y, z);
   return rotated_tri;

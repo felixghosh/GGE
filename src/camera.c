@@ -58,7 +58,8 @@ triangle projectTriangle(triangle tri){
   triangle projected_tri = {
     {xp1, yp1, a_cam.z},
     {xp2, yp2, b_cam.z},
-    {xp3, yp3, c_cam.z}
+    {xp3, yp3, c_cam.z},
+    tri.color
   };
   return projected_tri;
 }

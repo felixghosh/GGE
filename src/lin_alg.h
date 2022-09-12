@@ -11,6 +11,7 @@ typedef struct triangle{
   point a;
   point b;
   point c;
+  unsigned int color;
 } triangle;
 
 point translatePoint(point p, double x, double y, double z);

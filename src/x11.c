@@ -35,80 +35,92 @@ bool wireframe = false;
 triangle camera_basis = { //Currently not used
   {1.0, 0.0, 0.0},
   {0.0, 1.0, 0.0},
-  {0.0, 0.0, 1.0}
+  {0.0, 0.0, 1.0},
+  0
 };
 
 triangle tri0 = {
   {0, 0, 100},
   {100, 0, 100},
-  {0, 100, 100}
+  {0, 100, 100},
+  0xFF0000
   
 };
 triangle tri1 = {
   {0, 100, 100},
   {100, 0, 100},
-  {100, 100, 100}
+  {100, 100, 100},
+  0xFF0000
 };
 triangle tri2 = {
   {0, 0, 100},
   {0, 100, 100},
-  {0, 0, 200}
-  
+  {0, 0, 200},
+  0xFF0000
 };
 triangle tri3 = {
   {0, 0, 200},
   {0, 100, 100},
-  {0, 100, 200}
+  {0, 100, 200},
+  0xFF0000
 };
 triangle tri4 = {
   {0, 0, 200},
   {0, 100, 200},
-  {100, 0, 200}
+  {100, 0, 200},
+  0xFF0000
 };
 triangle tri5 = {
   {0, 100, 200},
   {100, 100, 200},
-  {100, 0, 200}
-  
+  {100, 0, 200},
+  0xFF0000
+
 };
 triangle tri6 = {
   {100, 0, 100},
   {100, 0, 200},
-  {100, 100, 100}
+  {100, 100, 100},
+  0xFF0000
 };
 triangle tri7 = {
   {100, 0, 200},
   {100, 100, 200},
-  {100, 100, 100}
-  
+  {100, 100, 100},
+  0xFF0000
+
 };
 triangle tri8 = {
   {0, 0, 100},
   {0, 0, 200},
-  {100, 0, 100}
-  
+  {100, 0, 100},
+  0xFF0000
+
 };
 triangle tri9 = {
   {100, 0, 100},
   {0, 0, 200},
-  {100, 0, 200}
+  {100, 0, 200},
+  0xFF0000
 };
 triangle tri10 = {
   {0, 100, 100},
   {100, 100, 100},
-  {0, 100, 200}
+  {0, 100, 200},
+  0xFF0000
 };
 triangle tri11 = {
   {100, 100, 100},
   {100, 100, 200},
-  {0, 100, 200}
-  
+  {0, 100, 200},
+  0xFF0000
 };
 
 triangle test = {
   {0, 0, 100},
   {10, 4, 100},
-  {4, 11, 100}
+  {4, 11, 100},
+  0x00FF00
 };
 
 int cmpfunc (const void * a, const void * b) {
@@ -272,6 +284,19 @@ int main(){
   tris[21] = tri9;
   tris[22] = tri10;
   tris[23] = tri11;
+  tris[12].color = 0x00FF00;
+  tris[13].color = 0x00FF00;
+  tris[14].color = 0x00FF00;
+  tris[15].color = 0x00FF00;
+  tris[16].color = 0x00FF00;
+  tris[17].color = 0x00FF00;
+  tris[18].color = 0x00FF00;
+  tris[19].color = 0x00FF00;
+  tris[20].color = 0x00FF00;
+  tris[21].color = 0x00FF00;
+  tris[22].color = 0x00FF00;
+  tris[23].color = 0x00FF00;
+
 
   point* centers = malloc(12*sizeof(point));
   centers[0] = calcCenter(tris[0]);
@@ -379,11 +404,7 @@ int main(){
         light_direction.x = round(light_direction.x*100)/100; light_direction.y = round(light_direction.y*100)/100; light_direction.z = round(light_direction.z*100)/100;
         double dp = normal.x * light_direction.x + normal.y*light_direction.y + normal.z*light_direction.z;
         
-        unsigned int color;
-        if(i < 12)
-          color = colorLightness(dp, cubeColor);
-        else
-          color = colorLightness(dp,0x00FF00);
+        unsigned int color = colorLightness(dp, tris[i].color);
         XSetForeground( dsp, gc, color);
         rasterizeTriangle(dsp, double_buffer, gc, projected_tri);
         
@@ -399,7 +420,7 @@ int main(){
     }
     //XSync(dsp, 0);
     XCopyArea(dsp, double_buffer, win, gc, 0, 0, WIDTH, HEIGHT, 0, 0);
-    //usleep(1000);
+    usleep(1000);
     XCheckWindowEvent( dsp, win, eventMask, &evt);
     if(evt.xkey.state != 0)
       printf("%lu\n", evt.xkey.state);

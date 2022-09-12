@@ -1,5 +1,5 @@
 default:
-	gcc -O3 x11.c -lX11 -lm
+	gcc -O3 src/x11.c src/lin_alg.c src/camera.c -lX11 -lm
 	./a.out
 
 debug:

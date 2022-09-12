@@ -16,7 +16,7 @@
 
 float camera_dist = 554.0; //For FOV 60
 
-clock_t t0, t1;
+struct timespec t0, t1;
 double elapsed_time;
 
 typedef struct point{
@@ -379,12 +379,12 @@ triangle projectTriangle(triangle tri){
   point a_cam = toCameraBasis(tri.a);
   point b_cam = toCameraBasis(tri.b);
   point c_cam = toCameraBasis(tri.c);
-  xp1 = camera_dist * a_cam.x / a_cam.z + WIDTH/2;//projectX(tri.a);//
-  xp2 = camera_dist * b_cam.x / b_cam.z + WIDTH/2;//projectX(tri.b);//
-  xp3 = camera_dist * c_cam.x / c_cam.z + WIDTH/2;//projectX(tri.c);//
-  yp1 = camera_dist * a_cam.y / a_cam.z + WIDTH/2;//projectY(tri.a);//
-  yp2 = camera_dist * b_cam.y / b_cam.z + WIDTH/2;//projectY(tri.b);//
-  yp3 = camera_dist * c_cam.y / c_cam.z + WIDTH/2;//projectY(tri.c);//
+  xp1 = round(camera_dist * a_cam.x / a_cam.z + WIDTH/2);
+  xp2 = round(camera_dist * b_cam.x / b_cam.z + WIDTH/2);
+  xp3 = round(camera_dist * c_cam.x / c_cam.z + WIDTH/2);
+  yp1 = round(camera_dist * a_cam.y / a_cam.z + WIDTH/2);
+  yp2 = round(camera_dist * b_cam.y / b_cam.z + WIDTH/2);
+  yp3 = round(camera_dist * c_cam.y / c_cam.z + WIDTH/2);
   triangle projected_tri = {
     {xp1, yp1, a_cam.z},
     {xp2, yp2, b_cam.z},
@@ -395,8 +395,7 @@ triangle projectTriangle(triangle tri){
 
 
 int main(){
-  t0 = clock();
-
+  clock_gettime(CLOCK_REALTIME, &t0);
   triangle* tris = malloc(12*sizeof(triangle));
   tris[0] = tri0;
   tris[1] = tri1;
@@ -466,10 +465,10 @@ int main(){
   XSelectInput(dsp,win,eventMask); // override prev
    
   do{
-    t1 = clock();
-    elapsed_time = (double)(t1 - t0) / (double)CLOCKS_PER_SEC;
-    t0 = t1;
-    printf("elapsed_time: %lf\n", elapsed_time);
+    clock_gettime(CLOCK_REALTIME, &t1);
+    elapsed_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec)/1000000000.0;
+    clock_gettime(CLOCK_REALTIME, &t0);
+    //printf("fps: %u\n", (int)(1/elapsed_time));
     XClearWindow(dsp, win);
     XSetForeground( dsp, gc, black);
     XFillRectangle(dsp, double_buffer, gc, 0, 0, WIDTH, HEIGHT);
@@ -526,7 +525,7 @@ int main(){
     }
     //XSync(dsp, 0);
     XCopyArea(dsp, double_buffer, win, gc, 0, 0, WIDTH, HEIGHT, 0, 0);
-    //usleep(1000000);
+    usleep(1000);
     XCheckWindowEvent( dsp, win, eventMask, &evt);
 
     if(evt.type == KeyPress){  //Handle Input

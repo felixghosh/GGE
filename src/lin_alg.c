@@ -2,12 +2,12 @@
 #include "global.h"
 #include <math.h>
 
-point translatePoint(point p, float x, float y, float z){
+point translatePoint(point p, double x, double y, double z){
   point newPoint = {p.x + x, p.y + y, p.z + z};
   return newPoint;
 }
 
-triangle translateTriangle(triangle tri, float x, float y, float z){
+triangle translateTriangle(triangle tri, double x, double y, double z){
   triangle translated_tri = {
     {tri.a.x + x, tri.a.y + y, tri.a.z + z},
     {tri.b.x + x, tri.b.y + y, tri.b.z + z},
@@ -16,10 +16,10 @@ triangle translateTriangle(triangle tri, float x, float y, float z){
   return translated_tri;
 }
 
-triangle rotateX(triangle tri, float angle, float x, float y, float z){
+triangle rotateX(triangle tri, double angle, double x, double y, double z){
   angle *= elapsed_time*TIME_CONST;
   tri = translateTriangle(tri, -x, -y, -z);
-  float x1, y1, x2, y2, x3, y3, z1, z2, z3;
+  double x1, y1, x2, y2, x3, y3, z1, z2, z3;
   x1 = tri.a.x;
   x2 = tri.b.x;
   x3 = tri.c.x;
@@ -38,10 +38,10 @@ triangle rotateX(triangle tri, float angle, float x, float y, float z){
   return rotated_tri;
 }
 
-triangle rotateY(triangle tri, float angle, float x, float y, float z){
+triangle rotateY(triangle tri, double angle, double x, double y, double z){
   angle *= elapsed_time*TIME_CONST;
   tri = translateTriangle(tri, -x, -y, -z);
-  float x1, y1, x2, y2, x3, y3, z1, z2, z3;
+  double x1, y1, x2, y2, x3, y3, z1, z2, z3;
   x1 = cos(angle)*tri.a.x + sin(angle)*tri.a.z;
   x2 = cos(angle)*tri.b.x + sin(angle)*tri.b.z;
   x3 = cos(angle)*tri.c.x + sin(angle)*tri.c.z;
@@ -60,10 +60,10 @@ triangle rotateY(triangle tri, float angle, float x, float y, float z){
   return rotated_tri;
 }
 
-triangle rotateZ(triangle tri, float angle, float x, float y, float z){
+triangle rotateZ(triangle tri, double angle, double x, double y, double z){
   angle *= elapsed_time*TIME_CONST;
   tri = translateTriangle(tri, -x, -y, -z);
-  float x1, y1, x2, y2, x3, y3, z1, z2, z3;
+  double x1, y1, x2, y2, x3, y3, z1, z2, z3;
   x1 = cos(angle)*tri.a.x - sin(angle)*tri.a.y;
   x2 = cos(angle)*tri.b.x - sin(angle)*tri.b.y;
   x3 = cos(angle)*tri.c.x - sin(angle)*tri.c.y;
@@ -83,9 +83,9 @@ triangle rotateZ(triangle tri, float angle, float x, float y, float z){
 }
 
 point calcCenter(triangle tri){
-  float x = tri.a.x + tri.b.x + tri.c.x / 3;
-  float y = tri.a.y + tri.b.y + tri.c.y / 3;
-  float z = tri.a.z + tri.b.z + tri.c.z / 3;
+  double x = tri.a.x + tri.b.x + tri.c.x / 3;
+  double y = tri.a.y + tri.b.y + tri.c.y / 3;
+  double z = tri.a.z + tri.b.z + tri.c.z / 3;
   point p = {x, y, z};
   return p;
 }

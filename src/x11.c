@@ -8,25 +8,27 @@
 #include <math.h>
 #include <time.h>
 #include <stdbool.h>
+#include <pthread.h>
 
 #include "lin_alg.h"
 #include "camera.h"
 #include "global.h"
 
 
-float camera_dist = 554.0; //For FOV 60
+double camera_dist = 554.0; //For FOV 60
 
 struct timespec t0, t1;
 double elapsed_time;
 
+double speed = 3.0;
 
 point camera_pos = {0.0, 0.0, 0.0};
-float camera_angle_y = 0.0;
-float camera_angle_x = -0.1;
+double camera_angle_y = 0.0;
+double camera_angle_x = -0.1;
 
 point light_direction = {0.0, 0.0, 1.0};
 
-unsigned int cubeColor = 0x60E0E0;
+unsigned int cubeColor = 0xFF0000;
 
 bool wireframe = false;
 
@@ -109,17 +111,23 @@ triangle test = {
   {4, 11, 100}
 };
 
-float radToDeg(float rad){
-  float deg = (rad * 360.0) / (2*M_PI);
+int cmpfunc (const void * a, const void * b) {
+   triangle* pa = (triangle*)a;
+   triangle* pb = (triangle*)b;
+   return (calcCenter(*pb).z - calcCenter(*pa).z);
+}
+
+double radToDeg(double rad){
+  double deg = (rad * 360.0) / (2*M_PI);
   return deg;
 }
 
-float calcFOV(){
-  float fov = 2 * atan((WIDTH/2)/camera_dist);
+double calcFOV(){
+  double fov = 2 * atan((WIDTH/2)/camera_dist);
   return radToDeg(fov);
 }
 
-unsigned int colorLightness(float value, unsigned int color){
+unsigned int colorLightness(double value, unsigned int color){
   unsigned int r, g, b, rValue, gValue, bValue;
   r = 0x00FF0000 & color;
   g = 0x0000FF00 & color;
@@ -180,15 +188,15 @@ void rasterizeTriangle(Display* dsp, Window win, GC gc, triangle tri){
   bool shortSide = (p[1].y - p[0].y) * (p[2].x - p[0].x) < (p[1].x - p[0].x) * (p[2].y - p[0].y); //false = left, true = right
   
   int dy_long = (p[2].y - p[0].y);
-  float denominator = 1 / dy_long;
-  float slope_long[dy_long];
+  double denominator = 1 / dy_long;
+  double slope_long[dy_long];
   for(i = 0; i < dy_long; i++){
     slope_long[i] = p[0].x + (p[2].x-p[0].x)*(i)/dy_long;
     //XDrawPoint(dsp, win, gc, slope_long[i], (int)i+p[0].y);
   }
   int dy_short = (p[1].y - p[0].y);
   denominator = 1 / dy_short;
-  float slope_short[dy_short];
+  double slope_short[dy_short];
   if(dy_short != 0){
     for(i = 0; i < dy_short; i++){
       slope_short[i] = p[0].x + (p[1].x-p[0].x)*i/dy_short;
@@ -197,7 +205,7 @@ void rasterizeTriangle(Display* dsp, Window win, GC gc, triangle tri){
   }
   int dy_last = (p[2].y - p[1].y);
   denominator = 1 / dy_last;
-  float slope_last[dy_last];
+  double slope_last[dy_last];
   if(dy_last != 0){
     for(i = 0; i < dy_last; i++){
       slope_last[i] = p[1].x + (p[2].x-p[1].x)*i/dy_last;
@@ -239,7 +247,7 @@ triangle roundTriangle(triangle tri){
 
 int main(){
   clock_gettime(CLOCK_REALTIME, &t0);
-  triangle* tris = malloc(12*sizeof(triangle));
+  triangle* tris = malloc(24*sizeof(triangle));
   tris[0] = tri0;
   tris[1] = tri1;
   tris[2] = tri2;
@@ -252,6 +260,18 @@ int main(){
   tris[9] = tri9;
   tris[10] = tri10;
   tris[11] = tri11;
+  tris[12] = tri0;
+  tris[13] = tri1;
+  tris[14] = tri2;
+  tris[15] = tri3;
+  tris[16] = tri4;
+  tris[17] = tri5;
+  tris[18] = tri6;
+  tris[19] = tri7;
+  tris[20] = tri8;
+  tris[21] = tri9;
+  tris[22] = tri10;
+  tris[23] = tri11;
 
   point* centers = malloc(12*sizeof(point));
   centers[0] = calcCenter(tris[0]);
@@ -269,6 +289,8 @@ int main(){
 
   for(int i = 0; i < 12; i++)
     tris[i] = translateTriangle(tris[i], 0, -100, 700);
+  for(int i = 12; i < 24; i++)
+    tris[i] = translateTriangle(tris[i], 0, 150, 700);
 
   Display *dsp = XOpenDisplay( NULL );
   if( !dsp ){ return 1; }
@@ -311,14 +333,15 @@ int main(){
     clock_gettime(CLOCK_REALTIME, &t1);
     elapsed_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec)/1000000000.0;
     clock_gettime(CLOCK_REALTIME, &t0);
-    printf("fps: %u\n", (int)(1/elapsed_time));
+    printf("fps: %5u\n", (int)(1/elapsed_time));
+    
     XClearWindow(dsp, win);
     XSetForeground( dsp, gc, black);
     XFillRectangle(dsp, double_buffer, gc, 0, 0, WIDTH, HEIGHT);
     XSetForeground( dsp, gc, white);
     XDrawString(dsp, double_buffer, gc, WIDTH-70, HEIGHT-10, "GGE v0.0.1", 10);
     char fov[11];
-    float currentFOV = calcFOV();
+    double currentFOV = calcFOV();
     if(currentFOV < 100.0){
       snprintf(fov, sizeof fov-1, "FOV: %3.1lf", currentFOV);
       XDrawString(dsp, double_buffer, gc, 10, HEIGHT-10, fov, 9);
@@ -327,7 +350,10 @@ int main(){
       snprintf(fov, sizeof fov, "FOV: %3.1lf", currentFOV);
       XDrawString(dsp, double_buffer, gc, 10, HEIGHT-10, fov, 10);
     }
-    for(int i = 0; i < 12; i++){
+    //tris = quicksort(tris, 24);
+    qsort(tris, 24, sizeof(triangle), cmpfunc);
+    //sleep(1);
+    for(int i = 0; i < 24; i++){
       //Check normal
       triangle projected_tri = projectTriangle(tris[i]);
       point normal, line1, line2;
@@ -343,49 +369,55 @@ int main(){
       normal.y = line1.z*line2.x - line1.x*line2.z;
       normal.z = line1.x*line2.y - line1.y*line2.x;
       
-      float normalLength = sqrt(normal.x*normal.x + normal.y*normal.y + normal.z*normal.z);
+      double normalLength = sqrt(normal.x*normal.x + normal.y*normal.y + normal.z*normal.z);
       normal.x /= normalLength; normal.y /= normalLength; normal.z /= normalLength;
-      normal.x = roundf(normal.x*100)/100; normal.y = roundf(normal.y*100)/100; normal.z = roundf(normal.z*100)/100;
+      normal.x = round(normal.x*100)/100; normal.y = round(normal.y*100)/100; normal.z = round(normal.z*100)/100;
       if(normal.z > 0){
         
-        float lightLength = sqrt(light_direction.x*light_direction.x + light_direction.y*light_direction.y + light_direction.z*light_direction.z);
+        double lightLength = sqrt(light_direction.x*light_direction.x + light_direction.y*light_direction.y + light_direction.z*light_direction.z);
         light_direction.x /= lightLength; light_direction.y /= lightLength; light_direction.z /= lightLength;
-        light_direction.x = roundf(light_direction.x*100)/100; light_direction.y = roundf(light_direction.y*100)/100; light_direction.z = roundf(light_direction.z*100)/100;
-        float dp = normal.x * light_direction.x + normal.y*light_direction.y + normal.z*light_direction.z;
-
-        unsigned int color = colorLightness(dp, cubeColor);
+        light_direction.x = round(light_direction.x*100)/100; light_direction.y = round(light_direction.y*100)/100; light_direction.z = round(light_direction.z*100)/100;
+        double dp = normal.x * light_direction.x + normal.y*light_direction.y + normal.z*light_direction.z;
+        
+        unsigned int color;
+        if(i < 12)
+          color = colorLightness(dp, cubeColor);
+        else
+          color = colorLightness(dp,0x00FF00);
         XSetForeground( dsp, gc, color);
         rasterizeTriangle(dsp, double_buffer, gc, projected_tri);
         
         if(wireframe){
-          XSetForeground(dsp, gc, 0xFF0000);
+          XSetForeground(dsp, gc, 0x00FF);
           drawTriangle(dsp, double_buffer, gc, projected_tri);
         }
       }
       
-      //tris[i] = rotateX(tris[i], 0.012, 0, -100, 800);
+      tris[i] = rotateX(tris[i], 0.007, 0, -100, 800);
       tris[i] = rotateY(tris[i], 0.013, 0, -100, 800);
       tris[i] = rotateZ(tris[i], 0.003, 0, -100, 800);
     }
     //XSync(dsp, 0);
     XCopyArea(dsp, double_buffer, win, gc, 0, 0, WIDTH, HEIGHT, 0, 0);
-    usleep(1000);
+    //usleep(1000);
     XCheckWindowEvent( dsp, win, eventMask, &evt);
+    if(evt.xkey.state != 0)
+      printf("%lu\n", evt.xkey.state);
 
     if(evt.type == KeyPress){  //Handle Input
       //printf("%u\n", evt.xkey.keycode);
       if(evt.xkey.keycode == 25){       //w
-        movCamera(0.0, 0.0, 2.0);
+        movCamera(0.0, 0.0, speed);
       } else if(evt.xkey.keycode == 38){//a
-        movCamera(-2.0, 0.0, 0.0);
+        movCamera(-speed, 0.0, 0.0);
       } else if(evt.xkey.keycode == 39){//s
-        movCamera(0.0, 0.0, -2.0);
+        movCamera(0.0, 0.0, -speed);
       } else if(evt.xkey.keycode == 40){//d
-        movCamera(2.0, 0.0, 0.0);
+        movCamera(speed, 0.0, 0.0);
       } else if(evt.xkey.keycode == 27){//r
-        movCamera(0.0, -2.0, 0.0);
+        movCamera(0.0, -speed, 0.0);
       } else if(evt.xkey.keycode == 41){//f
-        movCamera(0.0, 2.0, 0.0);
+        movCamera(0.0, speed, 0.0);
       } else if(evt.xkey.keycode == 24){//q
         yawCamera(-0.01);
       } else if(evt.xkey.keycode == 26){//e

@@ -2,9 +2,9 @@
 #define LIN_ALG_H
 
 typedef struct point{
-  float x;
-  float y;
-  float z;
+  double x;
+  double y;
+  double z;
 } point;
 
 typedef struct triangle{
@@ -13,15 +13,15 @@ typedef struct triangle{
   point c;
 } triangle;
 
-point translatePoint(point p, float x, float y, float z);
+point translatePoint(point p, double x, double y, double z);
 
-triangle translateTriangle(triangle tri, float x, float y, float z);
+triangle translateTriangle(triangle tri, double x, double y, double z);
 
-triangle rotateX(triangle tri, float angle, float x, float y, float z);
+triangle rotateX(triangle tri, double angle, double x, double y, double z);
 
-triangle rotateY(triangle tri, float angle, float x, float y, float z);
+triangle rotateY(triangle tri, double angle, double x, double y, double z);
 
-triangle rotateZ(triangle tri, float angle, float x, float y, float z);
+triangle rotateZ(triangle tri, double angle, double x, double y, double z);
 
 point calcCenter(triangle tri);
 

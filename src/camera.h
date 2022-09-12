@@ -3,18 +3,18 @@
 
 #include "lin_alg.h"
 
-extern float camera_dist;
+extern double camera_dist;
 extern point camera_pos;
-extern float camera_angle_y;
-extern float camera_angle_x;
+extern double camera_angle_y;
+extern double camera_angle_x;
 extern triangle camera_basis;
 
 
-void yawCamera(float rad);
+void yawCamera(double rad);
 
-void pitchCamera(float rad);
+void pitchCamera(double rad);
 
-void movCamera(float distX, float distY, float distZ);
+void movCamera(double distX, double distY, double distZ);
 
 point toCameraBasis(point p);
 

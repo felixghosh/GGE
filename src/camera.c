@@ -3,7 +3,7 @@
 #include "global.h"
 #include <math.h>
 
-void yawCamera(float rad){
+void yawCamera(double rad){
   rad*=elapsed_time*TIME_CONST;
   point newBasisX = {sin(M_PI/2 + rad + camera_angle_y), 0.0, cos(M_PI/2 + rad + camera_angle_y)};
   point newBasisZ = {sin(rad + camera_angle_y), 0.0, cos(rad + camera_angle_y)};
@@ -12,13 +12,13 @@ void yawCamera(float rad){
   camera_angle_y += rad;
 }
 
-void pitchCamera(float rad){
+void pitchCamera(double rad){
   rad*=elapsed_time*TIME_CONST;
   camera_angle_x += rad;
 }
 
 
-void movCamera(float distX, float distY, float distZ){
+void movCamera(double distX, double distY, double distZ){
   distZ*=elapsed_time*TIME_CONST; distX*=elapsed_time*TIME_CONST; distY*=elapsed_time*TIME_CONST;
   camera_pos.z += cos(camera_angle_y)*distZ;
   camera_pos.x += sin(camera_angle_y)*distZ;
@@ -33,9 +33,9 @@ point toCameraBasis(point p){
   point camToPoint = {
     p.x - camera_pos.x, p.y - camera_pos.y, p.z - camera_pos.z
   };
-  float xr = cos(-camera_angle_y)*camToPoint.x + sin(-camera_angle_y)*camToPoint.z;
-  float yr = camToPoint.y;
-  float zr = -sin(-camera_angle_y)*camToPoint.x + cos(-camera_angle_y)*camToPoint.z;
+  double xr = cos(-camera_angle_y)*camToPoint.x + sin(-camera_angle_y)*camToPoint.z;
+  double yr = camToPoint.y;
+  double zr = -sin(-camera_angle_y)*camToPoint.x + cos(-camera_angle_y)*camToPoint.z;
   point rotated_py = {xr, yr, zr};
   xr = rotated_py.x;
   yr = cos(-camera_angle_x)*rotated_py.y - sin(-camera_angle_x)*rotated_py.z;

@@ -6,14 +6,18 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <math.h>
+#include <time.h>
 #include <stdbool.h>
 
 #define WIDTH 640.0
 #define HEIGHT 480.0
 #define ESC 9
+#define TIME_CONST 100
 
 float camera_dist = 554.0; //For FOV 60
 
+clock_t t0, t1;
+double elapsed_time;
 
 typedef struct point{
   float x;
@@ -159,6 +163,7 @@ triangle translateTriangle(triangle tri, float x, float y, float z){
 }
 
 void yawCamera(float rad){
+  rad*=elapsed_time*TIME_CONST;
   point newBasisX = {sin(M_PI/2 + rad + camera_angle_y), 0.0, cos(M_PI/2 + rad + camera_angle_y)};
   point newBasisZ = {sin(rad + camera_angle_y), 0.0, cos(rad + camera_angle_y)};
   camera_basis.a = newBasisX;
@@ -167,15 +172,19 @@ void yawCamera(float rad){
 }
 
 void pitchCamera(float rad){
+  rad*=elapsed_time*TIME_CONST;
   camera_angle_x += rad;
 }
 
-void movCamera(float distZ, float distX){
+void movCamera(float distZ, float distX, float distY){
+  distZ*=elapsed_time*TIME_CONST; distX*=elapsed_time*TIME_CONST; distY*=elapsed_time*TIME_CONST;
   camera_pos.z += cos(camera_angle_y)*distZ;
   camera_pos.x += sin(camera_angle_y)*distZ;
 
   camera_pos.z += cos(camera_angle_y + M_PI/2)*distX;
   camera_pos.x += sin(camera_angle_y + M_PI/2)*distX;
+
+  camera_pos.y += distY;
 }
 
 point calcCenter(triangle tri){
@@ -272,6 +281,7 @@ void rasterizeTriangle(Display* dsp, Window win, GC gc, triangle tri){
 }
 
 triangle rotateX(triangle tri, float angle, float x, float y, float z){
+  angle *= elapsed_time*TIME_CONST;
   tri = translateTriangle(tri, -x, -y, -z);
   float x1, y1, x2, y2, x3, y3, z1, z2, z3;
   x1 = tri.a.x;
@@ -293,6 +303,7 @@ triangle rotateX(triangle tri, float angle, float x, float y, float z){
 }
 
 triangle rotateY(triangle tri, float angle, float x, float y, float z){
+  angle *= elapsed_time*TIME_CONST;
   tri = translateTriangle(tri, -x, -y, -z);
   float x1, y1, x2, y2, x3, y3, z1, z2, z3;
   x1 = cos(angle)*tri.a.x + sin(angle)*tri.a.z;
@@ -314,6 +325,7 @@ triangle rotateY(triangle tri, float angle, float x, float y, float z){
 }
 
 triangle rotateZ(triangle tri, float angle, float x, float y, float z){
+  angle *= elapsed_time*TIME_CONST;
   tri = translateTriangle(tri, -x, -y, -z);
   float x1, y1, x2, y2, x3, y3, z1, z2, z3;
   x1 = cos(angle)*tri.a.x - sin(angle)*tri.a.y;
@@ -383,6 +395,7 @@ triangle projectTriangle(triangle tri){
 
 
 int main(){
+  t0 = clock();
 
   triangle* tris = malloc(12*sizeof(triangle));
   tris[0] = tri0;
@@ -453,6 +466,10 @@ int main(){
   XSelectInput(dsp,win,eventMask); // override prev
    
   do{
+    t1 = clock();
+    elapsed_time = (double)(t1 - t0) / (double)CLOCKS_PER_SEC;
+    t0 = t1;
+    printf("elapsed_time: %lf\n", elapsed_time);
     XClearWindow(dsp, win);
     XSetForeground( dsp, gc, black);
     XFillRectangle(dsp, double_buffer, gc, 0, 0, WIDTH, HEIGHT);
@@ -483,6 +500,7 @@ int main(){
       normal.x = line1.y*line2.z - line1.z*line2.y;
       normal.y = line1.z*line2.x - line1.x*line2.z;
       normal.z = line1.x*line2.y - line1.y*line2.x;
+      
       float normalLength = sqrt(normal.x*normal.x + normal.y*normal.y + normal.z*normal.z);
       normal.x /= normalLength; normal.y /= normalLength; normal.z /= normalLength;
       normal.x = roundf(normal.x*100)/100; normal.y = roundf(normal.y*100)/100; normal.z = roundf(normal.z*100)/100;
@@ -503,28 +521,28 @@ int main(){
       }
       
       //tris[i] = rotateX(tris[i], 0.012, 0, -100, 800);
-      //tris[i] = rotateY(tris[i], 0.013, 0, -100, 800);
-      //tris[i] = rotateZ(tris[i], 0.003, 0, -100, 800);
+      tris[i] = rotateY(tris[i], 0.013, 0, -100, 800);
+      tris[i] = rotateZ(tris[i], 0.003, 0, -100, 800);
     }
     //XSync(dsp, 0);
     XCopyArea(dsp, double_buffer, win, gc, 0, 0, WIDTH, HEIGHT, 0, 0);
-    usleep(10000);
+    //usleep(1000000);
     XCheckWindowEvent( dsp, win, eventMask, &evt);
 
     if(evt.type == KeyPress){  //Handle Input
       //printf("%u\n", evt.xkey.keycode);
       if(evt.xkey.keycode == 25){       //w
-        movCamera(2.0, 0.0);
+        movCamera(2.0, 0.0, 0.0);
       } else if(evt.xkey.keycode == 38){//a
-        movCamera(0.0, -2.0);
+        movCamera(0.0, -2.0, 0.0);
       } else if(evt.xkey.keycode == 39){//s
-        movCamera(-2.0, 0.0);
+        movCamera(-2.0, 0.0, 0.0);
       } else if(evt.xkey.keycode == 40){//d
-        movCamera(0.0, 2.0);
+        movCamera(0.0, 2.0, 0.0);
       } else if(evt.xkey.keycode == 27){//r
-        camera_pos.y -= 2.0;
+        movCamera(0.0, 0.0, -2.0);
       } else if(evt.xkey.keycode == 41){//f
-        camera_pos.y += 2.0;
+        movCamera(0.0, 0.0, 2.0);
       } else if(evt.xkey.keycode == 24){//q
         yawCamera(-0.01);
       } else if(evt.xkey.keycode == 26){//e
@@ -534,9 +552,9 @@ int main(){
       } else if(evt.xkey.keycode == 28){//t
         pitchCamera(0.01);
       } else if(evt.xkey.keycode == 44){//j
-        camera_dist++;
+        camera_dist+= 2*elapsed_time*TIME_CONST;
       } else if(evt.xkey.keycode == 45){//k
-        camera_dist--;
+        camera_dist-= 2*elapsed_time*TIME_CONST;
       } else if(evt.xkey.keycode == 46){//l
         wireframe = !wireframe;
         usleep(100000);

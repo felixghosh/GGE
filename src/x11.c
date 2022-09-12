@@ -2,6 +2,7 @@
 #include <X11/Xutil.h>
 #include <X11/Xos.h>
 #include <xcb/xproto.h>
+#include <X11/extensions/Xfixes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -25,6 +26,10 @@ double speed = 3.0;
 point camera_pos = {0.0, 0.0, 0.0};
 double camera_angle_y = 0.0;
 double camera_angle_x = -0.1;
+
+int lastMouseX = WIDTH/2;
+int lastMouseY = HEIGHT/2;
+int mouseX, mouseY;
 
 point light_direction = {0.0, 0.0, 1.0};
 
@@ -351,14 +356,14 @@ int main(){
   Pixmap double_buffer = XCreatePixmap(dsp, win, WIDTH, HEIGHT, 24);
 
 
-  eventMask = KeyPressMask|KeyReleaseMask;
+  eventMask = KeyPressMask|KeyReleaseMask|PointerMotionMask;
   XSelectInput(dsp,win,eventMask); // override prev
    
   do{
     clock_gettime(CLOCK_REALTIME, &t1);
     elapsed_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec)/1000000000.0;
     clock_gettime(CLOCK_REALTIME, &t0);
-    printf("fps: %5u\n", (int)(1/elapsed_time));
+    //printf("fps: %5u\n", (int)(1/elapsed_time));
     
     XClearWindow(dsp, win);
     XSetForeground( dsp, gc, black);
@@ -414,19 +419,19 @@ int main(){
         }
       }
       
-      tris[i] = rotateX(tris[i], 0.007, 0, -100, 800);
-      tris[i] = rotateY(tris[i], 0.013, 0, -100, 800);
-      tris[i] = rotateZ(tris[i], 0.003, 0, -100, 800);
+      //tris[i] = rotateX(tris[i], 0.007, 0, -100, 800);
+      //tris[i] = rotateY(tris[i], 0.013, 0, -100, 800);
+      //tris[i] = rotateZ(tris[i], 0.003, 0, -100, 800);
     }
     //XSync(dsp, 0);
     XCopyArea(dsp, double_buffer, win, gc, 0, 0, WIDTH, HEIGHT, 0, 0);
     usleep(1000);
     XCheckWindowEvent( dsp, win, eventMask, &evt);
-    if(evt.xkey.state != 0)
-      printf("%lu\n", evt.xkey.state);
+    //if(evt.xkey.state != 0)
+    //  printf("%lu\n", evt.xkey.state);
 
     if(evt.type == KeyPress){  //Handle Input
-      //printf("%u\n", evt.xkey.keycode);
+      printf("%u\n", evt.xkey.keycode);
       if(evt.xkey.keycode == 25){       //w
         movCamera(0.0, 0.0, speed);
       } else if(evt.xkey.keycode == 38){//a
@@ -453,8 +458,21 @@ int main(){
         camera_dist-= 2*elapsed_time*TIME_CONST;
       } else if(evt.xkey.keycode == 46){//l
         wireframe = !wireframe;
+        XWarpPointer(dsp, win, win, 0, 0, 0, 0, WIDTH/2, HEIGHT/2);
         usleep(100000);
       }
+    } else if(evt.type == MotionNotify && evt.xmotion.type == 6){
+      //XFixesHideCursor(dsp, win);
+      if(evt.xmotion.x != WIDTH/2 && evt.xmotion.y != HEIGHT/2){
+        int dx = lastMouseX - evt.xmotion.x;
+        int dy = lastMouseY - evt.xmotion.y;
+        XWarpPointer(dsp, win, win, 0, 0, 0, 0, WIDTH/2, HEIGHT/2);
+        XFlush(dsp);
+        yawCamera((double)-dx/200);
+        pitchCamera((double)dy/200);
+      }
+      lastMouseX = evt.xmotion.x;
+      lastMouseY = evt.xmotion.y;
     }
   }while( evt.xkey.keycode != ESC );
   

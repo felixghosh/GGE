@@ -8,6 +8,7 @@ extern point camera_pos;
 extern double camera_angle_y;
 extern double camera_angle_x;
 extern triangle camera_basis;
+extern int mouseX, mouseY, lastMouseX, lastMouseY;
 
 
 void yawCamera(double rad);

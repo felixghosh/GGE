@@ -268,7 +268,7 @@ triangle roundTriangle(triangle tri){
 
 int main(){
   clock_gettime(CLOCK_REALTIME, &t0);
-  /*triangle* tris = malloc(24*sizeof(triangle));
+  triangle* tris = malloc(24*sizeof(triangle));
   tris[0] = tri0;
   tris[1] = tri1;
   tris[2] = tri2;
@@ -304,10 +304,10 @@ int main(){
   tris[20].color = 0x00FF00;
   tris[21].color = 0x00FF00;
   tris[22].color = 0x00FF00;
-  tris[23].color = 0x00FF00;*/
+  tris[23].color = 0x00FF00;
 
-  FILE* fp;
-  fp = fopen("/home/felixghosh/prog/c/GGE/sphere2.obj", "r");
+  /*FILE* fp;
+  fp = fopen("/home/felixghosh/prog/c/GGE/sphere.obj", "r");
   
   size_t buf_size = 50;
   char* buf = malloc(buf_size*sizeof(char));
@@ -354,12 +354,12 @@ int main(){
       };
 
   //free(buf);
-  }
+  }*/
   /*for(int i = 0; i < nVertices; i++)
     printf("(%lf, %lf, %lf)\n", vertices[i].x, vertices[i].y, vertices[i].z);
   for(int i = 0; i < nFaces; i++)
     printf("tri color: %u point1.x %lf\n", tris[i].color, tris[i].a.x);*/
-
+  
 
 
   for(int i = 0; i < 12; i++)
@@ -428,8 +428,8 @@ int main(){
     //tris = quicksort(tris, 24);
     qsort(tris, 24, sizeof(triangle), cmpfunc);
     //sleep(1);
-    //for(int i = 0; i < 24; i++){
-    for(int i = 0; i < nFaces; i++){
+    for(int i = 0; i < 24; i++){
+    //for(int i = 0; i < nFaces; i++){
       //Check normal
       triangle projected_tri = projectTriangle(tris[i]);
       point normal, line1, line2;
@@ -477,7 +477,7 @@ int main(){
     }
     //XSync(dsp, 0);
     XCopyArea(dsp, double_buffer, win, gc, 0, 0, WIDTH*resScale, HEIGHT*resScale, 0, 0);
-    usleep(10000);
+    //usleep(100);
     XCheckWindowEvent( dsp, win, eventMask, &evt);
     //if(evt.xkey.state != 0)
     //  printf("%lu\n", evt.xkey.state);

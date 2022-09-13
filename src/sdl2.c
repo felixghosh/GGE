@@ -177,6 +177,7 @@ void initialize(){
             printf("InitSetup failed to create window\n");
 
         SDL_SetWindowTitle(screen, "GGE");
+        SDL_SetWindowMouseGrab(screen, SDL_TRUE);
 }
 
 void terminate(){
@@ -394,11 +395,23 @@ int main(int argc, char* argv[]){
                     running = 0;
                 } else if(keypressed == SDLK_l){//l
                     wireframe = !wireframe;
+                } 
+            } else if(evt.type == SDL_MOUSEMOTION){
+                SDL_ShowCursor(SDL_DISABLE);
+                double dY = lastMouseY - evt.motion.y;
+                if(evt.motion.x != WIDTH*resScale/2 && evt.motion.y != HEIGHT*resScale/2){
+                    int dx = lastMouseX - evt.motion.x;
+                    int dy = lastMouseY - evt.motion.y;
+                    SDL_WarpMouseInWindow(screen,WIDTH*resScale/2, HEIGHT*resScale/2);
+                    yawCamera((double)-dx/100);
+                    pitchCamera((double)dy/100);
                 }
+                lastMouseX = evt.motion.x;
+                lastMouseY = evt.motion.y;
             }
         }
 
-        if(keystates[SDL_SCANCODE_W]){      //w
+        if(keystates[SDL_SCANCODE_W]){ //w
             movCamera(1.0, 1.0, speed);
         }if(keystates[SDL_SCANCODE_A]){//a
             movCamera(-speed, 0.0, 0.0);

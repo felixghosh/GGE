@@ -178,6 +178,8 @@ void initialize(){
 
         SDL_SetWindowTitle(screen, "GGE");
         SDL_SetWindowMouseGrab(screen, SDL_TRUE);
+        SDL_SetRelativeMouseMode(SDL_TRUE);
+        SDL_ShowCursor(SDL_DISABLE);
 }
 
 void terminate(){
@@ -325,7 +327,7 @@ int main(int argc, char* argv[]){
         clock_gettime(CLOCK_REALTIME, &t1);
         elapsed_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec)/1000000000.0;
         clock_gettime(CLOCK_REALTIME, &t0);
-        //printf("fps: %5u\n", (int)(1/elapsed_time));
+        printf("fps: %5u\n", (int)(1/elapsed_time));
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
@@ -397,17 +399,12 @@ int main(int argc, char* argv[]){
                     wireframe = !wireframe;
                 } 
             } else if(evt.type == SDL_MOUSEMOTION){
-                SDL_ShowCursor(SDL_DISABLE);
-                double dY = lastMouseY - evt.motion.y;
                 if(evt.motion.x != WIDTH*resScale/2 && evt.motion.y != HEIGHT*resScale/2){
-                    int dx = lastMouseX - evt.motion.x;
-                    int dy = lastMouseY - evt.motion.y;
-                    SDL_WarpMouseInWindow(screen,WIDTH*resScale/2, HEIGHT*resScale/2);
-                    yawCamera((double)-dx/100);
-                    pitchCamera((double)dy/100);
+                    int dx = evt.motion.xrel;
+                    int dy = evt.motion.yrel;
+                    yawCamera((double)dx/100);
+                    pitchCamera((double)-dy/100);
                 }
-                lastMouseX = evt.motion.x;
-                lastMouseY = evt.motion.y;
             }
         }
 

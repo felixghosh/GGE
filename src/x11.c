@@ -10,6 +10,7 @@
 #include <time.h>
 #include <stdbool.h>
 #include <pthread.h>
+#include <string.h>
 
 #include "lin_alg.h"
 #include "camera.h"
@@ -22,6 +23,7 @@ struct timespec t0, t1;
 double elapsed_time;
 
 double speed = 3.0;
+double resScale = 1;
 
 point camera_pos = {0.0, 0.0, 0.0};
 double camera_angle_y = 0.0;
@@ -233,14 +235,16 @@ void rasterizeTriangle(Display* dsp, Window win, GC gc, triangle tri){
   i = 0;
   if(dy_short != 0){
     for(i; i < dy_short; i++){
-      XDrawLine(dsp, win, gc, slope_long[i], i+p[0].y, (int)slope_short[i], i+p[0].y);
+      for(int j = 0; j < resScale; j++)
+        XDrawLine(dsp, win, gc, slope_long[i]*resScale, (i+p[0].y)*resScale+j, (int)slope_short[i]*resScale, (i+p[0].y)*resScale+j);
     }
     
   }
   if(dy_last != 0){
     int origin = i;
     for(i; i < dy_long; i++){
-      XDrawLine(dsp, win, gc, slope_long[i], i+p[0].y, (int)slope_last[i - origin], i+p[0].y);
+      for(int j = 0; j < resScale; j++)
+        XDrawLine(dsp, win, gc, slope_long[i]*resScale, (i+p[0].y)*resScale+j, (int)slope_last[i - origin]*resScale, (i+p[0].y)*resScale+j);
     }
     
   }
@@ -264,7 +268,7 @@ triangle roundTriangle(triangle tri){
 
 int main(){
   clock_gettime(CLOCK_REALTIME, &t0);
-  triangle* tris = malloc(24*sizeof(triangle));
+  /*triangle* tris = malloc(24*sizeof(triangle));
   tris[0] = tri0;
   tris[1] = tri1;
   tris[2] = tri2;
@@ -300,22 +304,63 @@ int main(){
   tris[20].color = 0x00FF00;
   tris[21].color = 0x00FF00;
   tris[22].color = 0x00FF00;
-  tris[23].color = 0x00FF00;
+  tris[23].color = 0x00FF00;*/
+
+  FILE* fp;
+  fp = fopen("/home/felixghosh/prog/c/GGE/sphere2.obj", "r");
+  
+  size_t buf_size = 50;
+  char* buf = malloc(buf_size*sizeof(char));
+  char* endptr;
+  unsigned long int nVertices = 0;
+  unsigned long int nFaces = 0;
+
+  do{
+    getline(&buf, &buf_size, fp);
+    nVertices++;
+  } while(buf[0] == 'v');
+
+  while(getline(&buf, &buf_size, fp)>0)
+    nFaces++;
+  nVertices--;
+
+  printf("nvertices %lu nface %lu\n", nVertices, nFaces);
+  rewind(fp);
+
+  point* vertices = malloc(nVertices * sizeof(point));
+  for(int i = 0; i < nVertices; i++){
+    getline(&buf, &buf_size, fp);
+    endptr = buf;
+    double values[3];
+    for(int i = 0; i < 3; i++)
+      values[i] = 10*strtod(endptr+1, &endptr);
+    vertices[i] = (point){values[0], values[1], values[2]};
+  }
+  
+  getline(&buf, &buf_size, fp);
+
+  triangle* tris = malloc(nFaces * sizeof(triangle));
+  for(int i = 0; i < nFaces; i++){
+    getline(&buf, &buf_size, fp);
+    endptr = buf;
+    long int values[3];
+    for(int i = 0; i < 3; i++)
+      values[i] = strtol(endptr+1, &endptr, 10);
+    tris[i] = (triangle){
+      vertices[values[0]],
+      vertices[values[1]],
+      vertices[values[2]],
+      0xFF0000
+      };
+
+  //free(buf);
+  }
+  /*for(int i = 0; i < nVertices; i++)
+    printf("(%lf, %lf, %lf)\n", vertices[i].x, vertices[i].y, vertices[i].z);
+  for(int i = 0; i < nFaces; i++)
+    printf("tri color: %u point1.x %lf\n", tris[i].color, tris[i].a.x);*/
 
 
-  point* centers = malloc(12*sizeof(point));
-  centers[0] = calcCenter(tris[0]);
-  centers[1] = calcCenter(tris[1]);
-  centers[2] = calcCenter(tris[2]);
-  centers[3] = calcCenter(tris[3]);
-  centers[4] = calcCenter(tris[4]);
-  centers[5] = calcCenter(tris[5]);
-  centers[6] = calcCenter(tris[6]);
-  centers[7] = calcCenter(tris[7]);
-  centers[8] = calcCenter(tris[8]);
-  centers[9] = calcCenter(tris[9]);
-  centers[10] = calcCenter(tris[10]);
-  centers[11] = calcCenter(tris[11]);
 
   for(int i = 0; i < 12; i++)
     tris[i] = translateTriangle(tris[i], 0, -100, 700);
@@ -332,7 +377,7 @@ int main(){
   Window win = XCreateSimpleWindow(dsp,
                                DefaultRootWindow(dsp),
                                50, 50,   // origin
-                                WIDTH, HEIGHT, // size
+                                WIDTH*resScale, HEIGHT*resScale, // size
                                0, white, // border
                                black );  // backgd
 
@@ -353,7 +398,7 @@ int main(){
                      NULL );   // array of values
   XSetForeground( dsp, gc, white);
 
-  Pixmap double_buffer = XCreatePixmap(dsp, win, WIDTH, HEIGHT, 24);
+  Pixmap double_buffer = XCreatePixmap(dsp, win, WIDTH*resScale, HEIGHT*resScale, 24);
 
 
   eventMask = KeyPressMask|KeyReleaseMask|PointerMotionMask;
@@ -363,27 +408,28 @@ int main(){
     clock_gettime(CLOCK_REALTIME, &t1);
     elapsed_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec)/1000000000.0;
     clock_gettime(CLOCK_REALTIME, &t0);
-    //printf("fps: %5u\n", (int)(1/elapsed_time));
+    printf("fps: %5u\n", (int)(1/elapsed_time));
     
     XClearWindow(dsp, win);
     XSetForeground( dsp, gc, black);
-    XFillRectangle(dsp, double_buffer, gc, 0, 0, WIDTH, HEIGHT);
+    XFillRectangle(dsp, double_buffer, gc, 0, 0, WIDTH*resScale, HEIGHT*resScale);
     XSetForeground( dsp, gc, white);
-    XDrawString(dsp, double_buffer, gc, WIDTH-70, HEIGHT-10, "GGE v0.0.1", 10);
+    XDrawString(dsp, double_buffer, gc, WIDTH*resScale-70, HEIGHT*resScale-10, "GGE v0.0.1", 10);
     char fov[11];
     double currentFOV = calcFOV();
     if(currentFOV < 100.0){
       snprintf(fov, sizeof fov-1, "FOV: %3.1lf", currentFOV);
-      XDrawString(dsp, double_buffer, gc, 10, HEIGHT-10, fov, 9);
+      XDrawString(dsp, double_buffer, gc, 10, HEIGHT*resScale-10, fov, 9);
     }
     else{
       snprintf(fov, sizeof fov, "FOV: %3.1lf", currentFOV);
-      XDrawString(dsp, double_buffer, gc, 10, HEIGHT-10, fov, 10);
+      XDrawString(dsp, double_buffer, gc, 10, HEIGHT*resScale-10, fov, 10);
     }
     //tris = quicksort(tris, 24);
     qsort(tris, 24, sizeof(triangle), cmpfunc);
     //sleep(1);
-    for(int i = 0; i < 24; i++){
+    //for(int i = 0; i < 24; i++){
+    for(int i = 0; i < nFaces; i++){
       //Check normal
       triangle projected_tri = projectTriangle(tris[i]);
       point normal, line1, line2;
@@ -415,7 +461,13 @@ int main(){
         
         if(wireframe){
           XSetForeground(dsp, gc, 0x00FF);
-          drawTriangle(dsp, double_buffer, gc, projected_tri);
+          triangle scaledTri = (triangle){
+            {projected_tri.a.x*resScale, projected_tri.a.y*resScale, projected_tri.a.z},
+            {projected_tri.b.x*resScale, projected_tri.b.y*resScale, projected_tri.b.z},
+            {projected_tri.c.x*resScale, projected_tri.c.y*resScale, projected_tri.c.z},
+            projected_tri.color
+          };
+          drawTriangle(dsp, double_buffer, gc, scaledTri);
         }
       }
       
@@ -424,14 +476,14 @@ int main(){
       //tris[i] = rotateZ(tris[i], 0.003, 0, -100, 800);
     }
     //XSync(dsp, 0);
-    XCopyArea(dsp, double_buffer, win, gc, 0, 0, WIDTH, HEIGHT, 0, 0);
-    usleep(1000);
+    XCopyArea(dsp, double_buffer, win, gc, 0, 0, WIDTH*resScale, HEIGHT*resScale, 0, 0);
+    usleep(10000);
     XCheckWindowEvent( dsp, win, eventMask, &evt);
     //if(evt.xkey.state != 0)
     //  printf("%lu\n", evt.xkey.state);
 
     if(evt.type == KeyPress){  //Handle Input
-      printf("%u\n", evt.xkey.keycode);
+      //printf("%u\n", evt.xkey.keycode);
       if(evt.xkey.keycode == 25){       //w
         movCamera(0.0, 0.0, speed);
       } else if(evt.xkey.keycode == 38){//a
@@ -458,15 +510,15 @@ int main(){
         camera_dist-= 2*elapsed_time*TIME_CONST;
       } else if(evt.xkey.keycode == 46){//l
         wireframe = !wireframe;
-        XWarpPointer(dsp, win, win, 0, 0, 0, 0, WIDTH/2, HEIGHT/2);
+        XWarpPointer(dsp, win, win, 0, 0, 0, 0, WIDTH*resScale/2, HEIGHT*resScale/2);
         usleep(100000);
       }
     } else if(evt.type == MotionNotify && evt.xmotion.type == 6){
-      //XFixesHideCursor(dsp, win);
-      if(evt.xmotion.x != WIDTH/2 && evt.xmotion.y != HEIGHT/2){
+      XFixesHideCursor(dsp, win);
+      if(evt.xmotion.x != WIDTH*resScale/2 && evt.xmotion.y != HEIGHT*resScale/2){
         int dx = lastMouseX - evt.xmotion.x;
         int dy = lastMouseY - evt.xmotion.y;
-        XWarpPointer(dsp, win, win, 0, 0, 0, 0, WIDTH/2, HEIGHT/2);
+        XWarpPointer(dsp, win, win, 0, 0, 0, 0, WIDTH*resScale/2, HEIGHT*resScale/2);
         XFlush(dsp);
         yawCamera((double)-dx/200);
         pitchCamera((double)dy/200);

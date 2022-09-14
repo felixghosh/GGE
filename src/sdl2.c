@@ -25,7 +25,7 @@ struct timespec t0, t1;
 double elapsed_time;
 
 double speed = 3.0;
-double resScale = 1;
+double resScale = 2;
 
 point camera_pos = {0.0, 0.0, 0.0};
 double camera_angle_y = 0.0;
@@ -122,7 +122,7 @@ triangle tri11 = {
 int cmpfunc (const void * a, const void * b) {
    triangle* pa = (triangle*)a;
    triangle* pb = (triangle*)b;
-   return (calcCenter(*pb).z - calcCenter(*pa).z);
+   return (vectorLength(subtractPoints(calcCenter(*pb), camera_pos)) - vectorLength(subtractPoints(calcCenter(*pa), camera_pos)));
 }
 
 double radToDeg(double rad){
@@ -323,7 +323,7 @@ int main(int argc, char* argv[]){
         clock_gettime(CLOCK_REALTIME, &t1);
         elapsed_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec)/1000000000.0;
         clock_gettime(CLOCK_REALTIME, &t0);
-        //printf("fps: %5u\n", (int)(1/elapsed_time));
+        printf("fps: %5u\n", (int)(1/elapsed_time));
         
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -336,11 +336,17 @@ int main(int argc, char* argv[]){
 
         for(int i = 0; i < 24; i++){
         //for(int i = 0; i < nFaces; i++){
-            //Check normal
+            
             triangle projected_tri = projectTriangle(tris[i]);
             point projected_normal = calcNormal(projected_tri);
             projected_normal = normalizeVector(projected_normal);
-            
+
+            //check if behind camera.
+            point center = calcCenter(projected_tri);
+            if(center.z < 0.1 )//|| dotProduct(subtractPoints(center, camera_pos), camera_dir) < 0)
+              continue;
+
+            //Check normal
             if(projected_normal.z > 0){
                 
                 light_direction = normalizeVector(light_direction);

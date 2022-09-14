@@ -120,3 +120,11 @@ point normalizeVector(point p){
 double dotProduct(point p1, point p2){
   return p1.x*p2.x + p1.y*p2.y + p1.z*p2.z;
 }
+
+point subtractPoints(point p1, point p2){
+  return (point) {p1.x - p2.x, p1.y - p2.y, p1.z - p2.z};
+}
+
+double vectorLength(point p){
+  return sqrt(p.x*p.x + p.y*p.y + p.z*p.z);
+}

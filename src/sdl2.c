@@ -25,7 +25,7 @@ struct timespec t0, t1;
 double elapsed_time;
 
 double speed = 3.0;
-double resScale = 2;
+double resScale = 1;
 
 point camera_pos = {0.0, 0.0, 0.0};
 double camera_angle_y = 0.0;
@@ -122,6 +122,7 @@ triangle tri11 = {
 int cmpfunc (const void * a, const void * b) {
    triangle* pa = (triangle*)a;
    triangle* pb = (triangle*)b;
+   //return calcCenter(*pb).z - calcCenter(*pa).z;
    return (vectorLength(subtractPoints(calcCenter(*pb), camera_pos)) - vectorLength(subtractPoints(calcCenter(*pa), camera_pos)));
 }
 
@@ -276,7 +277,57 @@ int main(int argc, char* argv[]){
     int i = 0;
 
     clock_gettime(CLOCK_REALTIME, &t0);
-  triangle* tris = malloc(24*sizeof(triangle));
+  FILE* fp;
+  fp = fopen("/home/felixghosh/prog/c/GGE/monkey.obj", "r");
+  
+  size_t buf_size = 50;
+  char* buf = malloc(buf_size*sizeof(char));
+  char* endptr;
+  unsigned long int nVertices = 0;
+  unsigned long int nFaces = 0;
+
+  do{
+    getline(&buf, &buf_size, fp);
+    nVertices++;
+  } while(buf[0] == 'v');
+
+  while(getline(&buf, &buf_size, fp)>0)
+    nFaces++;
+  nVertices--;
+
+  printf("nvertices %lu nface %lu\n", nVertices, nFaces);
+  rewind(fp);
+
+  point* vertices = malloc(nVertices * sizeof(point));
+  for(int i = 0; i < nVertices; i++){
+    getline(&buf, &buf_size, fp);
+    endptr = buf;
+    double values[3];
+    for(int i = 0; i < 3; i++)
+      values[i] = 10*strtod(endptr+1, &endptr);
+    vertices[i] = (point){-values[0], -values[1], -values[2]};
+  }
+  
+  getline(&buf, &buf_size, fp);
+
+  triangle* tris = malloc(nFaces * sizeof(triangle));
+  for(int i = 0; i < nFaces; i++){
+    getline(&buf, &buf_size, fp);
+    endptr = buf;
+    long int values[3];
+    for(int i = 0; i < 3; i++)
+      values[i] = strtol(endptr+1, &endptr, 10) - 1;
+    tris[i] = (triangle){
+      vertices[values[0]],
+      vertices[values[1]],
+      vertices[values[2]],
+      0x67CEE9
+      };
+
+  //free(buf);
+  }
+
+  /*triangle* tris = malloc(24*sizeof(triangle));
   tris[0] = tri0;
   tris[1] = tri1;
   tris[2] = tri2;
@@ -317,7 +368,9 @@ int main(int argc, char* argv[]){
   for(int i = 0; i < 12; i++)
     tris[i] = translateTriangle(tris[i], 0, -100, 700);
   for(int i = 12; i < 24; i++)
-    tris[i] = translateTriangle(tris[i], 0, 150, 700);
+    tris[i] = translateTriangle(tris[i], 0, 150, 700);*/
+  for(int i = 0; i < nFaces; i++)
+    tris[i] = translateTriangle(tris[i], 0, 0, 100);
 
     while(running){
         clock_gettime(CLOCK_REALTIME, &t1);
@@ -334,8 +387,8 @@ int main(int argc, char* argv[]){
         qsort(tris, 24, sizeof(triangle), cmpfunc);
 
 
-        for(int i = 0; i < 24; i++){
-        //for(int i = 0; i < nFaces; i++){
+        //for(int i = 0; i < 24; i++){
+        for(int i = 0; i < nFaces; i++){
             
             triangle projected_tri = projectTriangle(tris[i]);
             point projected_normal = calcNormal(projected_tri);
@@ -343,14 +396,14 @@ int main(int argc, char* argv[]){
 
             //check if behind camera.
             point center = calcCenter(projected_tri);
-            if(center.z < 0.1 )//|| dotProduct(subtractPoints(center, camera_pos), camera_dir) < 0)
-              continue;
+            //if(center.z < 0.1 )//|| dotProduct(subtractPoints(center, camera_pos), camera_dir) < 0)
+            //  continue;
 
             //Check normal
             if(projected_normal.z > 0){
                 
                 light_direction = normalizeVector(light_direction);
-                double lightness = dotProduct(projected_normal, light_direction);
+                double lightness = pow(dotProduct(projected_normal, light_direction), 3);
                 
                 unsigned int color = colorLightness(lightness, tris[i].color);
                 SDL_SetRenderDrawColor(renderer, 0x0000FF&color>>16, (0x00FF00&color)>>8, 0x0000FF&color, 255);
@@ -422,10 +475,10 @@ int main(int argc, char* argv[]){
         }if(keystates[SDL_SCANCODE_K]){//k
             camera_dist-= 2*elapsed_time*TIME_CONST;
         }if(keystates[SDL_SCANCODE_O]){//o
-          for(int i = 0; i < 24; i++){
-            tris[i] = rotateX(tris[i], 0.007, 0, -100, 800);
-            tris[i] = rotateY(tris[i], 0.013, 0, -100, 800);
-            tris[i] = rotateZ(tris[i], 0.003, 0, -100, 800);
+          for(int i = 0; i < nFaces; i++){
+            tris[i] = rotateX(tris[i], 0.007, 0, 0, 100);
+            tris[i] = rotateY(tris[i], 0.013, 0, 0, 100);
+            tris[i] = rotateZ(tris[i], 0.003, 0, 0, 100);
           }
         }
 

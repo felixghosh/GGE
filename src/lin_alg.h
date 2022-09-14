@@ -18,11 +18,17 @@ point translatePoint(point p, double x, double y, double z);
 
 triangle translateTriangle(triangle tri, double x, double y, double z);
 
-triangle rotateX(triangle tri, double angle, double x, double y, double z);
+triangle rotateTriX(triangle tri, double angle, double x, double y, double z);
 
-triangle rotateY(triangle tri, double angle, double x, double y, double z);
+triangle rotateTriY(triangle tri, double angle, double x, double y, double z);
 
-triangle rotateZ(triangle tri, double angle, double x, double y, double z);
+triangle rotateTriZ(triangle tri, double angle, double x, double y, double z);
+
+point rotatePointX(point p, double angle, double x, double y, double z);
+
+point rotatePointY(point p, double angle, double x, double y, double z);
+
+point rotatePointZ(point p, double angle, double x, double y, double z);
 
 point calcCenter(triangle tri);
 

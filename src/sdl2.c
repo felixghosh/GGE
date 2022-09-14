@@ -68,9 +68,9 @@ unsigned int colorLightness(double value, unsigned int color){
   g = 0x0000FF00 & color;
   b = 0x000000FF & color;
 
-  r = (int)(r * value);
-  g = (int)(g * value);
-  b = (int)(b * value);
+  r = (int)(r * value) > 0x00FF0000 ? 0x00FF0000 : (int)(r * value);
+  g = (int)(g * value) > 0x0000FF00 ? 0x0000FF00 : (int)(g * value);
+  b = (int)(b * value) > 0x000000FF ? 0x000000FF : (int)(b * value);
 
   r &= 0x00FF0000;
   g &= 0x0000FF00;
@@ -147,25 +147,25 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri){
   bool shortSide = (p[1].y - p[0].y) * (p[2].x - p[0].x) < (p[1].x - p[0].x) * (p[2].y - p[0].y); //false = left, true = right
   
   int dy_long = (p[2].y - p[0].y);
-  double denominator = 1 / dy_long;
+  double denominator = 1.0 / dy_long;
   double slope_long[dy_long];
   for(i = 0; i < dy_long; i++){
-    slope_long[i] = p[0].x + (p[2].x-p[0].x)*(i)/dy_long;
+    slope_long[i] = p[0].x + (p[2].x-p[0].x)*(i)*denominator;
   }
   int dy_short = (p[1].y - p[0].y);
-  denominator = 1 / dy_short;
+  denominator = 1.0 / dy_short;
   double slope_short[dy_short];
   if(dy_short != 0){
     for(i = 0; i < dy_short; i++){
-      slope_short[i] = p[0].x + (p[1].x-p[0].x)*i/dy_short;
+      slope_short[i] = p[0].x + (p[1].x-p[0].x)*i*denominator;
     }
   }
   int dy_last = (p[2].y - p[1].y);
-  denominator = 1 / dy_last;
+  denominator = 1.0 / dy_last;
   double slope_last[dy_last];
   if(dy_last != 0){
     for(i = 0; i < dy_last; i++){
-      slope_last[i] = p[1].x + (p[2].x-p[1].x)*i/dy_last;
+      slope_last[i] = p[1].x + (p[2].x-p[1].x)*i*denominator;
     }
   }
   //scanline
@@ -230,7 +230,7 @@ triangle* loadOBJ(const char* filePath, unsigned int color){
       color
       };
   }
-
+  free(buf);
   return tris;
 }
 
@@ -244,7 +244,7 @@ int main(int argc, char* argv[]){
   int running = 1;
   int i = 0;
 
-  triangle* tris = loadOBJ("/home/felixghosh/prog/c/GGE/monkey.obj", 0xDF2332);
+  triangle* tris = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/teapot.obj", 0xDF2332);
 
   clock_gettime(CLOCK_REALTIME, &t0);
 
@@ -255,7 +255,7 @@ int main(int argc, char* argv[]){
         clock_gettime(CLOCK_REALTIME, &t1);
         elapsed_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec)/1000000000.0;
         clock_gettime(CLOCK_REALTIME, &t0);
-        printf("fps: %5u\n", (int)(1/elapsed_time));
+        //printf("fps: %5u\n", (int)(1/elapsed_time));
         //printf("fov: %5u\n", (int)calcFOV());
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -281,28 +281,31 @@ int main(int argc, char* argv[]){
 
             //Check normal
             if(projected_normal.z > 0){
-                
-                light_direction = normalizeVector(light_direction);
-                double lightness = pow(dotProduct(projected_normal, light_direction), 2);
-                
-                unsigned int color = colorLightness(lightness, tris[i].color);
-                SDL_SetRenderDrawColor(renderer, 0x0000FF&color>>16, (0x00FF00&color)>>8, 0x0000FF&color, 255);
-                rasterizeTriangle(renderer, projected_tri);
-                
-                if(wireframe){
-                SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
-                triangle scaledTri = (triangle){
-                    {projected_tri.a.x*resScale, projected_tri.a.y*resScale, projected_tri.a.z},
-                    {projected_tri.b.x*resScale, projected_tri.b.y*resScale, projected_tri.b.z},
-                    {projected_tri.c.x*resScale, projected_tri.c.y*resScale, projected_tri.c.z},
-                    projected_tri.color
-                };
-                drawTriangle(renderer, scaledTri);
-                }
+              
+              point world_normal = calcNormal(tris[i]);
+              world_normal = normalizeVector(world_normal);
+
+              double lightness = pow(dotProduct(world_normal, light_direction), 1);
+              lightness = lightness < 0 ? 0.0 : lightness;
+              unsigned int color = colorLightness(lightness, tris[i].color);
+              SDL_SetRenderDrawColor(renderer, 0x0000FF&color>>16, (0x00FF00&color)>>8, 0x0000FF&color, 255);
+              
+              rasterizeTriangle(renderer, projected_tri);
+              
+              if(wireframe){
+              SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
+              triangle scaledTri = (triangle){
+                  {projected_tri.a.x*resScale, projected_tri.a.y*resScale, projected_tri.a.z},
+                  {projected_tri.b.x*resScale, projected_tri.b.y*resScale, projected_tri.b.z},
+                  {projected_tri.c.x*resScale, projected_tri.c.y*resScale, projected_tri.c.z},
+                  projected_tri.color
+              };
+              drawTriangle(renderer, scaledTri);
+              }
             }
-            //tris[i] = rotateX(tris[i], 0.007, 0, -100, 800);
-            //tris[i] = rotateY(tris[i], 0.013, 0, -100, 800);
-            //tris[i] = rotateZ(tris[i], 0.003, 0, -100, 800);
+            //tris[i] = rotateTriX(tris[i], 0.007, 0, -100, 800);
+            //tris[i] = rotateTriY(tris[i], 0.013, 0, -100, 800);
+            //tris[i] = rotateTriZ(tris[i], 0.003, 0, -100, 800);
         }
         SDL_RenderPresent(renderer);
 
@@ -353,13 +356,15 @@ int main(int argc, char* argv[]){
             camera_dist-= 2*elapsed_time*TIME_CONST;
         }if(keystates[SDL_SCANCODE_O]){//o
           for(int i = 0; i < nFaces; i++){
-            tris[i] = rotateX(tris[i], 0.007, 0, 0, 300);
-            tris[i] = rotateY(tris[i], 0.013, 0, 0, 300);
-            tris[i] = rotateZ(tris[i], 0.003, 0, 0, 300);
+            tris[i] = rotateTriX(tris[i], 0.007, 0, 0, 300);
+            tris[i] = rotateTriY(tris[i], 0.013, 0, 0, 300);
+            tris[i] = rotateTriZ(tris[i], 0.003, 0, 0, 300);
           }
         }
 
     }
+
+    free(tris);
 
     terminate();
 }

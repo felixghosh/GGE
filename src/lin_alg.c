@@ -16,8 +16,43 @@ triangle translateTriangle(triangle tri, double x, double y, double z){
   };
   return translated_tri;
 }
+point rotatePointX(point p, double angle, double x, double y, double z){
+  angle *= elapsed_time*TIME_CONST;
+  p = (point){p.x - x, p.y - y, p.z - z};
+  double rx, ry, rz;
+  rx = p.x;
+  ry = cos(angle)*p.y - sin(angle)*p.z;
+  rz = sin(angle)*p.y + cos(angle)*p.z;
+  p = (point){rx, ry, rz};
+  p = (point){p.x + x, p.y + y, p.z + z};
+  return p;
+}
 
-triangle rotateX(triangle tri, double angle, double x, double y, double z){
+point rotatePointY(point p, double angle, double x, double y, double z){
+  angle *= elapsed_time*TIME_CONST;
+  p = (point){p.x - x, p.y - y, p.z - z};
+  double rx, ry, rz;
+  rx = cos(angle)*p.x + sin(angle)*p.z;
+  ry = p.y;
+  rz = -sin(angle)*p.x + cos(angle)*p.z;
+  p = (point){rx, ry, rz};
+  p = (point){p.x + x, p.y + y, p.z + z};
+  return p;
+}
+
+point rotatePointZ(point p, double angle, double x, double y, double z){
+  angle *= elapsed_time*TIME_CONST;
+  p = (point){p.x - x, p.y - y, p.z - z};
+  double rx, ry, rz;
+  rx = cos(angle)*p.x - sin(angle)*p.y;
+  ry = sin(angle)*p.x + cos(angle)*p.y;
+  rz = p.z;
+  p = (point){rx, ry, rz};
+  p = (point){p.x + x, p.y + y, p.z + z};
+  return p;
+}
+
+triangle rotateTriX(triangle tri, double angle, double x, double y, double z){
   angle *= elapsed_time*TIME_CONST;
   tri = translateTriangle(tri, -x, -y, -z);
   double x1, y1, x2, y2, x3, y3, z1, z2, z3;
@@ -40,7 +75,7 @@ triangle rotateX(triangle tri, double angle, double x, double y, double z){
   return rotated_tri;
 }
 
-triangle rotateY(triangle tri, double angle, double x, double y, double z){
+triangle rotateTriY(triangle tri, double angle, double x, double y, double z){
   angle *= elapsed_time*TIME_CONST;
   tri = translateTriangle(tri, -x, -y, -z);
   double x1, y1, x2, y2, x3, y3, z1, z2, z3;
@@ -63,7 +98,7 @@ triangle rotateY(triangle tri, double angle, double x, double y, double z){
   return rotated_tri;
 }
 
-triangle rotateZ(triangle tri, double angle, double x, double y, double z){
+triangle rotateTriZ(triangle tri, double angle, double x, double y, double z){
   angle *= elapsed_time*TIME_CONST;
   tri = translateTriangle(tri, -x, -y, -z);
   double x1, y1, x2, y2, x3, y3, z1, z2, z3;

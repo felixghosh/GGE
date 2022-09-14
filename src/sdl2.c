@@ -35,88 +35,14 @@ point light_direction = {0.0, 0.0, 1.0};
 
 bool wireframe = false;
 
+unsigned long int nVertices = 0;
+unsigned long int nFaces = 0;
+
 triangle camera_basis = { //Currently not used
   {1.0, 0.0, 0.0},
   {0.0, 1.0, 0.0},
   {0.0, 0.0, 1.0},
   0
-};
-
-triangle tri0 = {
-  {0, 0, 100},
-  {100, 0, 100},
-  {0, 100, 100},
-  0xFF0000
-  
-};
-triangle tri1 = {
-  {0, 100, 100},
-  {100, 0, 100},
-  {100, 100, 100},
-  0xFF0000
-};
-triangle tri2 = {
-  {0, 0, 100},
-  {0, 100, 100},
-  {0, 0, 200},
-  0xFF0000
-};
-triangle tri3 = {
-  {0, 0, 200},
-  {0, 100, 100},
-  {0, 100, 200},
-  0xFF0000
-};
-triangle tri4 = {
-  {0, 0, 200},
-  {0, 100, 200},
-  {100, 0, 200},
-  0xFF0000
-};
-triangle tri5 = {
-  {0, 100, 200},
-  {100, 100, 200},
-  {100, 0, 200},
-  0xFF0000
-
-};
-triangle tri6 = {
-  {100, 0, 100},
-  {100, 0, 200},
-  {100, 100, 100},
-  0xFF0000
-};
-triangle tri7 = {
-  {100, 0, 200},
-  {100, 100, 200},
-  {100, 100, 100},
-  0xFF0000
-
-};
-triangle tri8 = {
-  {0, 0, 100},
-  {0, 0, 200},
-  {100, 0, 100},
-  0xFF0000
-
-};
-triangle tri9 = {
-  {100, 0, 100},
-  {0, 0, 200},
-  {100, 0, 200},
-  0xFF0000
-};
-triangle tri10 = {
-  {0, 100, 100},
-  {100, 100, 100},
-  {0, 100, 200},
-  0xFF0000
-};
-triangle tri11 = {
-  {100, 100, 100},
-  {100, 100, 200},
-  {0, 100, 200},
-  0xFF0000
 };
 
 int cmpfunc (const void * a, const void * b) {
@@ -132,7 +58,7 @@ double radToDeg(double rad){
 }
 
 double calcFOV(){
-  double fov = 2 * atan((WIDTH/2)/camera_dist);
+  double fov = 2 * atan((WIDTH*resScale/2)/camera_dist);
   return radToDeg(fov);
 }
 
@@ -186,6 +112,7 @@ void terminate(){
     exit(0);
 }
 
+//Aux function used by rasterizeTriangle
 void sortPoints(point points[], int a, int b){
   point temp;
   if(points[a].y != points[b].y){
@@ -256,35 +183,13 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri){
   }
 }
 
-triangle roundTriangle(triangle tri){
-  tri.a.x = round(tri.a.x);
-  tri.a.y = round(tri.a.y);
-  tri.a.z = round(tri.a.z);
-  tri.b.x = round(tri.b.x);
-  tri.b.x = round(tri.b.x);
-  tri.b.x = round(tri.b.x);
-  tri.c.x = round(tri.c.x);
-  tri.c.x = round(tri.c.x);
-  tri.c.x = round(tri.c.x);
-  return tri;
-}
-
-
-
-int main(int argc, char* argv[]){
-    initialize();
-    int running = 1;
-    int i = 0;
-
-    clock_gettime(CLOCK_REALTIME, &t0);
+triangle* loadOBJ(const char* filePath, unsigned int color){
   FILE* fp;
-  fp = fopen("/home/felixghosh/prog/c/GGE/monkey.obj", "r");
+  fp = fopen(filePath, "r");
   
   size_t buf_size = 50;
   char* buf = malloc(buf_size*sizeof(char));
   char* endptr;
-  unsigned long int nVertices = 0;
-  unsigned long int nFaces = 0;
 
   do{
     getline(&buf, &buf_size, fp);
@@ -304,7 +209,7 @@ int main(int argc, char* argv[]){
     endptr = buf;
     double values[3];
     for(int i = 0; i < 3; i++)
-      values[i] = 10*strtod(endptr+1, &endptr);
+      values[i] = 100*strtod(endptr+1, &endptr);
     vertices[i] = (point){-values[0], -values[1], -values[2]};
   }
   
@@ -321,73 +226,40 @@ int main(int argc, char* argv[]){
       vertices[values[0]],
       vertices[values[1]],
       vertices[values[2]],
-      0x67CEE9
+      color
       };
-
-  //free(buf);
   }
 
-  /*triangle* tris = malloc(24*sizeof(triangle));
-  tris[0] = tri0;
-  tris[1] = tri1;
-  tris[2] = tri2;
-  tris[3] = tri3;
-  tris[4] = tri4;
-  tris[5] = tri5;
-  tris[6] = tri6;
-  tris[7] = tri7;
-  tris[8] = tri8;
-  tris[9] = tri9;
-  tris[10] = tri10;
-  tris[11] = tri11;
-  tris[12] = tri0;
-  tris[13] = tri1;
-  tris[14] = tri2;
-  tris[15] = tri3;
-  tris[16] = tri4;
-  tris[17] = tri5;
-  tris[18] = tri6;
-  tris[19] = tri7;
-  tris[20] = tri8;
-  tris[21] = tri9;
-  tris[22] = tri10;
-  tris[23] = tri11;
-  tris[12].color = 0x00FF00;
-  tris[13].color = 0x00FF00;
-  tris[14].color = 0x00FF00;
-  tris[15].color = 0x00FF00;
-  tris[16].color = 0x00FF00;
-  tris[17].color = 0x00FF00;
-  tris[18].color = 0x00FF00;
-  tris[19].color = 0x00FF00;
-  tris[20].color = 0x00FF00;
-  tris[21].color = 0x00FF00;
-  tris[22].color = 0x00FF00;
-  tris[23].color = 0x00FF00;
+  return tris;
+}
 
-  for(int i = 0; i < 12; i++)
-    tris[i] = translateTriangle(tris[i], 0, -100, 700);
-  for(int i = 12; i < 24; i++)
-    tris[i] = translateTriangle(tris[i], 0, 150, 700);*/
+
+int main(int argc, char* argv[]){
+  initialize();
+  int running = 1;
+  int i = 0;
+
+  triangle* tris = loadOBJ("/home/felixghosh/prog/c/GGE/monkey.obj", 0xDF2332);
+
+  clock_gettime(CLOCK_REALTIME, &t0);
+
   for(int i = 0; i < nFaces; i++)
-    tris[i] = translateTriangle(tris[i], 0, 0, 100);
+    tris[i] = translateTriangle(tris[i], 0, 0, 200);
 
     while(running){
         clock_gettime(CLOCK_REALTIME, &t1);
         elapsed_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec)/1000000000.0;
         clock_gettime(CLOCK_REALTIME, &t0);
         printf("fps: %5u\n", (int)(1/elapsed_time));
-        
+        //printf("fov: %5u\n", (int)calcFOV());
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
         SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
         
+        //sort triangles for painters algorithm
+        qsort(tris, nFaces, sizeof(triangle), cmpfunc);
 
-        qsort(tris, 24, sizeof(triangle), cmpfunc);
-
-
-        //for(int i = 0; i < 24; i++){
         for(int i = 0; i < nFaces; i++){
             
             triangle projected_tri = projectTriangle(tris[i]);
@@ -396,14 +268,14 @@ int main(int argc, char* argv[]){
 
             //check if behind camera.
             point center = calcCenter(projected_tri);
-            //if(center.z < 0.1 )//|| dotProduct(subtractPoints(center, camera_pos), camera_dir) < 0)
-            //  continue;
+            if(center.z < 1 || dotProduct(subtractPoints(camera_pos, camera_pos), camera_dir) < 0)
+              continue;
 
             //Check normal
             if(projected_normal.z > 0){
                 
                 light_direction = normalizeVector(light_direction);
-                double lightness = pow(dotProduct(projected_normal, light_direction), 3);
+                double lightness = pow(dotProduct(projected_normal, light_direction), 2);
                 
                 unsigned int color = colorLightness(lightness, tris[i].color);
                 SDL_SetRenderDrawColor(renderer, 0x0000FF&color>>16, (0x00FF00&color)>>8, 0x0000FF&color, 255);
@@ -420,11 +292,9 @@ int main(int argc, char* argv[]){
                 drawTriangle(renderer, scaledTri);
                 }
             }
-            
             //tris[i] = rotateX(tris[i], 0.007, 0, -100, 800);
             //tris[i] = rotateY(tris[i], 0.013, 0, -100, 800);
             //tris[i] = rotateZ(tris[i], 0.003, 0, -100, 800);
-            
         }
         SDL_RenderPresent(renderer);
 
@@ -434,7 +304,6 @@ int main(int argc, char* argv[]){
         while(SDL_PollEvent(&evt)){
             if(evt.type == SDL_KEYDOWN){
                 int keypressed = evt.key.keysym.sym;
-                //printf("%d\n", keypressed);
                 if (keypressed == SDLK_ESCAPE){
                     running = 0;
                 } else if(keypressed == SDLK_l){//l
@@ -476,9 +345,9 @@ int main(int argc, char* argv[]){
             camera_dist-= 2*elapsed_time*TIME_CONST;
         }if(keystates[SDL_SCANCODE_O]){//o
           for(int i = 0; i < nFaces; i++){
-            tris[i] = rotateX(tris[i], 0.007, 0, 0, 100);
-            tris[i] = rotateY(tris[i], 0.013, 0, 0, 100);
-            tris[i] = rotateZ(tris[i], 0.003, 0, 0, 100);
+            tris[i] = rotateX(tris[i], 0.007, 0, 0, 200);
+            tris[i] = rotateY(tris[i], 0.013, 0, 0, 200);
+            tris[i] = rotateZ(tris[i], 0.003, 0, 0, 200);
           }
         }
 

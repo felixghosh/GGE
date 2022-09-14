@@ -29,7 +29,7 @@ double resScale = 1;
 
 point camera_pos = {0.0, 0.0, 0.0};
 double camera_angle_y = 0.0;
-double camera_angle_x = -0.1;
+double camera_angle_x = 0.0;
 
 point light_direction = {0.0, 0.0, 1.0};
 
@@ -172,6 +172,7 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri){
   i = 0;
   if(dy_short != 0){
     for(i; i < dy_short; i++)
+      //SDL_RenderFillRect(renderer, &((SDL_Rect){slope_long[i]*resScale, (i+p[0].y)*resScale, (int)slope_short[i]*resScale - slope_long[i]*resScale, (i+p[0].y)*resScale+resScale-1 - (i+p[0].y)*resScale}));
       for(int j = 0; j < resScale; j++)
         SDL_RenderDrawLine(renderer, slope_long[i]*resScale, (i+p[0].y)*resScale+j, (int)slope_short[i]*resScale, (i+p[0].y)*resScale+j);
   }
@@ -233,6 +234,10 @@ triangle* loadOBJ(const char* filePath, unsigned int color){
   return tris;
 }
 
+bool checkIfOutside(point p){
+  return p.x < 0 || p.y < 0;
+}
+
 
 int main(int argc, char* argv[]){
   initialize();
@@ -263,12 +268,15 @@ int main(int argc, char* argv[]){
         for(int i = 0; i < nFaces; i++){
             
             triangle projected_tri = projectTriangle(tris[i]);
+            bool outside = checkIfOutside(projected_tri.a) || checkIfOutside(projected_tri.b) || checkIfOutside(projected_tri.c);
+            if(outside)
+              continue;
             point projected_normal = calcNormal(projected_tri);
             projected_normal = normalizeVector(projected_normal);
 
             //check if behind camera.
             point center = calcCenter(projected_tri);
-            if(center.z < 1 || dotProduct(subtractPoints(camera_pos, camera_pos), camera_dir) < 0)
+            if(center.z < 5 || dotProduct(subtractPoints(camera_pos, camera_pos), camera_dir) < 0)
               continue;
 
             //Check normal
@@ -345,9 +353,9 @@ int main(int argc, char* argv[]){
             camera_dist-= 2*elapsed_time*TIME_CONST;
         }if(keystates[SDL_SCANCODE_O]){//o
           for(int i = 0; i < nFaces; i++){
-            tris[i] = rotateX(tris[i], 0.007, 0, 0, 200);
-            tris[i] = rotateY(tris[i], 0.013, 0, 0, 200);
-            tris[i] = rotateZ(tris[i], 0.003, 0, 0, 200);
+            tris[i] = rotateX(tris[i], 0.007, 0, 0, 300);
+            tris[i] = rotateY(tris[i], 0.013, 0, 0, 300);
+            tris[i] = rotateZ(tris[i], 0.003, 0, 0, 300);
           }
         }
 

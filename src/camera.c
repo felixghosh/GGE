@@ -16,7 +16,8 @@ void yawCamera(double rad){
 
 void pitchCamera(double rad){
   rad*=elapsed_time*TIME_CONST;
-  camera_angle_x -= rad;
+  if(camera_angle_x - rad > -M_PI/2 && camera_angle_x - rad < M_PI/2)
+    camera_angle_x -= rad;
   camera_dir.y = cos(rad)*camera_dir.y - sin(rad)*camera_dir.z;
   camera_dir.z = sin(rad)*camera_dir.y + cos(rad)*camera_dir.z;
 }

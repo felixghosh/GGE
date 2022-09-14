@@ -7,14 +7,18 @@ void yawCamera(double rad){
   rad*=elapsed_time*TIME_CONST;
   point newBasisX = {sin(M_PI/2 + rad + camera_angle_y), 0.0, cos(M_PI/2 + rad + camera_angle_y)};
   point newBasisZ = {sin(rad + camera_angle_y), 0.0, cos(rad + camera_angle_y)};
-  camera_basis.a = newBasisX;
-  camera_basis.c = newBasisZ;
+  //camera_basis.a = newBasisX;
+  //camera_basis.c = newBasisZ;
   camera_angle_y += rad;
+  camera_dir.x = cos(rad)*camera_dir.x + sin(rad)*camera_dir.z;
+  camera_dir.z = -sin(rad)*camera_dir.x + cos(rad)*camera_dir.z;
 }
 
 void pitchCamera(double rad){
   rad*=elapsed_time*TIME_CONST;
-  camera_angle_x += rad;
+  camera_angle_x -= rad;
+  camera_dir.y = cos(rad)*camera_dir.y - sin(rad)*camera_dir.z;
+  camera_dir.z = sin(rad)*camera_dir.y + cos(rad)*camera_dir.z;
 }
 
 
@@ -45,7 +49,7 @@ point toCameraBasis(point p){
 }
 
 triangle projectTriangle(triangle tri){
-  int xp1, yp1, xp2, yp2, xp3, yp3;
+  double xp1, yp1, xp2, yp2, xp3, yp3;
   point a_cam = toCameraBasis(tri.a);
   point b_cam = toCameraBasis(tri.b);
   point c_cam = toCameraBasis(tri.c);

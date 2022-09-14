@@ -87,9 +87,36 @@ triangle rotateZ(triangle tri, double angle, double x, double y, double z){
 }
 
 point calcCenter(triangle tri){
-  double x = tri.a.x + tri.b.x + tri.c.x / 3;
-  double y = tri.a.y + tri.b.y + tri.c.y / 3;
-  double z = tri.a.z + tri.b.z + tri.c.z / 3;
+  double x = (tri.a.x + tri.b.x + tri.c.x) / 3;
+  double y = (tri.a.y + tri.b.y + tri.c.y) / 3;
+  double z = (tri.a.z + tri.b.z + tri.c.z) / 3;
   point p = {x, y, z};
   return p;
+}
+
+point calcNormal(triangle tri){
+  point normal, line1, line2;
+  line1.x = tri.b.x - tri.a.x;
+  line1.y = tri.b.y - tri.a.y;
+  line1.z = tri.b.z - tri.a.z;
+
+  line2.x = tri.c.x - tri.a.x;
+  line2.y = tri.c.y - tri.a.y;
+  line2.z = tri.c.z - tri.a.z;
+
+  normal.x = line1.y*line2.z - line1.z*line2.y;
+  normal.y = line1.z*line2.x - line1.x*line2.z;
+  normal.z = line1.x*line2.y - line1.y*line2.x;
+
+  return normal;
+}
+
+point normalizeVector(point p){
+  double Length = sqrt(p.x*p.x + p.y*p.y + p.z*p.z);
+  p.x /= Length; p.y /= Length; p.z /= Length;
+  return p;
+}
+
+double dotProduct(point p1, point p2){
+  return p1.x*p2.x + p1.y*p2.y + p1.z*p2.z;
 }

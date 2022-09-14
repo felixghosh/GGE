@@ -19,23 +19,19 @@ SDL_Rect source, destination, dst;
 
 double camera_dist = 554.0; //For FOV 60
 
+point camera_dir = {0.0, 0.0, 1.0};
+
 struct timespec t0, t1;
 double elapsed_time;
 
 double speed = 3.0;
-double resScale = 4;
+double resScale = 1;
 
 point camera_pos = {0.0, 0.0, 0.0};
 double camera_angle_y = 0.0;
 double camera_angle_x = -0.1;
 
-int lastMouseX = WIDTH/2;
-int lastMouseY = HEIGHT/2;
-int mouseX, mouseY;
-
 point light_direction = {0.0, 0.0, 1.0};
-
-unsigned int cubeColor = 0xFF0000;
 
 bool wireframe = false;
 
@@ -327,7 +323,8 @@ int main(int argc, char* argv[]){
         clock_gettime(CLOCK_REALTIME, &t1);
         elapsed_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec)/1000000000.0;
         clock_gettime(CLOCK_REALTIME, &t0);
-        printf("fps: %5u\n", (int)(1/elapsed_time));
+        //printf("fps: %5u\n", (int)(1/elapsed_time));
+        
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
@@ -341,30 +338,15 @@ int main(int argc, char* argv[]){
         //for(int i = 0; i < nFaces; i++){
             //Check normal
             triangle projected_tri = projectTriangle(tris[i]);
-            point normal, line1, line2;
-            line1.x = projected_tri.b.x - projected_tri.a.x;
-            line1.y = projected_tri.b.y - projected_tri.a.y;
-            line1.z = projected_tri.b.z - projected_tri.a.z;
-
-            line2.x = projected_tri.c.x - projected_tri.a.x;
-            line2.y = projected_tri.c.y - projected_tri.a.y;
-            line2.z = projected_tri.c.z - projected_tri.a.z;
-
-            normal.x = line1.y*line2.z - line1.z*line2.y;
-            normal.y = line1.z*line2.x - line1.x*line2.z;
-            normal.z = line1.x*line2.y - line1.y*line2.x;
+            point projected_normal = calcNormal(projected_tri);
+            projected_normal = normalizeVector(projected_normal);
             
-            double normalLength = sqrt(normal.x*normal.x + normal.y*normal.y + normal.z*normal.z);
-            normal.x /= normalLength; normal.y /= normalLength; normal.z /= normalLength;
-            normal.x = round(normal.x*100)/100; normal.y = round(normal.y*100)/100; normal.z = round(normal.z*100)/100;
-            if(normal.z > 0){
+            if(projected_normal.z > 0){
                 
-                double lightLength = sqrt(light_direction.x*light_direction.x + light_direction.y*light_direction.y + light_direction.z*light_direction.z);
-                light_direction.x /= lightLength; light_direction.y /= lightLength; light_direction.z /= lightLength;
-                light_direction.x = round(light_direction.x*100)/100; light_direction.y = round(light_direction.y*100)/100; light_direction.z = round(light_direction.z*100)/100;
-                double dp = normal.x * light_direction.x + normal.y*light_direction.y + normal.z*light_direction.z;
+                light_direction = normalizeVector(light_direction);
+                double lightness = dotProduct(projected_normal, light_direction);
                 
-                unsigned int color = colorLightness(dp, tris[i].color);
+                unsigned int color = colorLightness(lightness, tris[i].color);
                 SDL_SetRenderDrawColor(renderer, 0x0000FF&color>>16, (0x00FF00&color)>>8, 0x0000FF&color, 255);
                 rasterizeTriangle(renderer, projected_tri);
                 
@@ -380,9 +362,10 @@ int main(int argc, char* argv[]){
                 }
             }
             
-            tris[i] = rotateX(tris[i], 0.007, 0, -100, 800);
-            tris[i] = rotateY(tris[i], 0.013, 0, -100, 800);
-            tris[i] = rotateZ(tris[i], 0.003, 0, -100, 800);
+            //tris[i] = rotateX(tris[i], 0.007, 0, -100, 800);
+            //tris[i] = rotateY(tris[i], 0.013, 0, -100, 800);
+            //tris[i] = rotateZ(tris[i], 0.003, 0, -100, 800);
+            
         }
         SDL_RenderPresent(renderer);
 
@@ -403,13 +386,13 @@ int main(int argc, char* argv[]){
                     int dx = evt.motion.xrel;
                     int dy = evt.motion.yrel;
                     yawCamera((double)dx/100);
-                    pitchCamera((double)-dy/100);
+                    pitchCamera((double)dy/100);
                 }
             }
         }
 
         if(keystates[SDL_SCANCODE_W]){ //w
-            movCamera(1.0, 1.0, speed);
+            movCamera(0.0, 0.0, speed);
         }if(keystates[SDL_SCANCODE_A]){//a
             movCamera(-speed, 0.0, 0.0);
         }if(keystates[SDL_SCANCODE_S]){//s
@@ -424,14 +407,20 @@ int main(int argc, char* argv[]){
             yawCamera(-0.01);
         }if(keystates[SDL_SCANCODE_E]){//e
             yawCamera(0.01);
-        }if(keystates[SDL_SCANCODE_Q]){//g
-            pitchCamera(-0.01);
-        }if(keystates[SDL_SCANCODE_T]){//t
+        }if(keystates[SDL_SCANCODE_G]){//g
             pitchCamera(0.01);
+        }if(keystates[SDL_SCANCODE_T]){//t
+            pitchCamera(-0.01);
         }if(keystates[SDL_SCANCODE_J]){//j
             camera_dist+= 2*elapsed_time*TIME_CONST;
         }if(keystates[SDL_SCANCODE_K]){//k
             camera_dist-= 2*elapsed_time*TIME_CONST;
+        }if(keystates[SDL_SCANCODE_O]){//o
+          for(int i = 0; i < 24; i++){
+            tris[i] = rotateX(tris[i], 0.007, 0, -100, 800);
+            tris[i] = rotateY(tris[i], 0.013, 0, -100, 800);
+            tris[i] = rotateZ(tris[i], 0.003, 0, -100, 800);
+          }
         }
 
     }

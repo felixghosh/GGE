@@ -8,6 +8,7 @@ extern point camera_pos;
 extern double camera_angle_y;
 extern double camera_angle_x;
 extern triangle camera_basis;
+extern point camera_dir;
 extern int mouseX, mouseY, lastMouseX, lastMouseY;
 
 

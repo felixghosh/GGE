@@ -26,4 +26,10 @@ triangle rotateZ(triangle tri, double angle, double x, double y, double z);
 
 point calcCenter(triangle tri);
 
+point calcNormal(triangle tri);
+
+point normalizeVector(point p);
+
+double dotProduct(point p1, point p2);
+
 #endif

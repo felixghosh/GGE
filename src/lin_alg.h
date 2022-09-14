@@ -14,6 +14,11 @@ typedef struct triangle{
   unsigned int color;
 } triangle;
 
+typedef struct object{
+  triangle* tris;
+  unsigned int nFaces;
+} object;
+
 point translatePoint(point p, double x, double y, double z);
 
 triangle translateTriangle(triangle tri, double x, double y, double z);

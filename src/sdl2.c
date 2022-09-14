@@ -12,6 +12,8 @@
 #include "camera.h"
 #include "global.h"
 
+#define MAXOBJ 100
+
 SDL_Window* screen = NULL;
 SDL_Renderer* renderer;
 SDL_Event evt;
@@ -35,8 +37,11 @@ point light_direction = {0.0, 0.0, 1.0};
 
 bool wireframe = false;
 
-unsigned long int nVertices = 0;
-unsigned long int nFaces = 0;
+
+
+
+object* objects;
+unsigned int nObj = 0;
 
 triangle camera_basis = { //Currently not used
   {1.0, 0.0, 0.0},
@@ -184,7 +189,9 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri){
   }
 }
 
-triangle* loadOBJ(const char* filePath, unsigned int color){
+object loadOBJ(const char* filePath, unsigned int color, double x, double y, double z, double scale){
+  unsigned long int nFaces = 0;
+  unsigned long int nVertices = 0;
   FILE* fp;
   fp = fopen(filePath, "r");
   
@@ -210,8 +217,8 @@ triangle* loadOBJ(const char* filePath, unsigned int color){
     endptr = buf;
     double values[3];
     for(int i = 0; i < 3; i++)
-      values[i] = 100*strtod(endptr+1, &endptr);
-    vertices[i] = (point){-values[0], -values[1], -values[2]};
+      values[i] = scale*strtod(endptr+1, &endptr);
+    vertices[i] = (point){-values[0] + x, -values[1] + y, -values[2] + z};
   }
   
   getline(&buf, &buf_size, fp);
@@ -230,26 +237,34 @@ triangle* loadOBJ(const char* filePath, unsigned int color){
       color
       };
   }
-  free(buf);
-  return tris;
+  //free(buf);
+  object obj = {tris, nFaces};
+  printf("returning tris at %p\n", tris);
+  return obj;
 }
 
 bool checkIfOutside(point p){
-  return p.x < 0 || p.y < 0;
+  return p.x < -50 || p.y < -50 || p.x > WIDTH*resScale + 50 || p.y > HEIGHT*resScale + 50;
 }
 
 
 int main(int argc, char* argv[]){
   initialize();
   int running = 1;
-  int i = 0;
+  int i = 0;  
 
-  triangle* tris = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/teapot.obj", 0xDF2332);
+  objects = malloc(MAXOBJ*sizeof(object));
+  object teapot = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/teapot.obj", 0xDF2332, 300, 0, 400, 100);
+  object cube = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/cube.obj", 0x23DF32, 0, 0, 400, 100);
+  object monkey = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/monkey.obj", 0x2323DF, 0, -300, 400, 100);
+  objects[nObj++] = teapot;
+  objects[nObj++] = cube;
+  objects[nObj++] = monkey;
 
   clock_gettime(CLOCK_REALTIME, &t0);
 
-  for(int i = 0; i < nFaces; i++)
-    tris[i] = translateTriangle(tris[i], 0, 0, 200);
+  //for(int i = 0; i < nFaces; i++)
+  //  tris[i] = translateTriangle(tris[i], 0, 0, 200);
 
     while(running){
         clock_gettime(CLOCK_REALTIME, &t1);
@@ -261,52 +276,58 @@ int main(int argc, char* argv[]){
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
         SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-        
-        //sort triangles for painters algorithm
-        qsort(tris, nFaces, sizeof(triangle), cmpfunc);
 
-        for(int i = 0; i < nFaces; i++){
-            
-            triangle projected_tri = projectTriangle(tris[i]);
-            bool outside = checkIfOutside(projected_tri.a) || checkIfOutside(projected_tri.b) || checkIfOutside(projected_tri.c);
-            if(outside)
-              continue;
-            point projected_normal = calcNormal(projected_tri);
-            projected_normal = normalizeVector(projected_normal);
+        for(int j = 0; j < nObj; j++){
+          
+          triangle* tris = objects[j].tris;
+          unsigned int nFaces = objects[j].nFaces;
 
-            //check if behind camera.
-            point center = calcCenter(projected_tri);
-            if(center.z < 5 || dotProduct(subtractPoints(camera_pos, camera_pos), camera_dir) < 0)
-              continue;
+          //sort triangles for painters algorithm
+          qsort(tris, nFaces, sizeof(triangle), cmpfunc);
 
-            //Check normal
-            if(projected_normal.z > 0){
+          for(int i = 0; i < nFaces; i++){
               
-              point world_normal = calcNormal(tris[i]);
-              world_normal = normalizeVector(world_normal);
+              triangle projected_tri = projectTriangle(tris[i]);
+              bool outside = checkIfOutside(projected_tri.a) || checkIfOutside(projected_tri.b) || checkIfOutside(projected_tri.c);
+              if(outside)
+                continue;
+              point projected_normal = calcNormal(projected_tri);
+              projected_normal = normalizeVector(projected_normal);
 
-              double lightness = pow(dotProduct(world_normal, light_direction), 1);
-              lightness = lightness < 0 ? 0.0 : lightness;
-              unsigned int color = colorLightness(lightness, tris[i].color);
-              SDL_SetRenderDrawColor(renderer, 0x0000FF&color>>16, (0x00FF00&color)>>8, 0x0000FF&color, 255);
-              
-              rasterizeTriangle(renderer, projected_tri);
-              
-              if(wireframe){
-              SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
-              triangle scaledTri = (triangle){
-                  {projected_tri.a.x*resScale, projected_tri.a.y*resScale, projected_tri.a.z},
-                  {projected_tri.b.x*resScale, projected_tri.b.y*resScale, projected_tri.b.z},
-                  {projected_tri.c.x*resScale, projected_tri.c.y*resScale, projected_tri.c.z},
-                  projected_tri.color
-              };
-              drawTriangle(renderer, scaledTri);
+              //check if behind camera.
+              point center = calcCenter(projected_tri);
+              if(center.z < 5)
+                continue;
+
+              //Check normal (backface culling)
+              if(projected_normal.z > 0){
+                
+                point world_normal = calcNormal(tris[i]);
+                world_normal = normalizeVector(world_normal);
+
+                double lightness = pow(dotProduct(world_normal, light_direction), 1);
+                lightness = lightness < 0 ? 0.0 : lightness;
+                unsigned int color = colorLightness(lightness, tris[i].color);
+                SDL_SetRenderDrawColor(renderer, 0x0000FF&color>>16, (0x00FF00&color)>>8, 0x0000FF&color, 255);
+                
+                rasterizeTriangle(renderer, projected_tri);
+                
+                if(wireframe){
+                SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
+                triangle scaledTri = (triangle){
+                    {projected_tri.a.x*resScale, projected_tri.a.y*resScale, projected_tri.a.z},
+                    {projected_tri.b.x*resScale, projected_tri.b.y*resScale, projected_tri.b.z},
+                    {projected_tri.c.x*resScale, projected_tri.c.y*resScale, projected_tri.c.z},
+                    projected_tri.color
+                };
+                drawTriangle(renderer, scaledTri);
+                }
               }
-            }
-            //tris[i] = rotateTriX(tris[i], 0.007, 0, -100, 800);
-            //tris[i] = rotateTriY(tris[i], 0.013, 0, -100, 800);
-            //tris[i] = rotateTriZ(tris[i], 0.003, 0, -100, 800);
-        }
+              //tris[i] = rotateTriX(tris[i], 0.007, 0, -100, 800);
+              //tris[i] = rotateTriY(tris[i], 0.013, 0, -100, 800);
+              //tris[i] = rotateTriZ(tris[i], 0.003, 0, -100, 800);
+          }
+        }          
         SDL_RenderPresent(renderer);
 
         
@@ -355,16 +376,20 @@ int main(int argc, char* argv[]){
         }if(keystates[SDL_SCANCODE_K]){//k
             camera_dist-= 2*elapsed_time*TIME_CONST;
         }if(keystates[SDL_SCANCODE_O]){//o
-          for(int i = 0; i < nFaces; i++){
-            tris[i] = rotateTriX(tris[i], 0.007, 0, 0, 300);
-            tris[i] = rotateTriY(tris[i], 0.013, 0, 0, 300);
-            tris[i] = rotateTriZ(tris[i], 0.003, 0, 0, 300);
+          for(int j = 0; j < nObj; j++){
+            triangle* tris = objects[j].tris;
+            for(int i = 0; i < objects[j].nFaces; i++){
+              tris[i] = rotateTriX(tris[i], 0.007, 0, 0, 300);
+              tris[i] = rotateTriY(tris[i], 0.013, 0, 0, 300);
+              tris[i] = rotateTriZ(tris[i], 0.003, 0, 0, 300);
+            }
           }
         }
 
     }
-
-    free(tris);
+    //for(int j = 0; j < nObj; j++)
+    //  free(objects[j].tris);
+    //free(objects);
 
     terminate();
 }

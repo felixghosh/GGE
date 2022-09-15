@@ -247,6 +247,53 @@ bool checkIfOutside(point p){
   return p.x < -50 || p.y < -50 || p.x > WIDTH*resScale + 50 || p.y > HEIGHT*resScale + 50;
 }
 
+typedef struct clipRet{
+  triangle* a;
+  triangle* b;
+} clipRet;
+
+clipRet clipEdge(point p1, point p2, triangle tri){
+  clipRet ret = {NULL, NULL};
+
+  return ret;
+}
+
+void clipTriangle(triangle** clipped_tris, unsigned int* nTris){
+  //left
+  clipRet ret = clipEdge((point){0,0}, (point){0, HEIGHT}, *clipped_tris[0]);
+  if(ret.a != NULL)
+    *clipped_tris[*nTris++] = *ret.a;
+  if(ret.b != NULL)
+    *clipped_tris[*nTris++] = *ret.b;
+  //top
+  for(int i = 0; i < *nTris; i++){
+    clipRet ret = clipEdge((point){0,0}, (point){WIDTH, 0}, *clipped_tris[0]);
+    if(ret.a != NULL)
+      *clipped_tris[*nTris++] = *ret.a;
+    if(ret.b != NULL)
+      *clipped_tris[*nTris++] = *ret.b;
+  }
+  //right
+  for(int i = 0; i < *nTris; i++){
+    clipRet ret = clipEdge((point){WIDTH,0}, (point){WIDTH, HEIGHT}, *clipped_tris[0]);
+    if(ret.a != NULL)
+      *clipped_tris[*nTris++] = *ret.a;
+    if(ret.b != NULL)
+      *clipped_tris[*nTris++] = *ret.b;
+  }
+  //bottom
+  for(int i = 0; i < *nTris; i++){
+    clipRet ret = clipEdge((point){0,HEIGHT}, (point){WIDTH, HEIGHT}, *clipped_tris[0]);
+    if(ret.a != NULL)
+      *clipped_tris[*nTris++] = *ret.a;
+    if(ret.b != NULL)
+      *clipped_tris[*nTris++] = *ret.b;
+  }
+  return;
+}
+
+
+
 
 int main(int argc, char* argv[]){
   initialize();
@@ -257,8 +304,8 @@ int main(int argc, char* argv[]){
   object teapot = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/teapot.obj", 0xDF2332, 300, 0, 400, 100);
   object cube = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/cube.obj", 0x23DF32, 0, 0, 400, 100);
   object monkey = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/monkey.obj", 0x2323DF, 0, -300, 400, 100);
-  objects[nObj++] = teapot;
-  objects[nObj++] = cube;
+  //objects[nObj++] = teapot;
+  //objects[nObj++] = cube;
   objects[nObj++] = monkey;
 
   clock_gettime(CLOCK_REALTIME, &t0);
@@ -289,8 +336,8 @@ int main(int argc, char* argv[]){
               
               triangle projected_tri = projectTriangle(tris[i]);
               bool outside = checkIfOutside(projected_tri.a) || checkIfOutside(projected_tri.b) || checkIfOutside(projected_tri.c);
-              if(outside)
-                continue;
+              //if(outside)
+              //  continue;
               point projected_normal = calcNormal(projected_tri);
               projected_normal = normalizeVector(projected_normal);
 
@@ -310,18 +357,26 @@ int main(int argc, char* argv[]){
                 unsigned int color = colorLightness(lightness, tris[i].color);
                 SDL_SetRenderDrawColor(renderer, 0x0000FF&color>>16, (0x00FF00&color)>>8, 0x0000FF&color, 255);
                 
-                rasterizeTriangle(renderer, projected_tri);
-                
-                if(wireframe){
-                SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
-                triangle scaledTri = (triangle){
-                    {projected_tri.a.x*resScale, projected_tri.a.y*resScale, projected_tri.a.z},
-                    {projected_tri.b.x*resScale, projected_tri.b.y*resScale, projected_tri.b.z},
-                    {projected_tri.c.x*resScale, projected_tri.c.y*resScale, projected_tri.c.z},
-                    projected_tri.color
-                };
-                drawTriangle(renderer, scaledTri);
+                // FIX CLIPPING HERE
+                unsigned int nTris = 1;
+                triangle* clipped_tris = malloc(16*sizeof(triangle));
+                clipped_tris[0] = tris[i];
+                clipTriangle(&clipped_tris, &nTris);
+                for(int i = 0; i < nTris; i++){
+                  rasterizeTriangle(renderer, projected_tri);
+
+                  if(wireframe){
+                    SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
+                    triangle scaledTri = (triangle){
+                        {projected_tri.a.x*resScale, projected_tri.a.y*resScale, projected_tri.a.z},
+                        {projected_tri.b.x*resScale, projected_tri.b.y*resScale, projected_tri.b.z},
+                        {projected_tri.c.x*resScale, projected_tri.c.y*resScale, projected_tri.c.z},
+                        projected_tri.color
+                    };
+                    drawTriangle(renderer, scaledTri);
+                  }
                 }
+                free(clipped_tris);
               }
               //tris[i] = rotateTriX(tris[i], 0.007, 0, -100, 800);
               //tris[i] = rotateTriY(tris[i], 0.013, 0, -100, 800);
@@ -387,9 +442,9 @@ int main(int argc, char* argv[]){
         }
 
     }
-    //for(int j = 0; j < nObj; j++)
-    //  free(objects[j].tris);
-    //free(objects);
+    for(int j = 0; j < nObj; j++)
+      free(objects[j].tris);
+    free(objects);
 
     terminate();
 }

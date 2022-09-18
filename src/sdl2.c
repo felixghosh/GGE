@@ -352,8 +352,8 @@ int main(int argc, char* argv[]){
   object monkey = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/monkey.obj", 0x2323DF, 0, -300, 400, 100);
   object tri = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/tri.obj", 0x23D33F, 0, 0, 400, 100);
   objects[nObj++] = teapot;
-  //objects[nObj++] = cube;
-  //objects[nObj++] = monkey;
+  objects[nObj++] = cube;
+  objects[nObj++] = monkey;
   //objects[nObj++] = tri;
 
   clock_gettime(CLOCK_REALTIME, &t0);
@@ -406,10 +406,10 @@ int main(int argc, char* argv[]){
                 clipped_tris[0] = projected_tri;
                 clipTriangle(&clipped_tris, &nTris);
                 for(int i = 0; i < nTris; i++){
-                  SDL_SetRenderDrawColor(renderer, 0x0000FF&color>>16, (0x00FF00&color)>>8, 0x0000FF&color, 255);
-                  rasterizeTriangle(renderer, clipped_tris[i]);
-              
-                  if(wireframe){
+                  if(!wireframe){
+                    SDL_SetRenderDrawColor(renderer, 0x0000FF&color>>16, (0x00FF00&color)>>8, 0x0000FF&color, 255);
+                    rasterizeTriangle(renderer, clipped_tris[i]);
+                  } else{
                     SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
                     triangle scaledTri = (triangle){
                         {clipped_tris[i].a.x*resScale, clipped_tris[i].a.y*resScale, clipped_tris[i].a.z},

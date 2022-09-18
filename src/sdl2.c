@@ -254,10 +254,10 @@ point calcIntersect(point p0, point p1, char axis, unsigned int value){
   point intersect;
   if(axis == 'x'){
     intersect.x = value;
-    intersect.y = ((p0.x - value)/(p0.x - p1.x))*(p1.y - p0.y) + p0.y;
+    intersect.y = round(((p0.x - value)/(p0.x - p1.x))*(p1.y - p0.y) + p0.y);
     intersect.z = 1.0;
   } else if(axis == 'y'){
-    intersect.x = ((p0.y - value)/(p0.y - p1.y))*(p1.x - p0.x) + p0.x;
+    intersect.x = round(((p0.y - value)/(p0.y - p1.y))*(p1.x - p0.x) + p0.x);
     intersect.y = value;
     intersect.z = 1.0;
   }

@@ -405,6 +405,8 @@ int main(int argc, char* argv[]){
                 triangle* clipped_tris = malloc(16*sizeof(triangle));
                 clipped_tris[0] = projected_tri;
                 clipTriangle(&clipped_tris, &nTris);
+
+                //RENDERING
                 for(int i = 0; i < nTris; i++){
                   if(!wireframe){
                     SDL_SetRenderDrawColor(renderer, 0x0000FF&color>>16, (0x00FF00&color)>>8, 0x0000FF&color, 255);

@@ -19,6 +19,8 @@ SDL_Renderer* renderer;
 SDL_Event evt;
 SDL_Rect source, destination, dst;
 
+bool debug = false;
+
 double camera_dist = 554.0; //For FOV 60
 
 point camera_dir = {0.0, 0.0, 1.0};
@@ -151,13 +153,13 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri){
 
   bool shortSide = (p[1].y - p[0].y) * (p[2].x - p[0].x) < (p[1].x - p[0].x) * (p[2].y - p[0].y); //false = left, true = right
   
-  int dy_long = (p[2].y - p[0].y);
+  int dy_long = round(p[2].y - p[0].y);
   double denominator = 1.0 / dy_long;
   double slope_long[dy_long];
   for(i = 0; i < dy_long; i++){
     slope_long[i] = p[0].x + (p[2].x-p[0].x)*(i)*denominator;
   }
-  int dy_short = (p[1].y - p[0].y);
+  int dy_short = round(p[1].y - p[0].y);
   denominator = 1.0 / dy_short;
   double slope_short[dy_short];
   if(dy_short != 0){
@@ -165,7 +167,10 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri){
       slope_short[i] = p[0].x + (p[1].x-p[0].x)*i*denominator;
     }
   }
-  int dy_last = (p[2].y - p[1].y);
+  if(debug){
+    printf("debug\n");
+  }
+  int dy_last = dy_long - dy_short;//round((p[2].y - p[1].y));
   denominator = 1.0 / dy_last;
   double slope_last[dy_last];
   if(dy_last != 0){
@@ -177,15 +182,18 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri){
   i = 0;
   if(dy_short != 0){
     for(i; i < dy_short; i++)
-      //SDL_RenderFillRect(renderer, &((SDL_Rect){slope_long[i]*resScale, (i+p[0].y)*resScale, (int)slope_short[i]*resScale - slope_long[i]*resScale, (i+p[0].y)*resScale+resScale-1 - (i+p[0].y)*resScale}));
-      for(int j = 0; j < resScale; j++)
+      for(int j = 0; j < resScale; j++){
         SDL_RenderDrawLine(renderer, slope_long[i]*resScale, (i+p[0].y)*resScale+j, (int)slope_short[i]*resScale, (i+p[0].y)*resScale+j);
+        //printf("drawing from (%lf, %lf) to (%lf, %lf)\n", slope_long[i], (i+p[0].y)*resScale+j, slope_short[i]*resScale, ((i+p[0].y)*resScale+j));
+      }
   }
   if(dy_last != 0){
     int origin = i;
     for(i; i < dy_long; i++)
-      for(int j = 0; j < resScale; j++)
+      for(int j = 0; j < resScale; j++){
         SDL_RenderDrawLine(renderer, slope_long[i]*resScale, (i+p[0].y)*resScale+j, (int)slope_last[i - origin]*resScale, (i+p[0].y)*resScale+j);
+        //printf("drawing from (%lf, %lf) to (%lf, %lf)\n", slope_long[i], (i+p[0].y)*resScale+j, slope_last[i - origin]*resScale, ((i+p[0].y)*resScale+j));
+      }
   }
 }
 
@@ -363,7 +371,7 @@ int main(int argc, char* argv[]){
         clock_gettime(CLOCK_REALTIME, &t1);
         elapsed_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec)/1000000000.0;
         clock_gettime(CLOCK_REALTIME, &t0);
-        printf("fps: %5u\n", (int)(1/elapsed_time));
+        //printf("fps: %5u\n", (int)(1/elapsed_time));
         //printf("fov: %5u\n", (int)calcFOV());
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -440,7 +448,9 @@ int main(int argc, char* argv[]){
                     running = 0;
                 } else if(keypressed == SDLK_l){//l
                     wireframe = !wireframe;
-                } 
+                } else if(keypressed == SDLK_i){//i
+                    debug = !debug;
+                }
             } else if(evt.type == SDL_MOUSEMOTION){
                 if(evt.motion.x != WIDTH*resScale/2 && evt.motion.y != HEIGHT*resScale/2){
                     int dx = evt.motion.xrel;

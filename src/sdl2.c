@@ -237,59 +237,105 @@ object loadOBJ(const char* filePath, unsigned int color, double x, double y, dou
       color
       };
   }
-  //free(buf);
+  free(buf);
   object obj = {tris, nFaces};
-  printf("returning tris at %p\n", tris);
   return obj;
 }
 
-bool checkIfOutside(point p){
-  return p.x < -50 || p.y < -50 || p.x > WIDTH*resScale + 50 || p.y > HEIGHT*resScale + 50;
+point calcIntersect(point p0, point p1, char axis, unsigned int value){
+  point intersect;
+  if(axis == 'x'){
+    intersect.x = value;
+    intersect.y = ((p0.x - value)/(p0.x - p1.x))*(p1.y - p0.y) + p0.y;
+    intersect.z = 1.0;
+  } else if(axis == 'y'){
+    intersect.x = ((p0.y - value)/(p0.y - p1.y))*(p1.x - p0.x) + p0.x;
+    intersect.y = value;
+    intersect.z = 1.0;
+  }
+  return intersect;
 }
 
-typedef struct clipRet{
-  triangle* a;
-  triangle* b;
-} clipRet;
+void clipEdge(point p1, point p2, triangle** clipped_tris, unsigned int* nTris, int index){
+  triangle tri = (*clipped_tris)[index];
+  point points[3] = {tri.a, tri.b, tri.c};
+  char axis;
+  unsigned int value;
 
-clipRet clipEdge(point p1, point p2, triangle tri){
-  clipRet ret = {NULL, NULL};
+  if(p1.x == p2.x){
+    axis = 'x';
+    value = p1.x;
+  } else if(p1.y == p2.y){
+    axis = 'y';
+    value = p1.y;
+  }
 
-  return ret;
+  int nOutside = 0;
+  int inside[3] = {1,1,1};
+  if((p2.x - p1.x)*(tri.a.y - p1.y)-(p2.y - p1.y)*(tri.a.x - p1.x) > 0){
+    nOutside++;
+    inside[0] = 0;
+  }
+  if((p2.x - p1.x)*(tri.b.y - p1.y)-(p2.y - p1.y)*(tri.b.x - p1.x) > 0){
+    nOutside++;
+    inside[1] = 0;
+  }
+  if((p2.x - p1.x)*(tri.c.y - p1.y)-(p2.y - p1.y)*(tri.c.x - p1.x) > 0){
+    nOutside++;
+    inside[2] = 0;
+  }
+
+  if(nOutside == 0){
+    //do nothing, leave triangle in
+  } else if(nOutside == 1){
+    //create two new triangles
+    int firstOut = 0;
+    for(int i = 0; i < 3; i++){
+      if(inside[i] == 0){
+        firstOut = i;
+        break;
+      }
+    }
+    point intersect1 = calcIntersect(points[firstOut], points[(firstOut+1)%3], axis, value);
+    point intersect2 = calcIntersect(points[firstOut], points[(firstOut+2)%3], axis, value);
+    (*clipped_tris)[index] = (triangle){points[(firstOut+1)%3], points[(firstOut+2)%3], intersect1, tri.color};
+    (*clipped_tris)[index+1] = (triangle){points[(firstOut+2)%3], intersect2, intersect1, tri.color};
+    (*nTris)++;
+  } else if(nOutside == 2){
+    //create one new triangle
+    int firstIn = 0;
+    for(int i = 0; i < 3; i++){
+      if(inside[i] == 1){
+        firstIn = i;
+        break;
+      }
+    }
+    point intersect1 = calcIntersect(points[firstIn], points[(firstIn+1)%3], axis, value);
+    point intersect2 = calcIntersect(points[firstIn], points[(firstIn+2)%3], axis, value);
+    (*clipped_tris)[index] = (triangle){points[firstIn], intersect1, intersect2, tri.color};
+  } else if(nOutside == 3){
+    //Don't render this triangle at all
+    for(int i = index; i < *nTris-1; i++)
+      (*clipped_tris)[i] = (*clipped_tris)[i+1];
+    (*nTris)--;
+  }
 }
 
 void clipTriangle(triangle** clipped_tris, unsigned int* nTris){
   //left
-  clipRet ret = clipEdge((point){0,0}, (point){0, HEIGHT}, *clipped_tris[0]);
-  if(ret.a != NULL)
-    *clipped_tris[*nTris++] = *ret.a;
-  if(ret.b != NULL)
-    *clipped_tris[*nTris++] = *ret.b;
+  clipEdge((point){0,0,0}, (point){0,HEIGHT,0}, clipped_tris, nTris, 0);
   //top
   for(int i = 0; i < *nTris; i++){
-    clipRet ret = clipEdge((point){0,0}, (point){WIDTH, 0}, *clipped_tris[0]);
-    if(ret.a != NULL)
-      *clipped_tris[*nTris++] = *ret.a;
-    if(ret.b != NULL)
-      *clipped_tris[*nTris++] = *ret.b;
+    clipEdge((point){0,0,0}, (point){-WIDTH,0,0}, clipped_tris, nTris, i);
   }
   //right
   for(int i = 0; i < *nTris; i++){
-    clipRet ret = clipEdge((point){WIDTH,0}, (point){WIDTH, HEIGHT}, *clipped_tris[0]);
-    if(ret.a != NULL)
-      *clipped_tris[*nTris++] = *ret.a;
-    if(ret.b != NULL)
-      *clipped_tris[*nTris++] = *ret.b;
+    clipEdge((point){WIDTH,0,0}, (point){WIDTH,-HEIGHT,0}, clipped_tris, nTris, i);
   }
   //bottom
   for(int i = 0; i < *nTris; i++){
-    clipRet ret = clipEdge((point){0,HEIGHT}, (point){WIDTH, HEIGHT}, *clipped_tris[0]);
-    if(ret.a != NULL)
-      *clipped_tris[*nTris++] = *ret.a;
-    if(ret.b != NULL)
-      *clipped_tris[*nTris++] = *ret.b;
+    clipEdge((point){0,HEIGHT,0}, (point){WIDTH,HEIGHT,0}, clipped_tris, nTris, i);
   }
-  return;
 }
 
 
@@ -304,20 +350,20 @@ int main(int argc, char* argv[]){
   object teapot = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/teapot.obj", 0xDF2332, 300, 0, 400, 100);
   object cube = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/cube.obj", 0x23DF32, 0, 0, 400, 100);
   object monkey = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/monkey.obj", 0x2323DF, 0, -300, 400, 100);
-  //objects[nObj++] = teapot;
+  object tri = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/tri.obj", 0x23D33F, 0, 0, 400, 100);
+  objects[nObj++] = teapot;
   //objects[nObj++] = cube;
-  objects[nObj++] = monkey;
+  //objects[nObj++] = monkey;
+  //objects[nObj++] = tri;
 
   clock_gettime(CLOCK_REALTIME, &t0);
 
-  //for(int i = 0; i < nFaces; i++)
-  //  tris[i] = translateTriangle(tris[i], 0, 0, 200);
 
     while(running){
         clock_gettime(CLOCK_REALTIME, &t1);
         elapsed_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec)/1000000000.0;
         clock_gettime(CLOCK_REALTIME, &t0);
-        //printf("fps: %5u\n", (int)(1/elapsed_time));
+        printf("fps: %5u\n", (int)(1/elapsed_time));
         //printf("fov: %5u\n", (int)calcFOV());
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -335,15 +381,12 @@ int main(int argc, char* argv[]){
           for(int i = 0; i < nFaces; i++){
               
               triangle projected_tri = projectTriangle(tris[i]);
-              bool outside = checkIfOutside(projected_tri.a) || checkIfOutside(projected_tri.b) || checkIfOutside(projected_tri.c);
-              //if(outside)
-              //  continue;
               point projected_normal = calcNormal(projected_tri);
               projected_normal = normalizeVector(projected_normal);
 
               //check if behind camera.
               point center = calcCenter(projected_tri);
-              if(center.z < 5)
+              if(center.z < camera_dist/10)
                 continue;
 
               //Check normal (backface culling)
@@ -355,37 +398,37 @@ int main(int argc, char* argv[]){
                 double lightness = pow(dotProduct(world_normal, light_direction), 1);
                 lightness = lightness < 0 ? 0.0 : lightness;
                 unsigned int color = colorLightness(lightness, tris[i].color);
-                SDL_SetRenderDrawColor(renderer, 0x0000FF&color>>16, (0x00FF00&color)>>8, 0x0000FF&color, 255);
                 
-                // FIX CLIPPING HERE
+                
+                //CLIPPING
                 unsigned int nTris = 1;
                 triangle* clipped_tris = malloc(16*sizeof(triangle));
-                clipped_tris[0] = tris[i];
+                clipped_tris[0] = projected_tri;
                 clipTriangle(&clipped_tris, &nTris);
                 for(int i = 0; i < nTris; i++){
-                  rasterizeTriangle(renderer, projected_tri);
-
+                  SDL_SetRenderDrawColor(renderer, 0x0000FF&color>>16, (0x00FF00&color)>>8, 0x0000FF&color, 255);
+                  rasterizeTriangle(renderer, clipped_tris[i]);
+              
                   if(wireframe){
                     SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
                     triangle scaledTri = (triangle){
-                        {projected_tri.a.x*resScale, projected_tri.a.y*resScale, projected_tri.a.z},
-                        {projected_tri.b.x*resScale, projected_tri.b.y*resScale, projected_tri.b.z},
-                        {projected_tri.c.x*resScale, projected_tri.c.y*resScale, projected_tri.c.z},
-                        projected_tri.color
+                        {clipped_tris[i].a.x*resScale, clipped_tris[i].a.y*resScale, clipped_tris[i].a.z},
+                        {clipped_tris[i].b.x*resScale, clipped_tris[i].b.y*resScale, clipped_tris[i].b.z},
+                        {clipped_tris[i].c.x*resScale, clipped_tris[i].c.y*resScale, clipped_tris[i].c.z},
+                        clipped_tris[i].color
                     };
                     drawTriangle(renderer, scaledTri);
                   }
                 }
                 free(clipped_tris);
               }
-              //tris[i] = rotateTriX(tris[i], 0.007, 0, -100, 800);
-              //tris[i] = rotateTriY(tris[i], 0.013, 0, -100, 800);
-              //tris[i] = rotateTriZ(tris[i], 0.003, 0, -100, 800);
           }
-        }          
+        }
+        //SWITCH BUFFERS          
         SDL_RenderPresent(renderer);
 
         
+        //HANDLE INPUT
         const Uint8* keystates = SDL_GetKeyboardState(NULL);
         
         while(SDL_PollEvent(&evt)){
@@ -442,6 +485,8 @@ int main(int argc, char* argv[]){
         }
 
     }
+
+    //PROGRAM EXIT
     for(int j = 0; j < nObj; j++)
       free(objects[j].tris);
     free(objects);

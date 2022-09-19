@@ -167,9 +167,7 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri){
       slope_short[i] = p[0].x + (p[1].x-p[0].x)*i*denominator;
     }
   }
-  if(debug){
-    printf("debug\n");
-  }
+  
   int dy_last = dy_long - dy_short;//round((p[2].y - p[1].y));
   denominator = 1.0 / dy_last;
   double slope_last[dy_last];
@@ -307,7 +305,7 @@ void clipEdge(point p1, point p2, triangle** clipped_tris, unsigned int* nTris, 
     point intersect1 = calcIntersect(points[firstOut], points[(firstOut+1)%3], axis, value);
     point intersect2 = calcIntersect(points[firstOut], points[(firstOut+2)%3], axis, value);
     (*clipped_tris)[index] = (triangle){points[(firstOut+1)%3], points[(firstOut+2)%3], intersect1, tri.color};
-    (*clipped_tris)[index+1] = (triangle){points[(firstOut+2)%3], intersect2, intersect1, tri.color};
+    (*clipped_tris)[*nTris] = (triangle){points[(firstOut+2)%3], intersect2, intersect1, tri.color};
     (*nTris)++;
   } else if(nOutside == 2){
     //create one new triangle

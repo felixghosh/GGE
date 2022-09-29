@@ -375,7 +375,7 @@ int main(int argc, char* argv[]){
   object tri = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/tri.obj", 0x23D33F, 0, 0, 400, 100);
   object dog = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/dog.obj", 0x23D33F, 0, 0, 400, 100);
   object get = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/get.obj", 0x23D33F, 0, 0, 400, 100);
-  object room = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/room3.obj", 0xb3b3bF, 0, 100, 0, 1000);
+  object room = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/room3.obj", 0xE3737F, 0, 100, 0, 1000);
   object sphere = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/sphere.obj", 0xD3b3bF, 0, 100, 0, 100);
   
   objects[nObj++] = room;
@@ -388,8 +388,9 @@ int main(int argc, char* argv[]){
   //objects[nObj++] = sphere;
 
   lights = malloc(sizeof(light)*MAXLIGHT);
-  lights[nLights++] = (light){(point){400.0, 100.0, 100.0}, 1000.0};
+  lights[nLights++] = (light){(point){200.0, 200.0, 200.0}, 1000.0};
   lights[nLights++] = (light){(point){-5000.0, 100.0, 5000.0}, 3000.0};
+  //lights[nLights++] = (light){(point){0.0, -10000.0, 0.0}, 20000};
 
   clock_gettime(CLOCK_REALTIME, &t0);
 
@@ -439,10 +440,10 @@ int main(int argc, char* argv[]){
                 for(int i = 0; i < nLights; i++){
                   point light_direction = normalizeVector(subtractPoints(calcCenter(tri), lights[i].p));
                   double light_dist = vectorLength(subtractPoints(calcCenter(tri), lights[i].p));
-                  lightness += (lights[i].intensity/pow(light_dist, 1.1))*dotProduct(world_normal, light_direction);
+                  double partial_light = (lights[i].intensity/pow(light_dist, 1.1))*dotProduct(world_normal, light_direction);
+                  partial_light = partial_light < 0 ? 0 : partial_light;
+                  lightness += partial_light;
                 }
-                //double lightness = pow(dotProduct(world_normal, light_direction), 1);
-                lightness = lightness < 0 ? 0.0 : lightness;
                 unsigned int color = colorLightness(lightness, tris[i].color);
                 
                 
@@ -533,9 +534,9 @@ int main(int argc, char* argv[]){
             }
           }
         }if(keystates[SDL_SCANCODE_U]){//u
-          lights[0].p.x += 10;
+          lights[0].p.z += 30;
         }if(keystates[SDL_SCANCODE_Y]){//y
-          lights[0].p.x -= 10;
+          lights[0].p.z -= 30;
         }if(keystates[SDL_SCANCODE_LSHIFT]){
           speed = speed_fast;
         }else{

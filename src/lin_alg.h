@@ -41,6 +41,8 @@ point calcNormal(triangle tri);
 
 point normalizeVector(point p);
 
+point roundVector(point p);
+
 double dotProduct(point p1, point p2);
 
 point subtractPoints(point p1, point p2);

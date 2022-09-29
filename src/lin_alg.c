@@ -152,6 +152,14 @@ point normalizeVector(point p){
   return p;
 }
 
+point roundVector(point p){
+  return (point){
+    round(p.x),
+    round(p.y),
+    round(p.z)
+  };
+}
+
 double dotProduct(point p1, point p2){
   return p1.x*p2.x + p1.y*p2.y + p1.z*p2.z;
 }

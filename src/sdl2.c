@@ -11,8 +11,10 @@
 #include "lin_alg.h"
 #include "camera.h"
 #include "global.h"
+#include "light.h"
 
 #define MAXOBJ 100
+#define MAXLIGHT 100
 
 SDL_Window* screen = NULL;
 SDL_Renderer* renderer;
@@ -29,13 +31,15 @@ struct timespec t0, t1;
 double elapsed_time;
 
 double speed = 10.0;
-double resScale = 1;
+double speed_fast = 30.0;
+double speed_slow = 10.0;
+double resScale = 2;
 
 point camera_pos = {0.0, 0.0, 0.0};
 double camera_angle_y = 0.0;
 double camera_angle_x = 0.0;
 
-point light_direction = {0.3, -0.2, 0.5};
+//point light_direction = {0.3, -0.2, 0.5};
 
 bool wireframe = false;
 
@@ -44,6 +48,9 @@ bool wireframe = false;
 
 object* objects;
 unsigned int nObj = 0;
+
+light* lights;
+unsigned int nLights = 0;
 
 triangle camera_basis = { //Currently not used
   {1.0, 0.0, 0.0},
@@ -368,17 +375,21 @@ int main(int argc, char* argv[]){
   object tri = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/tri.obj", 0x23D33F, 0, 0, 400, 100);
   object dog = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/dog.obj", 0x23D33F, 0, 0, 400, 100);
   object get = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/get.obj", 0x23D33F, 0, 0, 400, 100);
-  object room = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/room2.obj", 0xb3b3bF, 0, 100, 0, 1000);
+  object room = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/room3.obj", 0xb3b3bF, 0, 100, 0, 1000);
   object sphere = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/sphere.obj", 0xD3b3bF, 0, 100, 0, 100);
   
   objects[nObj++] = room;
-  //objects[nObj++] = cube;
+  objects[nObj++] = cube;
   //objects[nObj++] = monkey;
   //objects[nObj++] = tri;
   //objects[nObj++] = dog;
-  objects[nObj++] = get;
+  //bjects[nObj++] = get;
   //objects[nObj++] = teapot;
   //objects[nObj++] = sphere;
+
+  lights = malloc(sizeof(light)*MAXLIGHT);
+  lights[nLights++] = (light){(point){400.0, 100.0, 100.0}, 1000.0};
+  lights[nLights++] = (light){(point){-5000.0, 100.0, 5000.0}, 3000.0};
 
   clock_gettime(CLOCK_REALTIME, &t0);
 
@@ -387,7 +398,7 @@ int main(int argc, char* argv[]){
         clock_gettime(CLOCK_REALTIME, &t1);
         elapsed_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec)/1000000000.0;
         clock_gettime(CLOCK_REALTIME, &t0);
-        printf("fps: %5u\n", (int)(1/elapsed_time));
+        //printf("fps: %5u\n", (int)(1/elapsed_time));
         //printf("fov: %5u\n", (int)calcFOV());
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -403,8 +414,8 @@ int main(int argc, char* argv[]){
           qsort(tris, nFaces, sizeof(triangle), cmpfunc);
 
           for(int i = 0; i < nFaces; i++){
-              
-              triangle projected_tri = projectTriangle(tris[i]);
+              triangle tri = tris[i];
+              triangle projected_tri = projectTriangle(tri);
               if(triBehind(projected_tri))
                 continue;
               if(debug){
@@ -421,12 +432,18 @@ int main(int argc, char* argv[]){
               //Check normal (backface culling)
               if(projected_normal.z > 0){
                 
-                point world_normal = calcNormal(tris[i]);
-                world_normal = normalizeVector(world_normal);
+                point world_normal = normalizeVector(calcNormal(tri));
+                
 
-                double lightness = pow(dotProduct(world_normal, light_direction), 1);
+                double lightness = 0.0;
+                for(int i = 0; i < nLights; i++){
+                  point light_direction = normalizeVector(subtractPoints(calcCenter(tri), lights[i].p));
+                  double light_dist = vectorLength(subtractPoints(calcCenter(tri), lights[i].p));
+                  lightness += (lights[i].intensity/pow(light_dist, 1.1))*dotProduct(world_normal, light_direction);
+                }
+                //double lightness = pow(dotProduct(world_normal, light_direction), 1);
                 lightness = lightness < 0 ? 0.0 : lightness;
-                unsigned int color = colorLightness(lightness+0.1, tris[i].color);
+                unsigned int color = colorLightness(lightness, tris[i].color);
                 
                 
                 //CLIPPING
@@ -515,6 +532,14 @@ int main(int argc, char* argv[]){
               tris[i] = rotateTriZ(tris[i], 0.003, 0, 0, 300);
             }
           }
+        }if(keystates[SDL_SCANCODE_U]){//u
+          lights[0].p.x += 10;
+        }if(keystates[SDL_SCANCODE_Y]){//y
+          lights[0].p.x -= 10;
+        }if(keystates[SDL_SCANCODE_LSHIFT]){
+          speed = speed_fast;
+        }else{
+          speed = speed_slow;
         }
 
     }
@@ -523,6 +548,7 @@ int main(int argc, char* argv[]){
     for(int j = 0; j < nObj; j++)
       free(objects[j].tris);
     free(objects);
+    free(lights);
 
     terminate();
 }

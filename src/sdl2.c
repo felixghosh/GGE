@@ -28,14 +28,14 @@ point camera_dir = {0.0, 0.0, 1.0};
 struct timespec t0, t1;
 double elapsed_time;
 
-double speed = 3.0;
+double speed = 10.0;
 double resScale = 1;
 
 point camera_pos = {0.0, 0.0, 0.0};
 double camera_angle_y = 0.0;
 double camera_angle_x = 0.0;
 
-point light_direction = {0.0, 0.0, 1.0};
+point light_direction = {0.3, -0.2, 0.5};
 
 bool wireframe = false;
 
@@ -253,9 +253,14 @@ point calcIntersect(point p0, point p1, char axis, unsigned int value){
   if(axis == 'x'){
     intersect.x = value;
     intersect.y = round(((p0.x - value)/(p0.x - p1.x))*(p1.y - p0.y) + p0.y);
+    //intersect.y = intersect.y < 0.0 ? 0.0 : intersect.y;
+    //intersect.y = intersect.y > HEIGHT ? HEIGHT : intersect.y;
+    
     intersect.z = 1.0;
   } else if(axis == 'y'){
     intersect.x = round(((p0.y - value)/(p0.y - p1.y))*(p1.x - p0.x) + p0.x);
+    //intersect.x = intersect.x < 0.0 ? 0.0 : intersect.x;
+    //intersect.x = intersect.x > WIDTH ? WIDTH : intersect.x;
     intersect.y = value;
     intersect.z = 1.0;
   }
@@ -345,6 +350,10 @@ void clipTriangle(triangle** clipped_tris, unsigned int* nTris){
 }
 
 
+bool triBehind(triangle tri){
+  return tri.a.z < 0 && tri.b.z < 0 && tri.c.z < 0;
+}
+
 
 
 int main(int argc, char* argv[]){
@@ -353,14 +362,23 @@ int main(int argc, char* argv[]){
   int i = 0;  
 
   objects = malloc(MAXOBJ*sizeof(object));
-  object teapot = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/teapot.obj", 0xDF2332, 300, 0, 400, 100);
+  object teapot = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/teapot.obj", 0xDF2332, 0, 0, 300, 100);
   object cube = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/cube.obj", 0x23DF32, 0, 0, 400, 100);
   object monkey = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/monkey.obj", 0x2323DF, 0, -300, 400, 100);
   object tri = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/tri.obj", 0x23D33F, 0, 0, 400, 100);
-  objects[nObj++] = teapot;
-  objects[nObj++] = cube;
-  objects[nObj++] = monkey;
+  object dog = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/dog.obj", 0x23D33F, 0, 0, 400, 100);
+  object get = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/get.obj", 0x23D33F, 0, 0, 400, 100);
+  object room = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/room2.obj", 0xb3b3bF, 0, 100, 0, 1000);
+  object sphere = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/sphere.obj", 0xD3b3bF, 0, 100, 0, 100);
+  
+  objects[nObj++] = room;
+  //objects[nObj++] = cube;
+  //objects[nObj++] = monkey;
   //objects[nObj++] = tri;
+  //objects[nObj++] = dog;
+  objects[nObj++] = get;
+  //objects[nObj++] = teapot;
+  //objects[nObj++] = sphere;
 
   clock_gettime(CLOCK_REALTIME, &t0);
 
@@ -369,7 +387,7 @@ int main(int argc, char* argv[]){
         clock_gettime(CLOCK_REALTIME, &t1);
         elapsed_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec)/1000000000.0;
         clock_gettime(CLOCK_REALTIME, &t0);
-        //printf("fps: %5u\n", (int)(1/elapsed_time));
+        printf("fps: %5u\n", (int)(1/elapsed_time));
         //printf("fov: %5u\n", (int)calcFOV());
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -387,6 +405,11 @@ int main(int argc, char* argv[]){
           for(int i = 0; i < nFaces; i++){
               
               triangle projected_tri = projectTriangle(tris[i]);
+              if(triBehind(projected_tri))
+                continue;
+              if(debug){
+                printf("(%2.1lf,%2.1lf,%2.1lf) (%2.1lf,%2.1lf,%2.1lf) (%2.1lf,%2.1lf,%2.1lf)\n", projected_tri.a.x, projected_tri.a.y, projected_tri.a.z, projected_tri.b.x, projected_tri.b.y, projected_tri.b.z, projected_tri.c.x, projected_tri.c.y, projected_tri.c.z);
+              }
               point projected_normal = calcNormal(projected_tri);
               projected_normal = normalizeVector(projected_normal);
 
@@ -403,7 +426,7 @@ int main(int argc, char* argv[]){
 
                 double lightness = pow(dotProduct(world_normal, light_direction), 1);
                 lightness = lightness < 0 ? 0.0 : lightness;
-                unsigned int color = colorLightness(lightness, tris[i].color);
+                unsigned int color = colorLightness(lightness+0.1, tris[i].color);
                 
                 
                 //CLIPPING

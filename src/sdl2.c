@@ -33,7 +33,7 @@ double elapsed_time;
 double speed = 10.0;
 double speed_fast = 30.0;
 double speed_slow = 10.0;
-double resScale = 2;
+double resScale = 1;
 
 point camera_pos = {0.0, 0.0, 0.0};
 double camera_angle_y = 0.0;
@@ -60,8 +60,12 @@ triangle camera_basis = { //Currently not used
 };
 
 int cmpfunc (const void * a, const void * b) {
-   triangle* pa = (triangle*)a;
-   triangle* pb = (triangle*)b;
+   //triangle* pa = (triangle*)a;
+   //triangle* pb = (triangle*)b;
+   tri_map* tma = (tri_map*)a;
+   tri_map* tmb = (tri_map*)b;
+   triangle* pa = tma->tri;
+   triangle* pb = tmb->tri;
    //return calcCenter(*pb).z - calcCenter(*pa).z;
    return (vectorLength(subtractPoints(calcCenter(*pb), camera_pos)) - vectorLength(subtractPoints(calcCenter(*pa), camera_pos)));
 }
@@ -380,7 +384,7 @@ int main(int argc, char* argv[]){
   
   objects[nObj++] = room;
   objects[nObj++] = cube;
-  //objects[nObj++] = monkey;
+  objects[nObj++] = monkey;
   //objects[nObj++] = tri;
   //objects[nObj++] = dog;
   //bjects[nObj++] = get;
@@ -391,6 +395,22 @@ int main(int argc, char* argv[]){
   lights[nLights++] = (light){(point){200.0, 200.0, 200.0}, 1000.0};
   lights[nLights++] = (light){(point){-5000.0, 100.0, 5000.0}, 3000.0};
   //lights[nLights++] = (light){(point){0.0, -10000.0, 0.0}, 20000};
+
+  unsigned long totalTris = 0;
+  for(int i = 0; i < nObj; i++)
+    totalTris += objects[i].nFaces;
+
+  tri_map* allTris = malloc(totalTris*sizeof(tri_map));
+  unsigned long index = 0;
+  for(int i = 0; i < nObj; i++){
+    for(int j = 0; j < objects[i].nFaces; j++){
+      allTris[index++] = (tri_map){&(objects[i].tris[j]), &(objects[i])};
+    }
+  }
+  if(index != totalTris){
+    printf("ERROR INDEX DOESNT MATCH TOTALTRIS!\nindex %lu, totalTris %lu\n", index, totalTris);
+    exit(1);
+  }
 
   clock_gettime(CLOCK_REALTIME, &t0);
 
@@ -406,16 +426,16 @@ int main(int argc, char* argv[]){
         SDL_RenderClear(renderer);
         SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
 
-        for(int j = 0; j < nObj; j++){
+        //for(int j = 0; j < nObj; j++){
           
-          triangle* tris = objects[j].tris;
-          unsigned int nFaces = objects[j].nFaces;
+        //  triangle* tris = objects[j].tris;
+        //  unsigned int nFaces = objects[j].nFaces;
 
           //sort triangles for painters algorithm
-          qsort(tris, nFaces, sizeof(triangle), cmpfunc);
+          qsort(allTris, totalTris, sizeof(tri_map), cmpfunc);
 
-          for(int i = 0; i < nFaces; i++){
-              triangle tri = tris[i];
+          for(int i = 0; i < totalTris; i++){
+              triangle tri = *(allTris[i].tri);
               triangle projected_tri = projectTriangle(tri);
               if(triBehind(projected_tri))
                 continue;
@@ -444,7 +464,7 @@ int main(int argc, char* argv[]){
                   partial_light = partial_light < 0 ? 0 : partial_light;
                   lightness += partial_light;
                 }
-                unsigned int color = colorLightness(lightness, tris[i].color);
+                unsigned int color = colorLightness(lightness, tri.color);
                 
                 
                 //CLIPPING
@@ -472,7 +492,7 @@ int main(int argc, char* argv[]){
                 free(clipped_tris);
               }
           }
-        }
+        //}
         //SWITCH BUFFERS          
         SDL_RenderPresent(renderer);
 
@@ -550,6 +570,7 @@ int main(int argc, char* argv[]){
       free(objects[j].tris);
     free(objects);
     free(lights);
+    free(allTris);
 
     terminate();
 }

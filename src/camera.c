@@ -49,40 +49,25 @@ point toCameraBasis(point p){
   return rotated_pyx;
 }
 
-triangle projectTriangle(triangle tri){
-  double xp1, yp1, xp2, yp2, xp3, yp3;
+triangle toCameraBasisTriangle(triangle tri){
   point a_cam = toCameraBasis(tri.a);
   point b_cam = toCameraBasis(tri.b);
   point c_cam = toCameraBasis(tri.c);
-  //if(a_cam.z < 0) a_cam.z = 1;//-1/a_cam.z;
-  //if(b_cam.z < 0) b_cam.z = 1;//-1/b_cam.z;
-  //if(c_cam.z < 0) c_cam.z = 1;//-1/c_cam.z;
-  if(a_cam.z > 0){
-    xp1 = round(camera_dist * a_cam.x / a_cam.z + WIDTH/2);
-    yp1 = round(camera_dist * a_cam.y / a_cam.z + WIDTH/2);
-  } else {
-    xp1 = round(a_cam.x + WIDTH/2);
-    yp1 = round(a_cam.y + WIDTH/2);
-  }
-  if(b_cam.z > 0){
-    xp2 = round(camera_dist * b_cam.x / b_cam.z + WIDTH/2);
-    yp2 = round(camera_dist * b_cam.y / b_cam.z + WIDTH/2);
-  } else {
-    xp2 = round(b_cam.x + WIDTH/2);
-    yp2 = round(b_cam.y + WIDTH/2);
-  }
-  if(c_cam.z > 0){
-    xp3 = round(camera_dist * c_cam.x / c_cam.z + WIDTH/2);
-    yp3 = round(camera_dist * c_cam.y / c_cam.z + WIDTH/2);
-  } else {
-    xp3 = round(c_cam.x + WIDTH/2);
-    yp3 = round(c_cam.y + WIDTH/2);
-  }
-  
-  
-  
-  
-  
+  return (triangle){a_cam, b_cam, c_cam};
+}
+
+triangle projectTriangle(triangle tri){
+  double xp1, yp1, xp2, yp2, xp3, yp3;
+  point a_cam = tri.a;//toCameraBasis(tri.a);
+  point b_cam = tri.b;//toCameraBasis(tri.b);
+  point c_cam = tri.c;//toCameraBasis(tri.c);
+
+  xp1 = round(camera_dist * a_cam.x / a_cam.z + WIDTH/2);
+  yp1 = round(camera_dist * a_cam.y / a_cam.z + WIDTH/2);
+  xp2 = round(camera_dist * b_cam.x / b_cam.z + WIDTH/2);
+  yp2 = round(camera_dist * b_cam.y / b_cam.z + WIDTH/2);
+  xp3 = round(camera_dist * c_cam.x / c_cam.z + WIDTH/2);
+  yp3 = round(camera_dist * c_cam.y / c_cam.z + WIDTH/2);
   
   triangle projected_tri = {
     {xp1, yp1, a_cam.z},

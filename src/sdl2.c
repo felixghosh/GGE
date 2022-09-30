@@ -33,7 +33,7 @@ double elapsed_time;
 double speed = 10.0;
 double speed_fast = 30.0;
 double speed_slow = 10.0;
-double resScale = 1;
+unsigned int resScale = 1;
 
 point camera_pos = {0.0, 0.0, 0.0};
 double camera_angle_y = 0.0;
@@ -274,6 +274,10 @@ point calcIntersect(point p0, point p1, char axis, unsigned int value){
     //intersect.x = intersect.x > WIDTH ? WIDTH : intersect.x;
     intersect.y = value;
     intersect.z = 1.0;
+  } else if(axis == 'z'){
+    intersect.x = round(((p0.z - value)/(p0.z - p1.z))*(p1.x - p0.x) + p0.x);
+    intersect.y = round(((p0.z - value)/(p0.z - p1.z))*(p1.y - p0.y) + p0.y);
+    intersect.z = value;
   }
   return intersect;
 }
@@ -290,22 +294,44 @@ void clipEdge(point p1, point p2, triangle** clipped_tris, unsigned int* nTris, 
   } else if(p1.y == p2.y){
     axis = 'y';
     value = p1.y;
+  } else if(p1.z == p2.z){
+    axis = 'z';
+    value = p1.z;
   }
 
   int nOutside = 0;
   int inside[3] = {1,1,1};
-  if((p2.x - p1.x)*(tri.a.y - p1.y)-(p2.y - p1.y)*(tri.a.x - p1.x) > 0){
-    nOutside++;
-    inside[0] = 0;
+  if(axis = 'z'){
+    if((p2.z - p1.z)*(tri.a.y - p1.y)-(p2.y - p1.y)*(tri.a.z - p1.z) > 0){
+      //printf("OUTSIDE!\n");
+      nOutside++;
+      inside[0] = 0;
+    }
+    if((p2.z - p1.z)*(tri.b.y - p1.y)-(p2.y - p1.y)*(tri.b.z - p1.z) > 0){
+      //printf("OUTSIDE!\n");
+      nOutside++;
+      inside[1] = 0;
+    }
+    if((p2.z - p1.z)*(tri.c.y - p1.y)-(p2.y - p1.y)*(tri.c.z - p1.z) > 0){
+      //printf("OUTSIDE!\n");
+      nOutside++;
+      inside[2] = 0;
+    }
+  } else{
+    if((p2.x - p1.x)*(tri.a.y - p1.y)-(p2.y - p1.y)*(tri.a.x - p1.x) > 0){
+      nOutside++;
+      inside[0] = 0;
+    }
+    if((p2.x - p1.x)*(tri.b.y - p1.y)-(p2.y - p1.y)*(tri.b.x - p1.x) > 0){
+      nOutside++;
+      inside[1] = 0;
+    }
+    if((p2.x - p1.x)*(tri.c.y - p1.y)-(p2.y - p1.y)*(tri.c.x - p1.x) > 0){
+      nOutside++;
+      inside[2] = 0;
+    }
   }
-  if((p2.x - p1.x)*(tri.b.y - p1.y)-(p2.y - p1.y)*(tri.b.x - p1.x) > 0){
-    nOutside++;
-    inside[1] = 0;
-  }
-  if((p2.x - p1.x)*(tri.c.y - p1.y)-(p2.y - p1.y)*(tri.c.x - p1.x) > 0){
-    nOutside++;
-    inside[2] = 0;
-  }
+  
 
   if(nOutside == 0){
     //do nothing, leave triangle in
@@ -368,6 +394,7 @@ bool triBehind(triangle tri){
 
 
 int main(int argc, char* argv[]){
+  int tris_rasterized = 0;
   initialize();
   int running = 1;
   int i = 0;  
@@ -379,26 +406,28 @@ int main(int argc, char* argv[]){
   object tri = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/tri.obj", 0x23D33F, 0, 0, 400, 100);
   object dog = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/dog.obj", 0x23D33F, 0, 0, 400, 100);
   object get = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/get.obj", 0x23D33F, 0, 0, 400, 100);
-  object room = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/room3.obj", 0xE3737F, 0, 100, 0, 1000);
-  object sphere = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/sphere.obj", 0xD3b3bF, 0, 100, 0, 100);
+  object room = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/room3.obj", 0xE3E428, 0, 100, 0, 1000);
+  object sphere = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/sphere.obj", 0x450FD9, 0, 100, 0, 100);
   
   objects[nObj++] = room;
   objects[nObj++] = cube;
   objects[nObj++] = monkey;
   //objects[nObj++] = tri;
   //objects[nObj++] = dog;
-  //bjects[nObj++] = get;
+  //objects[nObj++] = get;
   //objects[nObj++] = teapot;
   //objects[nObj++] = sphere;
 
   lights = malloc(sizeof(light)*MAXLIGHT);
   lights[nLights++] = (light){(point){200.0, 200.0, 200.0}, 1000.0};
   lights[nLights++] = (light){(point){-5000.0, 100.0, 5000.0}, 3000.0};
-  //lights[nLights++] = (light){(point){0.0, -10000.0, 0.0}, 20000};
+  //lights[nLights++] = (light){(point){0.0, -10000.0, 0.0}, 6000};
 
   unsigned long totalTris = 0;
   for(int i = 0; i < nObj; i++)
     totalTris += objects[i].nFaces;
+
+  printf("All objects loaded! Total triangles: %lu\n", totalTris);
 
   tri_map* allTris = malloc(totalTris*sizeof(tri_map));
   unsigned long index = 0;
@@ -416,85 +445,97 @@ int main(int argc, char* argv[]){
 
 
     while(running){
-        clock_gettime(CLOCK_REALTIME, &t1);
-        elapsed_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec)/1000000000.0;
-        clock_gettime(CLOCK_REALTIME, &t0);
-        //printf("fps: %5u\n", (int)(1/elapsed_time));
-        //printf("fov: %5u\n", (int)calcFOV());
+      clock_gettime(CLOCK_REALTIME, &t1);
+      elapsed_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec)/1000000000.0;
+      clock_gettime(CLOCK_REALTIME, &t0);
+      printf("fps: %5u\n", (int)(1/elapsed_time));
+      //printf("fov: %5u\n", (int)calcFOV());
 
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderClear(renderer);
-        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+      SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+      SDL_RenderClear(renderer);
+      SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
 
-        //for(int j = 0; j < nObj; j++){
-          
-        //  triangle* tris = objects[j].tris;
-        //  unsigned int nFaces = objects[j].nFaces;
 
-          //sort triangles for painters algorithm
-          qsort(allTris, totalTris, sizeof(tri_map), cmpfunc);
+      //sort triangles for painters algorithm
+      qsort(allTris, totalTris, sizeof(tri_map), cmpfunc);
 
-          for(int i = 0; i < totalTris; i++){
-              triangle tri = *(allTris[i].tri);
-              triangle projected_tri = projectTriangle(tri);
-              if(triBehind(projected_tri))
-                continue;
-              if(debug){
-                printf("(%2.1lf,%2.1lf,%2.1lf) (%2.1lf,%2.1lf,%2.1lf) (%2.1lf,%2.1lf,%2.1lf)\n", projected_tri.a.x, projected_tri.a.y, projected_tri.a.z, projected_tri.b.x, projected_tri.b.y, projected_tri.b.z, projected_tri.c.x, projected_tri.c.y, projected_tri.c.z);
+      
+
+      for(int i = 0; i < totalTris; i++){
+          triangle tri = *(allTris[i].tri);
+          triangle cam_tri = toCameraBasisTriangle(tri);
+
+          //Z-clipping
+          triangle* clipped_tris_z = malloc(2*sizeof(triangle));
+          clipped_tris_z[0] = cam_tri;
+          unsigned int nTrisZ = 1;
+          clipEdge((point){0,0,camera_dist/2} , (point){WIDTH,HEIGHT,camera_dist/2}, &clipped_tris_z, &nTrisZ, 0);
+
+          for(int j = 0; j < nTrisZ; j++){
+            //triangle projected_tri = projectTriangle(cam_tri);
+            triangle projected_tri = projectTriangle(clipped_tris_z[j]);            
+            if(triBehind(projected_tri))
+              continue;
+            if(debug){
+              printf("(%2.1lf,%2.1lf,%2.1lf) (%2.1lf,%2.1lf,%2.1lf) (%2.1lf,%2.1lf,%2.1lf)\n", projected_tri.a.x, projected_tri.a.y, projected_tri.a.z, projected_tri.b.x, projected_tri.b.y, projected_tri.b.z, projected_tri.c.x, projected_tri.c.y, projected_tri.c.z);
+            }
+            point projected_normal = calcNormal(projected_tri);
+            projected_normal = normalizeVector(projected_normal);
+
+            //check if behind camera.
+            point center = calcCenter(projected_tri);
+            if(center.z < camera_dist/10)
+              continue;
+
+            //Check normal (backface culling)
+            if(projected_normal.z > 0){
+              
+              point world_normal = normalizeVector(calcNormal(tri));
+              
+
+              double lightness = 0.0;
+              for(int i = 0; i < nLights; i++){
+                point light_direction = normalizeVector(subtractPoints(calcCenter(tri), lights[i].p));
+                double light_dist = vectorLength(subtractPoints(calcCenter(tri), lights[i].p));
+                double partial_light = (lights[i].intensity/pow(light_dist, 1.1))*dotProduct(world_normal, light_direction);
+                partial_light = partial_light < 0 ? 0 : partial_light;
+                lightness += partial_light;
               }
-              point projected_normal = calcNormal(projected_tri);
-              projected_normal = normalizeVector(projected_normal);
+              unsigned int color = colorLightness(lightness, tri.color);
+              
+              
+              //CLIPPING
+              unsigned int nTris = 1;
+              triangle* clipped_tris = malloc(16*sizeof(triangle));
+              clipped_tris[0] = projected_tri;
+              //clipTriangle(&clipped_tris, &nTris);
 
-              //check if behind camera.
-              point center = calcCenter(projected_tri);
-              if(center.z < camera_dist/10)
-                continue;
-
-              //Check normal (backface culling)
-              if(projected_normal.z > 0){
-                
-                point world_normal = normalizeVector(calcNormal(tri));
-                
-
-                double lightness = 0.0;
-                for(int i = 0; i < nLights; i++){
-                  point light_direction = normalizeVector(subtractPoints(calcCenter(tri), lights[i].p));
-                  double light_dist = vectorLength(subtractPoints(calcCenter(tri), lights[i].p));
-                  double partial_light = (lights[i].intensity/pow(light_dist, 1.1))*dotProduct(world_normal, light_direction);
-                  partial_light = partial_light < 0 ? 0 : partial_light;
-                  lightness += partial_light;
+              //RENDERING
+              for(int i = 0; i < nTris; i++){
+                if(!wireframe){
+                  SDL_SetRenderDrawColor(renderer, 0x0000FF&color>>16, (0x00FF00&color)>>8, 0x0000FF&color, 255);
+                  tris_rasterized++;
+                  rasterizeTriangle(renderer, clipped_tris[i]);
+                } else{
+                  SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
+                  triangle scaledTri = (triangle){
+                      {clipped_tris[i].a.x*resScale, clipped_tris[i].a.y*resScale, clipped_tris[i].a.z},
+                      {clipped_tris[i].b.x*resScale, clipped_tris[i].b.y*resScale, clipped_tris[i].b.z},
+                      {clipped_tris[i].c.x*resScale, clipped_tris[i].c.y*resScale, clipped_tris[i].c.z},
+                      clipped_tris[i].color
+                  };
+                  drawTriangle(renderer, scaledTri);
                 }
-                unsigned int color = colorLightness(lightness, tri.color);
-                
-                
-                //CLIPPING
-                unsigned int nTris = 1;
-                triangle* clipped_tris = malloc(16*sizeof(triangle));
-                clipped_tris[0] = projected_tri;
-                clipTriangle(&clipped_tris, &nTris);
-
-                //RENDERING
-                for(int i = 0; i < nTris; i++){
-                  if(!wireframe){
-                    SDL_SetRenderDrawColor(renderer, 0x0000FF&color>>16, (0x00FF00&color)>>8, 0x0000FF&color, 255);
-                    rasterizeTriangle(renderer, clipped_tris[i]);
-                  } else{
-                    SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
-                    triangle scaledTri = (triangle){
-                        {clipped_tris[i].a.x*resScale, clipped_tris[i].a.y*resScale, clipped_tris[i].a.z},
-                        {clipped_tris[i].b.x*resScale, clipped_tris[i].b.y*resScale, clipped_tris[i].b.z},
-                        {clipped_tris[i].c.x*resScale, clipped_tris[i].c.y*resScale, clipped_tris[i].c.z},
-                        clipped_tris[i].color
-                    };
-                    drawTriangle(renderer, scaledTri);
-                  }
-                }
-                free(clipped_tris);
               }
+              free(clipped_tris);
+            }
           }
-        //}
+          free(clipped_tris_z);
+        }
         //SWITCH BUFFERS          
         SDL_RenderPresent(renderer);
+        //printf("triangles rasterized: %d\n", tris_rasterized);
+        tris_rasterized = 0;
 
         
         //HANDLE INPUT
@@ -514,8 +555,8 @@ int main(int argc, char* argv[]){
                 if(evt.motion.x != WIDTH*resScale/2 && evt.motion.y != HEIGHT*resScale/2){
                     int dx = evt.motion.xrel;
                     int dy = evt.motion.yrel;
-                    yawCamera((double)dx/100);
-                    pitchCamera((double)dy/100);
+                    yawCamera((double)dx/30000/elapsed_time);
+                    pitchCamera((double)dy/30000/elapsed_time);
                 }
             }
         }
@@ -545,7 +586,7 @@ int main(int argc, char* argv[]){
         }if(keystates[SDL_SCANCODE_K]){//k
             camera_dist-= 2*elapsed_time*TIME_CONST;
         }if(keystates[SDL_SCANCODE_O]){//o
-          for(int j = 0; j < nObj; j++){
+          for(int j = 1; j < nObj; j++){
             triangle* tris = objects[j].tris;
             for(int i = 0; i < objects[j].nFaces; i++){
               tris[i] = rotateTriX(tris[i], 0.007, 0, 0, 300);

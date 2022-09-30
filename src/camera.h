@@ -20,6 +20,8 @@ void movCamera(double distX, double distY, double distZ);
 
 point toCameraBasis(point p);
 
+triangle toCameraBasisTriangle(triangle tri);
+
 triangle projectTriangle(triangle tri);
 
 #endif

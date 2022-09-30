@@ -1,0 +1,241 @@
+Flat profile:
+
+Each sample counts as 0.01 seconds.
+  %   cumulative   self              self     total           
+ time   seconds   seconds    calls  us/call  us/call  name    
+ 57.72      1.87     1.87  1554616     1.20     1.24  rasterizeTriangle
+ 15.74      2.38     0.51                             cmpfunc
+  6.48      2.59     0.21                             main
+  4.63      2.74     0.15 42826844     0.00     0.00  calcCenter
+  3.40      2.85     0.11  8905416     0.01     0.01  toCameraBasis
+  2.78      2.94     0.09 40899996     0.00     0.00  subtractPoints
+  1.85      3.00     0.06  6590696     0.01     0.01  normalizeVector
+  1.54      3.05     0.05  4663848     0.01     0.01  sortPoints
+  1.54      3.10     0.05  3481464     0.01     0.01  calcNormal
+  1.23      3.14     0.04 37790764     0.00     0.00  vectorLength
+  1.23      3.18     0.04  2968472     0.01     0.01  projectTriangle
+  0.93      3.21     0.03  2968472     0.01     0.05  toCameraBasisTriangle
+  0.62      3.23     0.02                             _init
+  0.31      3.24     0.01  2968472     0.00     0.00  triBehind
+  0.00      3.24     0.00  3109232     0.00     0.00  dotProduct
+  0.00      3.24     0.00  1554616     0.00     0.00  colorLightness
+  0.00      3.24     0.00        8     0.00     0.00  loadOBJ
+  0.00      3.24     0.00        1     0.00     0.00  initialize
+  0.00      3.24     0.00        1     0.00     0.00  terminate
+
+ %         the percentage of the total running time of the
+time       program used by this function.
+
+cumulative a running sum of the number of seconds accounted
+ seconds   for by this function and those listed above it.
+
+ self      the number of seconds accounted for by this
+seconds    function alone.  This is the major sort for this
+           listing.
+
+calls      the number of times this function was invoked, if
+           this function is profiled, else blank.
+
+ self      the average number of milliseconds spent in this
+ms/call    function per call, if this function is profiled,
+	   else blank.
+
+ total     the average number of milliseconds spent in this
+ms/call    function and its descendents per call, if this
+	   function is profiled, else blank.
+
+name       the name of the function.  This is the minor sort
+           for this listing. The index shows the location of
+	   the function in the gprof listing. If the index is
+	   in parenthesis it shows where it would appear in
+	   the gprof listing if it were to be printed.
+
+Copyright (C) 2012-2022 Free Software Foundation, Inc.
+
+Copying and distribution of this file, with or without modification,
+are permitted in any medium without royalty provided the copyright
+notice and this notice are preserved.
+
+		     Call graph (explanation follows)
+
+
+granularity: each sample hit covers 4 byte(s) for 0.31% of 3.24 seconds
+
+index % time    self  children    called     name
+                                                 <spontaneous>
+[1]     76.4    0.21    2.27                 main [1]
+                1.87    0.05 1554616/1554616     rasterizeTriangle [2]
+                0.03    0.11 2968472/2968472     toCameraBasisTriangle [5]
+                0.06    0.00 6590696/6590696     normalizeVector [8]
+                0.05    0.00 3481464/3481464     calcNormal [10]
+                0.04    0.00 2968472/2968472     projectTriangle [12]
+                0.03    0.00 8145312/42826844     calcCenter [4]
+                0.01    0.00 6218464/40899996     subtractPoints [7]
+                0.01    0.00 2968472/2968472     triBehind [14]
+                0.00    0.00 3109232/37790764     vectorLength [11]
+                0.00    0.00 3109232/3109232     dotProduct [15]
+                0.00    0.00 1554616/1554616     colorLightness [16]
+                0.00    0.00       8/8           loadOBJ [17]
+                0.00    0.00       1/1           initialize [18]
+                0.00    0.00       1/1           terminate [19]
+-----------------------------------------------
+                1.87    0.05 1554616/1554616     main [1]
+[2]     59.3    1.87    0.05 1554616         rasterizeTriangle [2]
+                0.05    0.00 4663848/4663848     sortPoints [9]
+-----------------------------------------------
+                                                 <spontaneous>
+[3]     23.0    0.51    0.23                 cmpfunc [3]
+                0.12    0.00 34681532/42826844     calcCenter [4]
+                0.08    0.00 34681532/40899996     subtractPoints [7]
+                0.04    0.00 34681532/37790764     vectorLength [11]
+-----------------------------------------------
+                0.03    0.00 8145312/42826844     main [1]
+                0.12    0.00 34681532/42826844     cmpfunc [3]
+[4]      4.6    0.15    0.00 42826844         calcCenter [4]
+-----------------------------------------------
+                0.03    0.11 2968472/2968472     main [1]
+[5]      4.3    0.03    0.11 2968472         toCameraBasisTriangle [5]
+                0.11    0.00 8905416/8905416     toCameraBasis [6]
+-----------------------------------------------
+                0.11    0.00 8905416/8905416     toCameraBasisTriangle [5]
+[6]      3.4    0.11    0.00 8905416         toCameraBasis [6]
+-----------------------------------------------
+                0.01    0.00 6218464/40899996     main [1]
+                0.08    0.00 34681532/40899996     cmpfunc [3]
+[7]      2.8    0.09    0.00 40899996         subtractPoints [7]
+-----------------------------------------------
+                0.06    0.00 6590696/6590696     main [1]
+[8]      1.9    0.06    0.00 6590696         normalizeVector [8]
+-----------------------------------------------
+                0.05    0.00 4663848/4663848     rasterizeTriangle [2]
+[9]      1.5    0.05    0.00 4663848         sortPoints [9]
+-----------------------------------------------
+                0.05    0.00 3481464/3481464     main [1]
+[10]     1.5    0.05    0.00 3481464         calcNormal [10]
+-----------------------------------------------
+                0.00    0.00 3109232/37790764     main [1]
+                0.04    0.00 34681532/37790764     cmpfunc [3]
+[11]     1.2    0.04    0.00 37790764         vectorLength [11]
+-----------------------------------------------
+                0.04    0.00 2968472/2968472     main [1]
+[12]     1.2    0.04    0.00 2968472         projectTriangle [12]
+-----------------------------------------------
+                                                 <spontaneous>
+[13]     0.6    0.02    0.00                 _init [13]
+-----------------------------------------------
+                0.01    0.00 2968472/2968472     main [1]
+[14]     0.3    0.01    0.00 2968472         triBehind [14]
+-----------------------------------------------
+                0.00    0.00 3109232/3109232     main [1]
+[15]     0.0    0.00    0.00 3109232         dotProduct [15]
+-----------------------------------------------
+                0.00    0.00 1554616/1554616     main [1]
+[16]     0.0    0.00    0.00 1554616         colorLightness [16]
+-----------------------------------------------
+                0.00    0.00       8/8           main [1]
+[17]     0.0    0.00    0.00       8         loadOBJ [17]
+-----------------------------------------------
+                0.00    0.00       1/1           main [1]
+[18]     0.0    0.00    0.00       1         initialize [18]
+-----------------------------------------------
+                0.00    0.00       1/1           main [1]
+[19]     0.0    0.00    0.00       1         terminate [19]
+-----------------------------------------------
+
+ This table describes the call tree of the program, and was sorted by
+ the total amount of time spent in each function and its children.
+
+ Each entry in this table consists of several lines.  The line with the
+ index number at the left hand margin lists the current function.
+ The lines above it list the functions that called this function,
+ and the lines below it list the functions this one called.
+ This line lists:
+     index	A unique number given to each element of the table.
+		Index numbers are sorted numerically.
+		The index number is printed next to every function name so
+		it is easier to look up where the function is in the table.
+
+     % time	This is the percentage of the `total' time that was spent
+		in this function and its children.  Note that due to
+		different viewpoints, functions excluded by options, etc,
+		these numbers will NOT add up to 100%.
+
+     self	This is the total amount of time spent in this function.
+
+     children	This is the total amount of time propagated into this
+		function by its children.
+
+     called	This is the number of times the function was called.
+		If the function called itself recursively, the number
+		only includes non-recursive calls, and is followed by
+		a `+' and the number of recursive calls.
+
+     name	The name of the current function.  The index number is
+		printed after it.  If the function is a member of a
+		cycle, the cycle number is printed between the
+		function's name and the index number.
+
+
+ For the function's parents, the fields have the following meanings:
+
+     self	This is the amount of time that was propagated directly
+		from the function into this parent.
+
+     children	This is the amount of time that was propagated from
+		the function's children into this parent.
+
+     called	This is the number of times this parent called the
+		function `/' the total number of times the function
+		was called.  Recursive calls to the function are not
+		included in the number after the `/'.
+
+     name	This is the name of the parent.  The parent's index
+		number is printed after it.  If the parent is a
+		member of a cycle, the cycle number is printed between
+		the name and the index number.
+
+ If the parents of the function cannot be determined, the word
+ `<spontaneous>' is printed in the `name' field, and all the other
+ fields are blank.
+
+ For the function's children, the fields have the following meanings:
+
+     self	This is the amount of time that was propagated directly
+		from the child into the function.
+
+     children	This is the amount of time that was propagated from the
+		child's children to the function.
+
+     called	This is the number of times the function called
+		this child `/' the total number of times the child
+		was called.  Recursive calls by the child are not
+		listed in the number after the `/'.
+
+     name	This is the name of the child.  The child's index
+		number is printed after it.  If the child is a
+		member of a cycle, the cycle number is printed
+		between the name and the index number.
+
+ If there are any cycles (circles) in the call graph, there is an
+ entry for the cycle-as-a-whole.  This entry shows who called the
+ cycle (as parents) and the members of the cycle (as children.)
+ The `+' recursive calls entry shows the number of function calls that
+ were internal to the cycle, and the calls entry for each member shows,
+ for that member, how many times it was called from other members of
+ the cycle.
+
+Copyright (C) 2012-2022 Free Software Foundation, Inc.
+
+Copying and distribution of this file, with or without modification,
+are permitted in any medium without royalty provided the copyright
+notice and this notice are preserved.
+
+Index by function name
+
+  [13] _init                  [17] loadOBJ                [19] terminate
+   [4] calcCenter              [1] main                    [6] toCameraBasis
+  [10] calcNormal              [8] normalizeVector         [5] toCameraBasisTriangle
+   [3] cmpfunc                [12] projectTriangle        [14] triBehind
+  [16] colorLightness          [2] rasterizeTriangle      [11] vectorLength
+  [15] dotProduct              [9] sortPoints
+  [18] initialize              [7] subtractPoints

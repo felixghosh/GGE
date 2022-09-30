@@ -1,13 +1,13 @@
 default:
-	gcc -O3 src/sdl2.c src/lin_alg.c src/camera.c -lm -lpthread -lSDL2
+	gcc -O3 src/sdl2.c src/lin_alg.c src/camera.c -lm -lpthread -lSDL2 -lSDL2_ttf
 	./a.out
 
 debug:
-	gcc -g src/sdl2.c src/lin_alg.c src/camera.c -lm -lpthread -lSDL2
+	gcc -g src/sdl2.c src/lin_alg.c src/camera.c -lm -lpthread -lSDL2 -lSDL2_ttf
 	./a.out
 
 prof:
-	gcc -pg src/sdl2.c src/lin_alg.c src/camera.c -lm -lpthread -lSDL2
+	gcc -pg src/sdl2.c src/lin_alg.c src/camera.c -lm -lpthread -lSDL2 -lSDL2_ttf
 	./a.out
 
 x11:

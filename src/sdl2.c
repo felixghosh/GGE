@@ -1,4 +1,5 @@
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -121,6 +122,10 @@ void initialize(){
         SDL_SetWindowMouseGrab(screen, SDL_TRUE);
         SDL_SetRelativeMouseMode(SDL_TRUE);
         SDL_ShowCursor(SDL_DISABLE);
+
+        if(TTF_Init() == -1){
+          printf("TTF could not be initialized!\n");
+        }
 }
 
 void terminate(){
@@ -257,6 +262,29 @@ object loadOBJ(const char* filePath, unsigned int color, double x, double y, dou
   free(buf);
   object obj = {tris, nFaces};
   return obj;
+}
+
+void drawText(SDL_Renderer* renderer, const char* message, int x, int y, int width, int height, unsigned int color, int pt){
+  TTF_Font* font = TTF_OpenFont("fonts/TerminusTTF-4.49.2.ttf", pt*resScale);
+  if(font == NULL){
+    printf("FONT COULD NOT BE LOADED!\n");
+    exit(1);
+  }
+  SDL_Color text_color = {(0xFF0000&color)>>16, (0x00FF00&color)>>8, 0x0000FF&color, 0xFF};
+  SDL_Surface* surfaceMessage = TTF_RenderText_Solid(font, message, text_color);
+  SDL_Texture* Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage); 
+
+  SDL_Rect Message_rect;
+  Message_rect.x = x*resScale;
+  Message_rect.y = y*resScale;
+  Message_rect.w = width*resScale; 
+  Message_rect.h = height*resScale;
+
+  SDL_RenderCopy(renderer, Message, NULL, &Message_rect);
+
+  SDL_FreeSurface(surfaceMessage);
+  SDL_DestroyTexture(Message);
+  TTF_CloseFont(font);
 }
 
 point calcIntersect(point p0, point p1, char axis, unsigned int value){
@@ -404,11 +432,11 @@ int main(int argc, char* argv[]){
   object sphere = loadOBJ("/home/felixghosh/prog/c/GGE/OBJ/sphere.obj", 0xD3b3bF, 0, 100, 0, 100);
   
   objects[nObj++] = room;
-  objects[nObj++] = cube;
-  objects[nObj++] = monkey;
+  //objects[nObj++] = cube;
+  //objects[nObj++] = monkey;
   //objects[nObj++] = tri;
   //objects[nObj++] = dog;
-  //bjects[nObj++] = get;
+  objects[nObj++] = get;
   //objects[nObj++] = teapot;
   //objects[nObj++] = sphere;
 
@@ -432,6 +460,7 @@ int main(int argc, char* argv[]){
     printf("ERROR INDEX DOESNT MATCH TOTALTRIS!\nindex %lu, totalTris %lu\n", index, totalTris);
     exit(1);
   }
+  printf("All objects loaded. Total triangles: %lu \n", totalTris);
 
   clock_gettime(CLOCK_REALTIME, &t0);
 
@@ -440,7 +469,7 @@ int main(int argc, char* argv[]){
         clock_gettime(CLOCK_REALTIME, &t1);
         elapsed_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec)/1000000000.0;
         clock_gettime(CLOCK_REALTIME, &t0);
-        printf("fps: %5u\n", (int)(1/elapsed_time));
+        //printf("fps: %5u\n", (int)(1/elapsed_time));
         //printf("fov: %5u\n", (int)calcFOV());
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -458,7 +487,7 @@ int main(int argc, char* argv[]){
           triangle* clipped_tris_z = malloc(2*sizeof(triangle));
           clipped_tris_z[0] = cam_tri;
           unsigned int nTrisZ = 1;
-          clipEdge((point){0,0,camera_dist} , (point){WIDTH,HEIGHT,camera_dist}, &clipped_tris_z, &nTrisZ, 0, 'z');
+          clipEdge((point){0,0,camera_dist/3} , (point){WIDTH,HEIGHT,camera_dist/3}, &clipped_tris_z, &nTrisZ, 0, 'z');
 
           for(int j = 0; j < nTrisZ; j++){
             triangle projected_tri = projectTriangle(clipped_tris_z[j]);
@@ -513,7 +542,9 @@ int main(int argc, char* argv[]){
           }
           free(clipped_tris_z);
         }
-        //}
+
+        drawText(renderer, "GGE v0.0.1", WIDTH-65, HEIGHT-20, 60, 16, 0xFFFFFF, 12);
+
         //SWITCH BUFFERS          
         SDL_RenderPresent(renderer);
 
@@ -566,7 +597,7 @@ int main(int argc, char* argv[]){
         }if(keystates[SDL_SCANCODE_K]){//k
             camera_dist-= 2*elapsed_time*TIME_CONST;
         }if(keystates[SDL_SCANCODE_O]){//o
-          for(int j = 0; j < nObj; j++){
+          for(int j = 1; j < nObj; j++){
             triangle* tris = objects[j].tris;
             for(int i = 0; i < objects[j].nFaces; i++){
               tris[i] = rotateTriX(tris[i], 0.007, 0, 0, 300);

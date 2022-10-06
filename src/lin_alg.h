@@ -14,15 +14,7 @@ typedef struct triangle{
   unsigned int color;
 } triangle;
 
-typedef struct object{
-  triangle* tris;
-  unsigned int nFaces;
-} object;
 
-typedef struct tri_map{
-  triangle* tri;
-  object* obj;
-} tri_map;
 
 point translatePoint(point p, double x, double y, double z);
 

@@ -1,0 +1,15 @@
+Fully hand written 3D rendering-engine in C
+rasterization using the "scanline" technique
+linear algebra library
+space transformation (world/view)
+2d screen projection
+fully functional 3D camera
+Adjustable FOV
+Programatic resolution-scaling
+Depth checking with painter's algorithm
+Wireframe rendering
+Backface culling
+User input through keyboard/mouse
+Support for loading in OBJ-files
+Triangle clipping
+Basic diffuse lighting (flat shaded)

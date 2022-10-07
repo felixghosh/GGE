@@ -1,10 +1,14 @@
-#include "game.h"
+#include "engine.h"
 
 object* objects;
 unsigned int nObj = 0;
 
 light* lights;
 unsigned int nLights = 0;
+
+unsigned long totalTris;
+
+tri_map* allTris;
 
 double speed = 10.0;
 double speed_fast = 30.0;
@@ -14,11 +18,10 @@ bool wireframe = false;
 
 bool debug = false;
 
-int run_game(){
-  int running = 1;
-  int i = 0;  
+int running;
 
-  objects = malloc(MAXOBJ*sizeof(object));
+void load_objects(){
+objects = malloc(MAXOBJ*sizeof(object));
   object teapot = loadOBJ("OBJ/teapot.obj", 0xDF2332, 0, 0, 300, 100);
   object cube = loadOBJ("OBJ/cube.obj", 0x23DF32, 0, 0, 400, 100);
   object monkey = loadOBJ("OBJ/monkey.obj", 0x2323DF, 0, -300, 400, 100);
@@ -37,16 +40,11 @@ int run_game(){
   //objects[nObj++] = teapot;
   //objects[nObj++] = sphere;
 
-  lights = malloc(sizeof(light)*MAXLIGHT);
-  lights[nLights++] = (light){(point){200.0, 200.0, -700.0}, 1000.0};
-  lights[nLights++] = (light){(point){-5000.0, 100.0, 5000.0}, 3000.0};
-  //lights[nLights++] = (light){(point){0.0, -10000.0, 0.0}, 20000};
-
-  unsigned long totalTris = 0;
+  totalTris = 0;
   for(int i = 0; i < nObj; i++)
     totalTris += objects[i].nFaces;
 
-  tri_map* allTris = malloc(totalTris*sizeof(tri_map));
+  allTris = malloc(totalTris*sizeof(tri_map));
   unsigned long index = 0;
   for(int i = 0; i < nObj; i++){
     for(int j = 0; j < objects[i].nFaces; j++){
@@ -58,18 +56,94 @@ int run_game(){
     exit(1);
   }
   printf("All objects loaded. Total triangles: %lu \n", totalTris);
+}
 
+void load_lights(){
+  lights = malloc(sizeof(light)*MAXLIGHT);
+  lights[nLights++] = (light){(point){200.0, 200.0, -700.0}, 1000.0};
+  lights[nLights++] = (light){(point){-5000.0, 100.0, 5000.0}, 3000.0};
+  //lights[nLights++] = (light){(point){0.0, -10000.0, 0.0}, 20000};
+}
+
+void update_time(){
+  clock_gettime(CLOCK_REALTIME, &t1);
+  elapsed_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec)/1000000000.0;
   clock_gettime(CLOCK_REALTIME, &t0);
+}
 
+void handle_input(){
+  const Uint8* keystates = SDL_GetKeyboardState(NULL);
+        
+  while(SDL_PollEvent(&evt)){
+    if(evt.type == SDL_KEYDOWN){
+      int keypressed = evt.key.keysym.sym;
+      if (keypressed == SDLK_ESCAPE){
+          running = 0;
+      } else if(keypressed == SDLK_l){//l
+          wireframe = !wireframe;
+      } else if(keypressed == SDLK_i){//i
+          debug = !debug;
+      }
+    }else if(evt.type == SDL_MOUSEMOTION){
+      if(evt.motion.x != WIDTH*resScale/2 && evt.motion.y != HEIGHT*resScale/2){
+        int dx = evt.motion.xrel;
+        int dy = evt.motion.yrel;
+        yawCamera((double)dx/100);
+        pitchCamera((double)dy/100);
+      }
+    }
+  }
 
-    while(running){
-        clock_gettime(CLOCK_REALTIME, &t1);
-        elapsed_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec)/1000000000.0;
-        clock_gettime(CLOCK_REALTIME, &t0);
-        //printf("fps: %5u\n", (int)(1/elapsed_time));
-        //printf("fov: %5u\n", (int)calcFOV());
+  if(keystates[SDL_SCANCODE_W]){ //w
+      movCamera(0.0, 0.0, speed);
+  }if(keystates[SDL_SCANCODE_A]){//a
+      movCamera(-speed, 0.0, 0.0);
+  }if(keystates[SDL_SCANCODE_S]){//s
+      movCamera(0.0, 0.0, -speed);
+  }if(keystates[SDL_SCANCODE_D]){//d
+      movCamera(speed, 0.0, 0.0);
+  }if(keystates[SDL_SCANCODE_R]){//r
+      movCamera(0.0, -speed, 0.0);
+  }if(keystates[SDL_SCANCODE_F]){//f
+      movCamera(0.0, speed, 0.0);
+  }if(keystates[SDL_SCANCODE_Q]){//q
+      yawCamera(-0.01);
+  }if(keystates[SDL_SCANCODE_E]){//e
+      yawCamera(0.01);
+  }if(keystates[SDL_SCANCODE_G]){//g
+      pitchCamera(0.01);
+  }if(keystates[SDL_SCANCODE_T]){//t
+      pitchCamera(-0.01);
+  }if(keystates[SDL_SCANCODE_J]){//j
+      camera_dist+= 2*elapsed_time*TIME_CONST;
+  }if(keystates[SDL_SCANCODE_K]){//k
+      camera_dist-= 2*elapsed_time*TIME_CONST;
+  }if(keystates[SDL_SCANCODE_O]){//o
+    for(int j = 1; j < nObj; j++){
+      triangle* tris = objects[j].tris;
+      for(int i = 0; i < objects[j].nFaces; i++){
+        tris[i] = rotateTriX(tris[i], 0.007, 0, 0, 300);
+        tris[i] = rotateTriY(tris[i], 0.013, 0, 0, 300);
+        tris[i] = rotateTriZ(tris[i], 0.003, 0, 0, 300);
+      }
+    }
+  }if(keystates[SDL_SCANCODE_U]){//u
+    lights[0].p.z += 30;
+  }if(keystates[SDL_SCANCODE_Y]){//y
+    lights[0].p.z -= 30;
+  }if(keystates[SDL_SCANCODE_LSHIFT]){
+    speed = speed_fast;
+  }else{
+    speed = speed_slow;
+  }
+}
 
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+void update_game_logic(){
+
+}
+
+void render_scene(){
+  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
         SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
 
@@ -144,87 +218,37 @@ int run_game(){
 
         //SWITCH BUFFERS          
         SDL_RenderPresent(renderer);
+}
 
-        
-        //HANDLE INPUT
-        const Uint8* keystates = SDL_GetKeyboardState(NULL);
-        
-        while(SDL_PollEvent(&evt)){
-            if(evt.type == SDL_KEYDOWN){
-                int keypressed = evt.key.keysym.sym;
-                if (keypressed == SDLK_ESCAPE){
-                    running = 0;
-                } else if(keypressed == SDLK_l){//l
-                    wireframe = !wireframe;
-                } else if(keypressed == SDLK_i){//i
-                    debug = !debug;
-                }
-            } else if(evt.type == SDL_MOUSEMOTION){
-                if(evt.motion.x != WIDTH*resScale/2 && evt.motion.y != HEIGHT*resScale/2){
-                    int dx = evt.motion.xrel;
-                    int dy = evt.motion.yrel;
-                    yawCamera((double)dx/100);
-                    pitchCamera((double)dy/100);
-                }
-            }
-        }
-
-        if(keystates[SDL_SCANCODE_W]){ //w
-            movCamera(0.0, 0.0, speed);
-        }if(keystates[SDL_SCANCODE_A]){//a
-            movCamera(-speed, 0.0, 0.0);
-        }if(keystates[SDL_SCANCODE_S]){//s
-            movCamera(0.0, 0.0, -speed);
-        }if(keystates[SDL_SCANCODE_D]){//d
-            movCamera(speed, 0.0, 0.0);
-        }if(keystates[SDL_SCANCODE_R]){//r
-            movCamera(0.0, -speed, 0.0);
-        }if(keystates[SDL_SCANCODE_F]){//f
-            movCamera(0.0, speed, 0.0);
-        }if(keystates[SDL_SCANCODE_Q]){//q
-            yawCamera(-0.01);
-        }if(keystates[SDL_SCANCODE_E]){//e
-            yawCamera(0.01);
-        }if(keystates[SDL_SCANCODE_G]){//g
-            pitchCamera(0.01);
-        }if(keystates[SDL_SCANCODE_T]){//t
-            pitchCamera(-0.01);
-        }if(keystates[SDL_SCANCODE_J]){//j
-            camera_dist+= 2*elapsed_time*TIME_CONST;
-        }if(keystates[SDL_SCANCODE_K]){//k
-            camera_dist-= 2*elapsed_time*TIME_CONST;
-        }if(keystates[SDL_SCANCODE_O]){//o
-          for(int j = 1; j < nObj; j++){
-            triangle* tris = objects[j].tris;
-            for(int i = 0; i < objects[j].nFaces; i++){
-              tris[i] = rotateTriX(tris[i], 0.007, 0, 0, 300);
-              tris[i] = rotateTriY(tris[i], 0.013, 0, 0, 300);
-              tris[i] = rotateTriZ(tris[i], 0.003, 0, 0, 300);
-            }
-          }
-        }if(keystates[SDL_SCANCODE_U]){//u
-          lights[0].p.z += 30;
-        }if(keystates[SDL_SCANCODE_Y]){//y
-          lights[0].p.z -= 30;
-        }if(keystates[SDL_SCANCODE_LSHIFT]){
-          speed = speed_fast;
-        }else{
-          speed = speed_slow;
-        }
-
-    }
-    //PROGRAM EXIT
-    for(int j = 0; j < nObj; j++)
+void free_objects(){
+  for(int j = 0; j < nObj; j++)
       free(objects[j].tris);
     free(objects);
     free(lights);
     free(allTris);
-
 }
 
-int main(){
-    initialize();
-    run_game();
-    terminate();
+
+int main(int argc, char* argv[]){
+    initialize_engine();
+    load_objects();
+    load_lights();
+    
+    running = 1; 
+    clock_gettime(CLOCK_REALTIME, &t0); //set time t0
+
+    while(running){
+      update_time();
+      //printf("fps: %5u\n", (int)(1/elapsed_time));
+      //printf("fov: %5u\n", (int)calcFOV());
+      handle_input();
+
+      update_game_logic();
+
+      render_scene();
+    }
+
+    free_objects();
+    terminate_engine();
     return 0;
 }

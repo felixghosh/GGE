@@ -1,5 +1,5 @@
-#define WIDTH 500.0
-#define HEIGHT 350.0
+#define WIDTH 800.0
+#define HEIGHT 600.0
 #define ESC 9
 #define TIME_CONST 100
 

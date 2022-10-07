@@ -13,7 +13,7 @@
 #include "camera.h"
 #include "global.h"
 #include "light.h"
-#include "game.h"
+#include "engine.h"
 
 
 point camera_pos = {0.0, 0.0, 0.0};
@@ -33,7 +33,7 @@ struct timespec t0, t1;
 
 double elapsed_time;
 
-double resScale = 2;
+double resScale = 1;
 
 double camera_angle_y = 0.0;
 double camera_angle_x = 0.0;
@@ -95,7 +95,7 @@ void drawTriangle(SDL_Renderer* renderer, triangle tri){
   }
 }
 
-void initialize(){
+void initialize_engine(){
     if(SDL_Init(SDL_INIT_EVERYTHING) < 0)
             printf("SDL could not be initialized! %s\n", SDL_GetError());
         else
@@ -115,7 +115,7 @@ void initialize(){
         }
 }
 
-void terminate(){
+void terminate_engine(){
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(screen);
     SDL_Quit();

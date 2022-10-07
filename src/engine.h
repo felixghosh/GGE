@@ -1,5 +1,5 @@
-#ifndef GAME_H
-#define GAME_H
+#ifndef ENGINE_H
+#define ENGINE_H
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
@@ -36,6 +36,7 @@ extern SDL_Event evt;
 
 extern double resScale;
 
+
 int cmpfunc (const void * a, const void * b);
 
 double radToDeg(double rad);
@@ -46,9 +47,9 @@ unsigned int colorLightness(double value, unsigned int color);
 
 void drawTriangle(SDL_Renderer* renderer, triangle tri);
 
-void initialize();
+void initialize_engine();
 
-void terminate();
+void terminate_engine();
 
 void sortPoints(point points[], int a, int b);
 
@@ -63,7 +64,5 @@ point calcIntersect(point p0, point p1, char axis, unsigned int value);
 void clipEdge(point p1, point p2, triangle** clipped_tris, unsigned int* nTris, int index, char axis);
 
 void clipTriangle(triangle** clipped_tris, unsigned int* nTris);
-
-int run_game();
 
 #endif

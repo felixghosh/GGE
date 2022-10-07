@@ -10,6 +10,8 @@ unsigned long totalTris;
 
 tri_map* allTris;
 
+const Uint8* keystates;
+
 double speed = 10.0;
 double speed_fast = 30.0;
 double speed_slow = 10.0;
@@ -19,6 +21,45 @@ bool wireframe = false;
 bool debug = false;
 
 int running;
+
+typedef enum game_state {
+  MENU, NEW_GAME, GAME_RUNNING, GAME_OVER
+} game_state;
+
+game_state current_state;
+
+void handle_input_menu(){
+keystates = SDL_GetKeyboardState(NULL);
+        
+  while(SDL_PollEvent(&evt)){
+    if(evt.type == SDL_KEYDOWN){
+      int keypressed = evt.key.keysym.sym;
+      if (keypressed == SDLK_ESCAPE){
+          running = 0;
+      } else if(keypressed == SDLK_s){//s
+          current_state = NEW_GAME;
+      }
+    }else if(evt.type == SDL_MOUSEMOTION){
+      
+    }
+  }
+}
+
+void handle_logic_menu(){
+
+}
+
+void render_menu(){
+  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+  SDL_RenderClear(renderer);
+
+  drawText(renderer, "DASK", WIDTH/2-90, HEIGHT/2-27, 180, 54, 0xFFFFFF, 32);
+
+  drawText(renderer, "GGE v0.0.1", WIDTH-65, HEIGHT-20, 60, 16, 0xFFFFFF, 12);
+
+  //SWITCH BUFFERS          
+  SDL_RenderPresent(renderer);
+}
 
 void load_objects(){
 objects = malloc(MAXOBJ*sizeof(object));
@@ -72,13 +113,13 @@ void update_time(){
 }
 
 void handle_input(){
-  const Uint8* keystates = SDL_GetKeyboardState(NULL);
+  keystates = SDL_GetKeyboardState(NULL);
         
   while(SDL_PollEvent(&evt)){
     if(evt.type == SDL_KEYDOWN){
       int keypressed = evt.key.keysym.sym;
       if (keypressed == SDLK_ESCAPE){
-          running = 0;
+          current_state = GAME_OVER;
       } else if(keypressed == SDLK_l){//l
           wireframe = !wireframe;
       } else if(keypressed == SDLK_i){//i
@@ -144,80 +185,106 @@ void update_game_logic(){
 
 void render_scene(){
   SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderClear(renderer);
-        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+  SDL_RenderClear(renderer);
+  SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
 
-        //sort triangles for painters algorithm
-        qsort(allTris, totalTris, sizeof(tri_map), cmpfunc);
+  //sort triangles for painters algorithm
+  qsort(allTris, totalTris, sizeof(tri_map), cmpfunc);
 
-        for(int i = 0; i < totalTris; i++){
-          triangle tri = *(allTris[i].tri);
-          triangle cam_tri = toCameraBasisTriangle(tri);
+  for(int i = 0; i < totalTris; i++){
+    triangle tri = *(allTris[i].tri);
+    triangle cam_tri = toCameraBasisTriangle(tri);
 
-          //CLIPPING AGAINST CAMERA Z-PLANE
-          triangle* clipped_tris_z = malloc(2*sizeof(triangle));
-          clipped_tris_z[0] = cam_tri;
-          unsigned int nTrisZ = 1;
-          clipEdge((point){0,0,camera_dist/2} , (point){WIDTH,HEIGHT,camera_dist/2}, &clipped_tris_z, &nTrisZ, 0, 'z');
+    //CLIPPING AGAINST CAMERA Z-PLANE
+    triangle* clipped_tris_z = malloc(2*sizeof(triangle));
+    clipped_tris_z[0] = cam_tri;
+    unsigned int nTrisZ = 1;
+    clipEdge((point){0,0,camera_dist/2} , (point){WIDTH,HEIGHT,camera_dist/2}, &clipped_tris_z, &nTrisZ, 0, 'z');
 
-          for(int j = 0; j < nTrisZ; j++){
-            triangle projected_tri = projectTriangle(clipped_tris_z[j]);
-            point projected_normal = calcNormal(projected_tri);
-            projected_normal = normalizeVector(projected_normal);
+    for(int j = 0; j < nTrisZ; j++){
+      triangle projected_tri = projectTriangle(clipped_tris_z[j]);
+      point projected_normal = calcNormal(projected_tri);
+      projected_normal = normalizeVector(projected_normal);
 
-            //check if behind camera.
-            //point center = calcCenter(projected_tri);
-            //if(center.z < camera_dist/10)
-            //  continue;
-
-            //Check normal (backface culling)
-            if(projected_normal.z > 0){
-              
-              point world_normal = normalizeVector(calcNormal(tri));
-              
-              double lightness = 0.0;
-              for(int i = 0; i < nLights; i++){
-                point light_direction = normalizeVector(subtractPoints(calcCenter(tri), lights[i].p));
-                double light_dist = vectorLength(subtractPoints(calcCenter(tri), lights[i].p));
-                double partial_light = (lights[i].intensity/pow(light_dist, 1.1))*dotProduct(world_normal, light_direction);
-                partial_light = partial_light < 0 ? 0 : partial_light;
-                lightness += partial_light;
-              }
-              unsigned int color = colorLightness(lightness, tri.color);
-              
-              
-              //CLIPPING AGAINST SCREEN BORDERS
-              unsigned int nTris = 1;
-              triangle* clipped_tris = malloc(16*sizeof(triangle));
-              clipped_tris[0] = projected_tri;
-              clipTriangle(&clipped_tris, &nTris);
-
-              //RENDERING
-              for(int i = 0; i < nTris; i++){
-                if(!wireframe){
-                  SDL_SetRenderDrawColor(renderer, 0x0000FF&color>>16, (0x00FF00&color)>>8, 0x0000FF&color, 255);
-                  rasterizeTriangle(renderer, clipped_tris[i]);
-                } else{
-                  SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
-                  triangle scaledTri = (triangle){
-                      {clipped_tris[i].a.x*resScale, clipped_tris[i].a.y*resScale, clipped_tris[i].a.z},
-                      {clipped_tris[i].b.x*resScale, clipped_tris[i].b.y*resScale, clipped_tris[i].b.z},
-                      {clipped_tris[i].c.x*resScale, clipped_tris[i].c.y*resScale, clipped_tris[i].c.z},
-                      clipped_tris[i].color
-                  };
-                  drawTriangle(renderer, scaledTri);
-                }
-              }
-              free(clipped_tris);
-            }
-          }
-          free(clipped_tris_z);
+      //Check normal (backface culling)
+      if(projected_normal.z > 0){
+        
+        point world_normal = normalizeVector(calcNormal(tri));
+        
+        double lightness = 0.0;
+        for(int i = 0; i < nLights; i++){
+          point light_direction = normalizeVector(subtractPoints(calcCenter(tri), lights[i].p));
+          double light_dist = vectorLength(subtractPoints(calcCenter(tri), lights[i].p));
+          double partial_light = (lights[i].intensity/pow(light_dist, 1.1))*dotProduct(world_normal, light_direction);
+          partial_light = partial_light < 0 ? 0 : partial_light;
+          lightness += partial_light;
         }
+        unsigned int color = colorLightness(lightness, tri.color);
+        
+        
+        //CLIPPING AGAINST SCREEN BORDERS
+        unsigned int nTris = 1;
+        triangle* clipped_tris = malloc(16*sizeof(triangle));
+        clipped_tris[0] = projected_tri;
+        clipTriangle(&clipped_tris, &nTris);
 
-        drawText(renderer, "GGE v0.0.1", WIDTH-65, HEIGHT-20, 60, 16, 0xFFFFFF, 12);
+        //RENDERING
+        for(int i = 0; i < nTris; i++){
+          if(!wireframe){
+            SDL_SetRenderDrawColor(renderer, 0x0000FF&color>>16, (0x00FF00&color)>>8, 0x0000FF&color, 255);
+            rasterizeTriangle(renderer, clipped_tris[i]);
+          } else{
+            SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
+            triangle scaledTri = (triangle){
+                {clipped_tris[i].a.x*resScale, clipped_tris[i].a.y*resScale, clipped_tris[i].a.z},
+                {clipped_tris[i].b.x*resScale, clipped_tris[i].b.y*resScale, clipped_tris[i].b.z},
+                {clipped_tris[i].c.x*resScale, clipped_tris[i].c.y*resScale, clipped_tris[i].c.z},
+                clipped_tris[i].color
+            };
+            drawTriangle(renderer, scaledTri);
+          }
+        }
+        free(clipped_tris);
+      }
+    }
+    free(clipped_tris_z);
+  }
 
-        //SWITCH BUFFERS          
-        SDL_RenderPresent(renderer);
+  drawText(renderer, "GGE v0.0.1", WIDTH-65, HEIGHT-20, 60, 16, 0xFFFFFF, 12);
+
+  //SWITCH BUFFERS          
+  SDL_RenderPresent(renderer);
+}
+
+void handle_input_game_over(){
+  keystates = SDL_GetKeyboardState(NULL);
+        
+  while(SDL_PollEvent(&evt)){
+    if(evt.type == SDL_KEYDOWN){
+      int keypressed = evt.key.keysym.sym;
+      if (keypressed == SDLK_ESCAPE){
+          running = 0;
+      } 
+    }else if(evt.type == SDL_MOUSEMOTION){
+      
+    }
+  }
+}
+
+void handle_logic_game_over(){
+
+}
+
+void render_game_over(){
+  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+  SDL_RenderClear(renderer);
+
+  drawText(renderer, "GAME OVER", WIDTH/2-90, HEIGHT/2-27, 180, 54, 0xFFFFFF, 32);
+
+  drawText(renderer, "GGE v0.0.1", WIDTH-65, HEIGHT-20, 60, 16, 0xFFFFFF, 12);
+
+  //SWITCH BUFFERS          
+  SDL_RenderPresent(renderer);
 }
 
 void free_objects(){
@@ -231,24 +298,50 @@ void free_objects(){
 
 int main(int argc, char* argv[]){
     initialize_engine();
-    load_objects();
-    load_lights();
-    
-    running = 1; 
-    clock_gettime(CLOCK_REALTIME, &t0); //set time t0
+    running = 1;
+    current_state = MENU;
 
     while(running){
-      update_time();
-      //printf("fps: %5u\n", (int)(1/elapsed_time));
-      //printf("fov: %5u\n", (int)calcFOV());
-      handle_input();
+      switch(current_state){
+        case MENU:
+          
+          handle_input_menu();
+          handle_logic_menu();
+          render_menu();
+          break;
 
-      update_game_logic();
+        case NEW_GAME:
 
-      render_scene();
+          load_objects();
+          load_lights();
+           
+          clock_gettime(CLOCK_REALTIME, &t0); //set time t0
+          current_state = GAME_RUNNING;
+          break;
+
+        case GAME_RUNNING:
+
+          update_time();
+          //printf("fps: %5u\n", (int)(1/elapsed_time));
+          //printf("fov: %5u\n", (int)calcFOV());
+          handle_input();
+
+          update_game_logic();
+
+          render_scene();
+          break;
+
+        case GAME_OVER:
+          free_objects();
+          while(running){
+            handle_input_game_over();
+            handle_logic_game_over();
+            render_game_over();
+          }
+          break;
+      }
     }
 
-    free_objects();
     terminate_engine();
     return 0;
 }

@@ -5,10 +5,6 @@
 
 void yawCamera(double rad){
   rad*=elapsed_time*TIME_CONST;
-  point newBasisX = {sin(M_PI/2 + rad + camera_angle_y), 0.0, cos(M_PI/2 + rad + camera_angle_y)};
-  point newBasisZ = {sin(rad + camera_angle_y), 0.0, cos(rad + camera_angle_y)};
-  //camera_basis.a = newBasisX;
-  //camera_basis.c = newBasisZ;
   camera_angle_y += rad;
   camera_dir.x = cos(rad)*camera_dir.x + sin(rad)*camera_dir.z;
   camera_dir.z = -sin(rad)*camera_dir.x + cos(rad)*camera_dir.z;
@@ -25,12 +21,8 @@ void pitchCamera(double rad){
 
 void movCamera(double distX, double distY, double distZ){
   distZ*=elapsed_time*TIME_CONST; distX*=elapsed_time*TIME_CONST; distY*=elapsed_time*TIME_CONST;
-  camera_pos.z += cos(camera_angle_y)*distZ;
-  camera_pos.x += sin(camera_angle_y)*distZ;
-
-  camera_pos.z += cos(camera_angle_y + M_PI/2)*distX;
-  camera_pos.x += sin(camera_angle_y + M_PI/2)*distX;
-
+  camera_pos.z += cos(camera_angle_y)*distZ + cos(camera_angle_y + M_PI/2)*distX;
+  camera_pos.x += sin(camera_angle_y)*distZ + sin(camera_angle_y + M_PI/2)*distX;
   camera_pos.y += distY;
 }
 

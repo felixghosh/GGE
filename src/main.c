@@ -12,13 +12,15 @@ tri_map* allTris;
 
 const Uint8* keystates;
 
-double speed = 10.0;
-double speed_fast = 30.0;
-double speed_slow = 10.0;
+double speed = 1.0;
+double speed_fast = 3.0;
+double speed_slow = 1.0;
 
 bool wireframe = false;
 
 bool debug = false;
+
+node player;
 
 int running;
 
@@ -27,6 +29,25 @@ typedef enum game_state {
 } game_state;
 
 game_state current_state;
+
+void movePlayer(double distX, double distY, double distZ){
+  movCamera(distX, distY, distZ);
+  distZ*=elapsed_time*TIME_CONST; 
+  distX*=elapsed_time*TIME_CONST; 
+  distY*=elapsed_time*TIME_CONST;
+  player = translateNode(player, sin(camera_angle_y)*distZ + sin(camera_angle_y + M_PI/2)*distX, distY, cos(camera_angle_y)*distZ + cos(camera_angle_y + M_PI/2)*distX);
+}
+
+void yawPlayer(double rad){
+  yawCamera(rad);
+  player = rotateNodeY(player, rad, player.pos.x, player.pos.y, player.pos.z);
+}
+
+void pitchPlayer(double rad){
+  pitchCamera(rad);
+  player = rotateNodeX(player, -cos(camera_angle_y)*rad, player.pos.x, player.pos.y, player.pos.z);
+  player = rotateNodeZ(player, sin(camera_angle_y)*rad, player.pos.x, player.pos.y, player.pos.z);
+}
 
 void handle_input_menu(){
 keystates = SDL_GetKeyboardState(NULL);
@@ -63,23 +84,37 @@ void render_menu(){
 
 void load_objects(){
 objects = malloc(MAXOBJ*sizeof(object));
-  object teapot = loadOBJ("OBJ/teapot.obj", 0xDF2332, 0, 0, 300, 100);
-  object cube = loadOBJ("OBJ/cube.obj", 0x23DF32, 0, 0, 400, 100);
-  object monkey = loadOBJ("OBJ/monkey.obj", 0x2323DF, 0, -300, 400, 100);
-  object tri = loadOBJ("OBJ/tri.obj", 0x23D33F, 0, 0, 400, 100);
-  object dog = loadOBJ("OBJ/dog.obj", 0x23D33F, 0, 0, 400, 100);
-  object get = loadOBJ("OBJ/get.obj", 0x23D33F, 0, 0, 400, 100);
-  object room = loadOBJ("OBJ/room3.obj", 0xE3737F, 0, 100, 0, 1000);
-  object sphere = loadOBJ("OBJ/sphere.obj", 0xD3b3bF, 0, 100, 0, 100);
+  object teapot = loadOBJ("OBJ/teapot.obj", 0xDF2332, 0, 0, 30, 10);
+  object cube = loadOBJ("OBJ/cube.obj", 0xDF3F32, -20, -20, 20, 10);
+  object monkey = loadOBJ("OBJ/monkey.obj", 0x2323DF, 0, -30, 40, 10);
+  object tri = loadOBJ("OBJ/tri.obj", 0x23D33F, 0, 0, 40, 10);
+  object dog = loadOBJ("OBJ/dog.obj", 0x23D33F, 0, 0, 40, 10);
+  object get = loadOBJ("OBJ/get.obj", 0x23D33F, 0, 0, 40, 10);
+  object room = loadOBJ("OBJ/room3.obj", 0xE3737F, 0, 10, 0, 100);
+  object sphere = loadOBJ("OBJ/sphere.obj", 0xD3b3bF, 0, 10, 0, 10);
+  object rifle = loadOBJ("OBJ/rifle.obj", 0x636393, (WIDTH)*0.004, (HEIGHT)*0.01, 0, 10);
+  
   
   objects[nObj++] = room;
   //objects[nObj++] = cube;
+  objects[nObj++] = rifle;
   //objects[nObj++] = monkey;
   //objects[nObj++] = tri;
   //objects[nObj++] = dog;
   objects[nObj++] = get;
   //objects[nObj++] = teapot;
   //objects[nObj++] = sphere;
+
+  
+  /*node child;
+  child.nChildren = 0;
+  child.children = NULL;
+  child.obj = &objects[nObj-2];
+  child.pos = cube.pos;
+  node* children = malloc(1*sizeof(node));
+  children[0] = child;*/
+  player = (node){&objects[nObj-2], camera_pos, NULL, 0};
+
 
   totalTris = 0;
   for(int i = 0; i < nObj; i++)
@@ -101,8 +136,8 @@ objects = malloc(MAXOBJ*sizeof(object));
 
 void load_lights(){
   lights = malloc(sizeof(light)*MAXLIGHT);
-  lights[nLights++] = (light){(point){200.0, 200.0, -700.0}, 1000.0};
-  lights[nLights++] = (light){(point){-5000.0, 100.0, 5000.0}, 3000.0};
+  lights[nLights++] = (light){(point){20.0, 20.0, -70.0}, 100.0};
+  lights[nLights++] = (light){(point){-500.0, 10.0, 500.0}, 300.0};
   //lights[nLights++] = (light){(point){0.0, -10000.0, 0.0}, 20000};
 }
 
@@ -129,49 +164,46 @@ void handle_input(){
       if(evt.motion.x != WIDTH*resScale/2 && evt.motion.y != HEIGHT*resScale/2){
         int dx = evt.motion.xrel;
         int dy = evt.motion.yrel;
-        yawCamera((double)dx/100);
-        pitchCamera((double)dy/100);
+        pitchPlayer((double)dy/300);
+        yawPlayer((double)dx/300);
       }
     }
   }
 
   if(keystates[SDL_SCANCODE_W]){ //w
-      movCamera(0.0, 0.0, speed);
+      movePlayer(0.0, 0.0, speed);
   }if(keystates[SDL_SCANCODE_A]){//a
-      movCamera(-speed, 0.0, 0.0);
+      movePlayer(-speed, 0.0, 0.0);
   }if(keystates[SDL_SCANCODE_S]){//s
-      movCamera(0.0, 0.0, -speed);
+      movePlayer(0.0, 0.0, -speed);
   }if(keystates[SDL_SCANCODE_D]){//d
-      movCamera(speed, 0.0, 0.0);
+      movePlayer(speed, 0.0, 0.0);
   }if(keystates[SDL_SCANCODE_R]){//r
-      movCamera(0.0, -speed, 0.0);
+      movePlayer(0.0, -speed, 0.0);
   }if(keystates[SDL_SCANCODE_F]){//f
-      movCamera(0.0, speed, 0.0);
+      movePlayer(0.0, speed, 0.0);
   }if(keystates[SDL_SCANCODE_Q]){//q
-      yawCamera(-0.01);
+      yawPlayer(-0.01);
   }if(keystates[SDL_SCANCODE_E]){//e
-      yawCamera(0.01);
+      yawPlayer(0.01);
   }if(keystates[SDL_SCANCODE_G]){//g
-      pitchCamera(0.01);
+      pitchPlayer(0.01);
   }if(keystates[SDL_SCANCODE_T]){//t
-      pitchCamera(-0.01);
+      pitchPlayer(-0.01);
   }if(keystates[SDL_SCANCODE_J]){//j
       camera_dist+= 2*elapsed_time*TIME_CONST;
   }if(keystates[SDL_SCANCODE_K]){//k
       camera_dist-= 2*elapsed_time*TIME_CONST;
   }if(keystates[SDL_SCANCODE_O]){//o
     for(int j = 1; j < nObj; j++){
-      triangle* tris = objects[j].tris;
-      for(int i = 0; i < objects[j].nFaces; i++){
-        tris[i] = rotateTriX(tris[i], 0.007, 0, 0, 300);
-        tris[i] = rotateTriY(tris[i], 0.013, 0, 0, 300);
-        tris[i] = rotateTriZ(tris[i], 0.003, 0, 0, 300);
-      }
+      objects[j] = rotateObjectX(objects[j], 0.007, 0, 0, 300);
+      objects[j] = rotateObjectY(objects[j], 0.013, 0, 0, 300);
+      objects[j] = rotateObjectZ(objects[j], 0.003, 0, 0, 300);
     }
   }if(keystates[SDL_SCANCODE_U]){//u
-    lights[0].p.z += 30;
+    lights[0].p.z += speed_fast;
   }if(keystates[SDL_SCANCODE_Y]){//y
-    lights[0].p.z -= 30;
+    lights[0].p.z -= speed_fast;
   }if(keystates[SDL_SCANCODE_LSHIFT]){
     speed = speed_fast;
   }else{
@@ -199,7 +231,7 @@ void render_scene(){
     triangle* clipped_tris_z = malloc(2*sizeof(triangle));
     clipped_tris_z[0] = cam_tri;
     unsigned int nTrisZ = 1;
-    clipEdge((point){0,0,camera_dist/2} , (point){WIDTH,HEIGHT,camera_dist/2}, &clipped_tris_z, &nTrisZ, 0, 'z');
+    clipEdge((point){0,0,5} , (point){WIDTH,HEIGHT,5}, &clipped_tris_z, &nTrisZ, 0, 'z');
 
     for(int j = 0; j < nTrisZ; j++){
       triangle projected_tri = projectTriangle(clipped_tris_z[j]);
@@ -212,6 +244,7 @@ void render_scene(){
         point world_normal = normalizeVector(calcNormal(tri));
         
         double lightness = 0.0;
+        double ambient = 0.1;
         for(int i = 0; i < nLights; i++){
           point light_direction = normalizeVector(subtractPoints(calcCenter(tri), lights[i].p));
           double light_dist = vectorLength(subtractPoints(calcCenter(tri), lights[i].p));
@@ -219,7 +252,7 @@ void render_scene(){
           partial_light = partial_light < 0 ? 0 : partial_light;
           lightness += partial_light;
         }
-        unsigned int color = colorLightness(lightness, tri.color);
+        unsigned int color = colorLightness(lightness + ambient, tri.color);
         
         
         //CLIPPING AGAINST SCREEN BORDERS

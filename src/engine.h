@@ -24,7 +24,15 @@
 typedef struct object{
   triangle* tris;
   unsigned int nFaces;
+  point pos;
 } object;
+
+typedef struct node{
+  object* obj;
+  point pos;
+  struct node* children;
+  unsigned int nChildren;
+} node;
 
 typedef struct tri_map{
   triangle* tri;
@@ -36,6 +44,21 @@ extern SDL_Event evt;
 
 extern double resScale;
 
+object translateObject(object obj, double x, double y, double z);
+
+object rotateObjectX(object obj, double angle, double x, double y, double z);
+
+object rotateObjectY(object obj, double angle, double x, double y, double z);
+
+object rotateObjectZ(object obj, double angle, double x, double y, double z);
+
+node translateNode(node node, double x, double y, double z);
+
+node rotateNodeX(node node, double angle, double x, double y, double z);
+
+node rotateNodeY(node node, double angle, double x, double y, double z);
+
+node rotateNodeZ(node node, double angle, double x, double y, double z);
 
 int cmpfunc (const void * a, const void * b);
 

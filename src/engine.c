@@ -47,6 +47,63 @@ triangle camera_basis = { //Currently not used
 };
 
 
+object translateObject(object obj, double x, double y, double z){
+  for(int i = 0; i < obj.nFaces; i++){
+    obj.tris[i] = translateTriangle(obj.tris[i], x, y, z);
+  }
+  return obj;
+}
+
+object rotateObjectX(object obj, double angle, double x, double y, double z){
+  for(int i = 0; i < obj.nFaces; i++)
+    obj.tris[i] = rotateTriX(obj.tris[i], angle, x, y, z);
+  return obj;
+}
+
+object rotateObjectY(object obj, double angle, double x, double y, double z){
+  for(int i = 0; i < obj.nFaces; i++)
+    obj.tris[i] = rotateTriY(obj.tris[i], angle, x, y, z);
+  return obj;
+}
+
+object rotateObjectZ(object obj, double angle, double x, double y, double z){
+  for(int i = 0; i < obj.nFaces; i++)
+    obj.tris[i] = rotateTriZ(obj.tris[i], angle, x, y, z);
+  return obj;
+}
+
+node translateNode(node node, double x, double y, double z){
+  *node.obj = translateObject(*node.obj, x, y, z);
+  node.pos = translatePoint(node.pos, x, y, z);
+  for(int i = 0; i < node.nChildren; i++)
+    node.children[i] = translateNode(node.children[i], x, y, z);
+  return node;
+}
+
+node rotateNodeX(node node, double angle, double x, double y, double z){
+  *node.obj = rotateObjectX(*node.obj, angle, x, y, z);
+  node.pos = rotatePointX(node.pos, angle, x, y, z);
+  for(int i = 0; i < node.nChildren; i++)
+    node.children[i] = rotateNodeX(node.children[i], angle, x, y, z);
+  return node;
+}
+
+node rotateNodeY(node node, double angle, double x, double y, double z){
+  *node.obj = rotateObjectY(*node.obj, angle, x, y, z);
+  node.pos = rotatePointY(node.pos, angle, x, y, z);
+  for(int i = 0; i < node.nChildren; i++)
+    node.children[i] = rotateNodeY(node.children[i], angle, x, y, z);
+  return node;
+}
+
+node rotateNodeZ(node node, double angle, double x, double y, double z){
+  *node.obj = rotateObjectZ(*node.obj, angle, x, y, z);
+  node.pos = rotatePointZ(node.pos, angle, x, y, z);
+  for(int i = 0; i < node.nChildren; i++)
+    node.children[i] = rotateNodeZ(node.children[i], angle, x, y, z);
+  return node;
+}
+
 int cmpfunc (const void * a, const void * b) {
    //triangle* pa = (triangle*)a;
    //triangle* pb = (triangle*)b;
@@ -247,7 +304,7 @@ object loadOBJ(const char* filePath, unsigned int color, double x, double y, dou
       };
   }
   free(buf);
-  object obj = {tris, nFaces};
+  object obj = {tris, nFaces, (point){x,y,z}};
   return obj;
 }
 

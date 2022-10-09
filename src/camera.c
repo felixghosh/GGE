@@ -4,14 +4,12 @@
 #include <math.h>
 
 void yawCamera(double rad){
-  rad*=elapsed_time*TIME_CONST;
   camera_angle_y += rad;
   camera_dir.x = cos(rad)*camera_dir.x + sin(rad)*camera_dir.z;
   camera_dir.z = -sin(rad)*camera_dir.x + cos(rad)*camera_dir.z;
 }
 
 void pitchCamera(double rad){
-  rad*=elapsed_time*TIME_CONST;
   if(camera_angle_x - rad > -M_PI/2 && camera_angle_x - rad < M_PI/2)
     camera_angle_x -= rad;
   camera_dir.y = cos(rad)*camera_dir.y - sin(rad)*camera_dir.z;
@@ -20,7 +18,6 @@ void pitchCamera(double rad){
 
 
 void movCamera(double distX, double distY, double distZ){
-  distZ*=elapsed_time*TIME_CONST; distX*=elapsed_time*TIME_CONST; distY*=elapsed_time*TIME_CONST;
   camera_pos.z += cos(camera_angle_y)*distZ + cos(camera_angle_y + M_PI/2)*distX;
   camera_pos.x += sin(camera_angle_y)*distZ + sin(camera_angle_y + M_PI/2)*distX;
   camera_pos.y += distY;

@@ -12,9 +12,10 @@ tri_map* allTris;
 
 const Uint8* keystates;
 
-double speed = 1.0;
-double speed_fast = 3.0;
-double speed_slow = 1.0;
+
+double speed_fast = 5.0;
+double speed_slow = 2.0;
+double speed = 2.0;
 
 bool wireframe = false;
 
@@ -32,9 +33,6 @@ game_state current_state;
 
 void movePlayer(double distX, double distY, double distZ){
   movCamera(distX, distY, distZ);
-  distZ*=elapsed_time*TIME_CONST; 
-  distX*=elapsed_time*TIME_CONST; 
-  distY*=elapsed_time*TIME_CONST;
   player = translateNode(player, sin(camera_angle_y)*distZ + sin(camera_angle_y + M_PI/2)*distX, distY, cos(camera_angle_y)*distZ + cos(camera_angle_y + M_PI/2)*distX);
 }
 
@@ -171,39 +169,39 @@ void handle_input(){
   }
 
   if(keystates[SDL_SCANCODE_W]){ //w
-      movePlayer(0.0, 0.0, speed);
+      movePlayer(0.0, 0.0, speed*elapsed_time*TIME_CONST);
   }if(keystates[SDL_SCANCODE_A]){//a
-      movePlayer(-speed, 0.0, 0.0);
+      movePlayer(-speed*elapsed_time*TIME_CONST, 0.0, 0.0);
   }if(keystates[SDL_SCANCODE_S]){//s
-      movePlayer(0.0, 0.0, -speed);
+      movePlayer(0.0, 0.0, -speed*elapsed_time*TIME_CONST);
   }if(keystates[SDL_SCANCODE_D]){//d
-      movePlayer(speed, 0.0, 0.0);
+      movePlayer(speed*elapsed_time*TIME_CONST, 0.0, 0.0);
   }if(keystates[SDL_SCANCODE_R]){//r
-      movePlayer(0.0, -speed, 0.0);
+      movePlayer(0.0, -speed*elapsed_time*TIME_CONST, 0.0);
   }if(keystates[SDL_SCANCODE_F]){//f
-      movePlayer(0.0, speed, 0.0);
+      movePlayer(0.0, speed*elapsed_time*TIME_CONST, 0.0);
   }if(keystates[SDL_SCANCODE_Q]){//q
-      yawPlayer(-0.01);
+      yawPlayer(-0.01*elapsed_time*TIME_CONST);
   }if(keystates[SDL_SCANCODE_E]){//e
-      yawPlayer(0.01);
+      yawPlayer(0.01*elapsed_time*TIME_CONST);
   }if(keystates[SDL_SCANCODE_G]){//g
-      pitchPlayer(0.01);
+      pitchPlayer(0.01*elapsed_time*TIME_CONST);
   }if(keystates[SDL_SCANCODE_T]){//t
-      pitchPlayer(-0.01);
+      pitchPlayer(-0.01*elapsed_time*TIME_CONST);
   }if(keystates[SDL_SCANCODE_J]){//j
       camera_dist+= 2*elapsed_time*TIME_CONST;
   }if(keystates[SDL_SCANCODE_K]){//k
       camera_dist-= 2*elapsed_time*TIME_CONST;
   }if(keystates[SDL_SCANCODE_O]){//o
     for(int j = 1; j < nObj; j++){
-      objects[j] = rotateObjectX(objects[j], 0.007, 0, 0, 300);
-      objects[j] = rotateObjectY(objects[j], 0.013, 0, 0, 300);
-      objects[j] = rotateObjectZ(objects[j], 0.003, 0, 0, 300);
+      objects[j] = rotateObjectX(objects[j], 0.007*elapsed_time*TIME_CONST, 0, 0, 300);
+      objects[j] = rotateObjectY(objects[j], 0.013*elapsed_time*TIME_CONST, 0, 0, 300);
+      objects[j] = rotateObjectZ(objects[j], 0.003*elapsed_time*TIME_CONST, 0, 0, 300);
     }
   }if(keystates[SDL_SCANCODE_U]){//u
-    lights[0].p.z += speed_fast;
+    lights[0].p.z += speed_fast*elapsed_time*TIME_CONST;
   }if(keystates[SDL_SCANCODE_Y]){//y
-    lights[0].p.z -= speed_fast;
+    lights[0].p.z -= speed_fast*elapsed_time*TIME_CONST;
   }if(keystates[SDL_SCANCODE_LSHIFT]){
     speed = speed_fast;
   }else{

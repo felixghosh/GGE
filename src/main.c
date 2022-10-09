@@ -26,6 +26,8 @@ bool debug = false;
 
 node player;
 
+node enemy;
+
 int running;
 
 unsigned int menu_color = 0x999999;
@@ -106,9 +108,10 @@ objects = malloc(MAXOBJ*sizeof(object));
   object monkey = loadOBJ("OBJ/monkey.obj", 0x2323DF, 0, -30, 40, 10);
   object tri = loadOBJ("OBJ/tri.obj", 0x23D33F, 0, 0, 40, 10);
   object dog = loadOBJ("OBJ/dog.obj", 0x23D33F, 0, 0, 40, 10);
-  object get = loadOBJ("OBJ/get.obj", 0x23D33F, 0, 0, 40, 10);
+  object get = loadOBJ("OBJ/get.obj", 0x23D33F, 0, 0, 80, 10);
   object room = loadOBJ("OBJ/room3.obj", 0xE3737F, 0, 10, 0, 100);
-  object sphere = loadOBJ("OBJ/sphere.obj", 0xD3b3bF, 0, 10, 0, 10);
+  object sphere1 = loadOBJ("OBJ/sphere.obj", 0xD3b3bF, 0, 10, 0, 10);
+  object sphere2 = loadOBJ("OBJ/sphere.obj", 0x444477, 0, 10, -8, 4);
   object rifle = loadOBJ("OBJ/rifle.obj", 0x636393, (WIDTH)*0.004, (HEIGHT)*0.01, 0, 10);
   
   
@@ -120,9 +123,14 @@ objects = malloc(MAXOBJ*sizeof(object));
   //objects[nObj++] = dog;
   objects[nObj++] = get;
   //objects[nObj++] = teapot;
-  //objects[nObj++] = sphere;
+  objects[nObj++] = sphere1;
+  objects[nObj++] = sphere2;
 
   player = (node){&objects[GUN], camera_pos, NULL, 0};
+  node pupil = {&objects[nObj-1], objects[nObj-1].pos, NULL, 0};
+  node* children = malloc(1*sizeof(node));
+  children[0] = pupil;
+  enemy = (node){&objects[nObj-2], objects[nObj-2].pos, children, 1};
 
 
   totalTris = 0;
@@ -147,7 +155,7 @@ void load_lights(){
   lights = malloc(sizeof(light)*MAXLIGHT);
   lights[nLights++] = (light){(point){20.0, 20.0, -70.0}, 100.0};
   lights[nLights++] = (light){(point){-500.0, 10.0, 500.0}, 300.0};
-  //lights[nLights++] = (light){(point){0.0, -10000.0, 0.0}, 20000};
+  //lights[nLights++] = (light){(point){0.0, -1000.0, 0.0}, 100};
 }
 
 void update_time(){
@@ -221,7 +229,11 @@ void handle_input(){
 }
 
 void update_game_logic(){
-
+  static double t = 0.0;
+  t += elapsed_time;
+  enemy = rotateNodeX(enemy, 0.007*elapsed_time*TIME_CONST, enemy.pos.x, enemy.pos.y, enemy.pos.z);
+  enemy = rotateNodeY(enemy, 0.03*elapsed_time*TIME_CONST, enemy.pos.x, enemy.pos.y, enemy.pos.z);
+  enemy = translateNode(enemy, 1.7*sin(t), 0.6*cos(t), cos(t));
 }
 
 void render_scene(){

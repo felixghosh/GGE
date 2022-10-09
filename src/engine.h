@@ -39,6 +39,7 @@ typedef struct tri_map{
   object* obj;
 } tri_map;
 
+extern SDL_Window* screen;
 extern SDL_Renderer* renderer;
 extern SDL_Event evt;
 

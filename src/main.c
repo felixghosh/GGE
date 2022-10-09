@@ -1,5 +1,8 @@
 #include "engine.h"
 
+#define LEVEL 0
+#define GUN 1
+
 object* objects;
 unsigned int nObj = 0;
 
@@ -24,6 +27,8 @@ bool debug = false;
 node player;
 
 int running;
+
+unsigned int menu_color = 0x999999;
 
 typedef enum game_state {
   MENU, NEW_GAME, GAME_RUNNING, GAME_OVER
@@ -55,11 +60,23 @@ keystates = SDL_GetKeyboardState(NULL);
       int keypressed = evt.key.keysym.sym;
       if (keypressed == SDLK_ESCAPE){
           running = 0;
-      } else if(keypressed == SDLK_s){//s
-          current_state = NEW_GAME;
       }
     }else if(evt.type == SDL_MOUSEMOTION){
-      
+      int x = evt.motion.x;
+      int y = evt.motion.y;
+      if(x >= WIDTH*resScale/2-55*(WIDTH*resScale/700) && x <= WIDTH*resScale/2-55*(WIDTH*resScale/700) + 120*(WIDTH*resScale/700)
+         && y >= HEIGHT*resScale/2-27*(HEIGHT*resScale/700) && y <= HEIGHT*resScale/2-27*(HEIGHT*resScale/700) + 32*(HEIGHT*resScale/700)){
+          menu_color = 0xFFFFFF;
+      } else menu_color = 0x999999;
+    }else if(evt.type == SDL_MOUSEBUTTONDOWN){
+      int x = evt.motion.x;
+      int y = evt.motion.y;
+      if(evt.button.button == SDL_BUTTON_LEFT){
+        if(x >= WIDTH*resScale/2-55*(WIDTH*resScale/700) && x <= WIDTH*resScale/2-55*(WIDTH*resScale/700) + 120*(WIDTH*resScale/700)
+          && y >= HEIGHT*resScale/2-27*(HEIGHT*resScale/700) && y <= HEIGHT*resScale/2-27*(HEIGHT*resScale/700) + 32*(HEIGHT*resScale/700)){
+            current_state = NEW_GAME;
+        }
+      }
     }
   }
 }
@@ -72,7 +89,9 @@ void render_menu(){
   SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
   SDL_RenderClear(renderer);
 
-  drawText(renderer, "DASK", WIDTH/2-90, HEIGHT/2-27, 180, 54, 0xFFFFFF, 32);
+  drawText(renderer, "DASK", WIDTH*resScale/2-90*(WIDTH*resScale/700), HEIGHT*resScale/2-127*(HEIGHT*resScale/700), 180*(WIDTH*resScale/700), 54*(HEIGHT*resScale/700), 0xFF1111, 36);
+  drawText(renderer, "START", WIDTH*resScale/2-55*(WIDTH*resScale/700), HEIGHT*resScale/2-27*(HEIGHT*resScale/700), 120*(WIDTH*resScale/700), 32*(HEIGHT*resScale/700), menu_color, 24);
+
 
   drawText(renderer, "GGE v0.0.1", WIDTH-65, HEIGHT-20, 60, 16, 0xFFFFFF, 12);
 
@@ -103,15 +122,7 @@ objects = malloc(MAXOBJ*sizeof(object));
   //objects[nObj++] = teapot;
   //objects[nObj++] = sphere;
 
-  
-  /*node child;
-  child.nChildren = 0;
-  child.children = NULL;
-  child.obj = &objects[nObj-2];
-  child.pos = cube.pos;
-  node* children = malloc(1*sizeof(node));
-  children[0] = child;*/
-  player = (node){&objects[nObj-2], camera_pos, NULL, 0};
+  player = (node){&objects[GUN], camera_pos, NULL, 0};
 
 
   totalTris = 0;
@@ -193,10 +204,10 @@ void handle_input(){
   }if(keystates[SDL_SCANCODE_K]){//k
       camera_dist-= 2*elapsed_time*TIME_CONST;
   }if(keystates[SDL_SCANCODE_O]){//o
-    for(int j = 1; j < nObj; j++){
-      objects[j] = rotateObjectX(objects[j], 0.007*elapsed_time*TIME_CONST, 0, 0, 300);
-      objects[j] = rotateObjectY(objects[j], 0.013*elapsed_time*TIME_CONST, 0, 0, 300);
-      objects[j] = rotateObjectZ(objects[j], 0.003*elapsed_time*TIME_CONST, 0, 0, 300);
+    for(int j = 2; j < nObj; j++){
+      objects[j] = rotateObjectX(objects[j], 0.007*elapsed_time*TIME_CONST, 0, 0, 40);
+      objects[j] = rotateObjectY(objects[j], 0.013*elapsed_time*TIME_CONST, 0, 0, 40);
+      objects[j] = rotateObjectZ(objects[j], 0.003*elapsed_time*TIME_CONST, 0, 0, 40);
     }
   }if(keystates[SDL_SCANCODE_U]){//u
     lights[0].p.z += speed_fast*elapsed_time*TIME_CONST;
@@ -345,6 +356,9 @@ int main(int argc, char* argv[]){
 
           load_objects();
           load_lights();
+
+          SDL_SetWindowMouseGrab(screen, SDL_TRUE);
+          SDL_SetRelativeMouseMode(SDL_TRUE);
            
           clock_gettime(CLOCK_REALTIME, &t0); //set time t0
           current_state = GAME_RUNNING;
@@ -354,7 +368,7 @@ int main(int argc, char* argv[]){
 
           update_time();
           //printf("fps: %5u\n", (int)(1/elapsed_time));
-          //printf("fov: %5u\n", (int)calcFOV());
+          printf("fov: %5u\n", (int)calcFOV());
           handle_input();
 
           update_game_logic();
@@ -364,6 +378,8 @@ int main(int argc, char* argv[]){
 
         case GAME_OVER:
           free_objects();
+          SDL_SetWindowMouseGrab(screen, SDL_FALSE);
+          SDL_SetRelativeMouseMode(SDL_FALSE);
           while(running){
             handle_input_game_over();
             handle_logic_game_over();

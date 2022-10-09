@@ -163,9 +163,7 @@ void initialize_engine(){
             printf("InitSetup failed to create window\n");
 
         SDL_SetWindowTitle(screen, "GGE");
-        SDL_SetWindowMouseGrab(screen, SDL_TRUE);
-        SDL_SetRelativeMouseMode(SDL_TRUE);
-        SDL_ShowCursor(SDL_DISABLE);
+        
 
         if(TTF_Init() == -1){
           printf("TTF could not be initialized!\n");

@@ -23,6 +23,12 @@ void movCamera(double distX, double distY, double distZ){
   camera_pos.y += distY;
 }
 
+void movCameraWorldSpace(double distX, double distY, double distZ){
+  camera_pos.z += distZ;
+  camera_pos.y += distY;
+  camera_pos.x += distX;
+}
+
 point toCameraBasis(point p){
   point camToPoint = {
     p.x - camera_pos.x, p.y - camera_pos.y, p.z - camera_pos.z

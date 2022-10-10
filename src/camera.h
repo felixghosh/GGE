@@ -18,6 +18,8 @@ void pitchCamera(double rad);
 
 void movCamera(double distX, double distY, double distZ);
 
+void movCameraWorldSpace(double distX, double distY, double distZ);
+
 point toCameraBasis(point p);
 
 triangle toCameraBasisTriangle(triangle tri);

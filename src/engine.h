@@ -17,8 +17,7 @@
 #include "global.h"
 #include "light.h"
 
-#define MAXOBJ 100
-#define MAXLIGHT 100
+
 
 
 typedef struct object{
@@ -37,6 +36,7 @@ typedef struct node{
 typedef struct tri_map{
   triangle* tri;
   object* obj;
+  bool* render;
 } tri_map;
 
 extern SDL_Window* screen;

@@ -8,11 +8,25 @@
 #define BASE_MAX_SPEED 5
 #define MAX_VERTICAL_SPEED 15
 
+#define MAXOBJ 100
+#define MAXLIGHT 100
+#define MAXENEMY 100
+
+
+typedef struct enemy_t{
+  node enemy;
+  int hp;
+  bool render;
+} enemy_t;
+
 object* objects;
 unsigned int nObj = 0;
 
 light* lights;
 unsigned int nLights = 0;
+
+enemy_t* enemies;
+unsigned int nEnemies = 0;
 
 unsigned long totalTris;
 
@@ -38,6 +52,7 @@ double enemy_radius = 10.0;
 node enemy;
 int enemy_hp = 10;
 
+
 int running;
 
 unsigned int menu_color = 0x999999;
@@ -47,6 +62,12 @@ double max_vel = BASE_MAX_SPEED;
 double x_vel, y_vel, z_vel;
 
 double room_x_max, room_x_min, room_z_max, room_z_min;
+
+typedef enum game_state {
+  MENU, NEW_GAME, GAME_RUNNING, GAME_OVER
+} game_state;
+
+game_state current_state;
 
 static void calc_obj_extremes(object obj, double* x_max, double* x_min, double* y_max, double* y_min, double* z_max, double* z_min) {
   double maxx = obj.tris[0].a.x;
@@ -143,7 +164,7 @@ bool playerHits(node enemy){
   point u = subtractPoints(enemy.pos, player.pos);
   point v = (point){-camera_dir.x, camera_dir.y, -camera_dir.z};
   point rejection = subtractPoints(u, scaleVector(v, dotProduct(v, u)));
-  return vectorLength(rejection) < enemy_radius;
+  return vectorLength(rejection) < enemy_radius*1.3;
 }
 
 void movePlayer(double distX, double distY, double distZ){
@@ -216,12 +237,6 @@ static void update_player_movement() {
   }
 }
 
-typedef enum game_state {
-  MENU, NEW_GAME, GAME_RUNNING, GAME_OVER
-} game_state;
-
-game_state current_state;
-
 void yawPlayer(double rad){
   yawCamera(rad);
   player = rotateNodeY(player, rad, player.pos.x, player.pos.y, player.pos.z);
@@ -292,8 +307,6 @@ objects = malloc(MAXOBJ*sizeof(object));
   object dog = loadOBJ("OBJ/dog.obj", 0x23D33F, 0, 0, 40, 10);
   object get = loadOBJ("OBJ/get.obj", 0x23D33F, 0, 0, 80, 10);
   object room = loadOBJ("OBJ/room2.obj", 0xE3737F, 0, 10, 0, 100);
-  object sphere1 = loadOBJ("OBJ/sphere.obj", 0xD3b3bF, 200, 10, 0, 10);
-  object sphere2 = loadOBJ("OBJ/sphere.obj", 0x444477, 200, 10, -8, 4);
   object rifle = loadOBJ("OBJ/rifle.obj", 0x636393, (WIDTH)*0.004, (HEIGHT)*0.015, -7, 10);
   
   
@@ -305,33 +318,15 @@ objects = malloc(MAXOBJ*sizeof(object));
   //objects[nObj++] = dog;
   //objects[nObj++] = get;
   //objects[nObj++] = teapot;
-  objects[nObj++] = sphere1;
-  objects[nObj++] = sphere2;
   //objects[nObj-1] = rotateObjectX(objects[nObj-1], 3.14/2, objects[nObj-1].pos.x, objects[nObj-1].pos.y, objects[nObj-1].pos.z);
 
   player = (node){&objects[GUN], camera_pos, NULL, 0};
-  node pupil = {&objects[nObj-1], objects[nObj-1].pos, NULL, 0};
-  node* children = malloc(1*sizeof(node));
-  children[0] = pupil;
-  enemy = (node){&objects[nObj-2], objects[nObj-2].pos, children, 1};
-
+ 
 
   totalTris = 0;
   for(int i = 0; i < nObj; i++)
     totalTris += objects[i].nFaces;
 
-  allTris = malloc(totalTris*sizeof(tri_map));
-  unsigned long index = 0;
-  for(int i = 0; i < nObj; i++){
-    for(int j = 0; j < objects[i].nFaces; j++){
-      allTris[index++] = (tri_map){&(objects[i].tris[j]), &(objects[i])};
-    }
-  }
-  if(index != totalTris){
-    printf("ERROR INDEX DOESNT MATCH TOTALTRIS!\nindex %lu, totalTris %lu\n", index, totalTris);
-    exit(1);
-  }
-  printf("All objects loaded. Total triangles: %lu \n", totalTris);
 }
 
 void load_lights(){
@@ -339,6 +334,56 @@ void load_lights(){
   lights[nLights++] = (light){(point){20.0, 20.0, -70.0}, 100.0};
   lights[nLights++] = (light){(point){-500.0, 10.0, 500.0}, 300.0};
   //lights[nLights++] = (light){(point){0.0, -1000.0, 0.0}, 100};
+}
+
+void readTris(node node){
+  totalTris += node.obj->nFaces;
+  for(int i = 0; i < node.nChildren; i++)
+    readTris(node.children[i]);
+}
+
+void mapTris(node node, unsigned long int* index, bool* render){
+  for(int i = 0; i < node.obj->nFaces; i++)
+    allTris[(*index)++] = (tri_map){&(node.obj->tris[i]), node.obj, render};
+  for(int i = 0; i < node.nChildren; i++)
+    mapTris(node.children[i], index, render);
+}
+
+void load_enemies(){
+  enemies = malloc(sizeof(enemy_t)*MAXENEMY);
+  object* sphere1 = malloc(sizeof(object));
+  object* sphere2 = malloc(sizeof(object));
+  *sphere1 = loadOBJ("OBJ/sphere.obj", 0xD3b3bF, 200, 10, 0, 10);
+  *sphere2 = loadOBJ("OBJ/sphere.obj", 0x444477, 200, 10, -8, 4);
+
+  node pupil = {sphere1, sphere1->pos, NULL, 0};
+  node* children = malloc(1*sizeof(node));
+  children[0] = pupil;
+  node enemy1 = {sphere2, sphere2->pos, children, 1};
+  enemies[nEnemies++] = (enemy_t){enemy1, 10, true};
+
+  for(int i = 0; i < nEnemies; i++)
+    readTris(enemies[i].enemy);
+}
+
+void load_tri_map(){
+  allTris = malloc(totalTris*sizeof(tri_map));
+  bool* render = malloc(sizeof(bool));
+  *render = true;
+  unsigned long index = 0;
+  for(int i = 0; i < nObj; i++){
+    for(int j = 0; j < objects[i].nFaces; j++){
+      allTris[index++] = (tri_map){&(objects[i].tris[j]), &(objects[i]), render};
+    }
+  }
+  for(int i = 0; i < nEnemies; i++){
+    mapTris(enemies[i].enemy, &index, &(enemies[i].render));
+  }
+  if(index != totalTris){
+    printf("ERROR INDEX DOESNT MATCH TOTALTRIS!\nindex %lu, totalTris %lu\n", index, totalTris);
+    exit(1);
+  }
+  printf("All objects loaded. Total triangles: %lu \n", totalTris);
 }
 
 void update_time(){
@@ -371,10 +416,16 @@ void handle_input(){
       int x = evt.motion.x;
       int y = evt.motion.y;
       if(evt.button.button == SDL_BUTTON_LEFT){
-        if(playerHits(enemy)){
-          enemy_hp -= 3;
-          printf("HIT\n");
-        } else printf("MISS\n");
+        for(int i = 0; i < nEnemies; i++){
+          if(playerHits(enemies[i].enemy)){
+            enemies[i].hp -= 3;
+            if(enemies[i].hp <= 0)
+              enemies[i].render = false;
+            printf("HIT\n");
+            printf("hp:%d render:%d\n", enemies[i].hp, enemies[i].render);
+          }
+        }
+        
       }
     }
   }
@@ -432,15 +483,32 @@ void update_game_logic(){
   static double t = 0.0;
   static double enemy_speed = 2.0;
   t += elapsed_time;
-  point dir = normalizeVector(subtractPoints(player.pos, enemy.pos));
+  for(int i = 0; i < nEnemies; i++){
+    if(!enemies[i].render)
+      continue;
+    node enemy = enemies[i].enemy;
+    point dir = normalizeVector(subtractPoints(player.pos, enemy.pos));
+    //enemy = translateNode(enemy, dir.x*enemy_speed*elapsed_time*TIME_CONST, dir.y*enemy_speed*elapsed_time*TIME_CONST, dir.z*enemy_speed*elapsed_time*TIME_CONST);
+    enemy = rotateNodeX(enemy, ((rand()%100 - 50) * 0.001)*elapsed_time*TIME_CONST, enemy.pos.x, enemy.pos.y, enemy.pos.z);
+    enemy = rotateNodeY(enemy, ((rand()%100 - 50) * 0.001)*elapsed_time*TIME_CONST, enemy.pos.x, enemy.pos.y, enemy.pos.z);
+    enemy = rotateNodeZ(enemy, (rand()%10 * 0.01)*elapsed_time*TIME_CONST, enemy.pos.x, enemy.pos.y, enemy.pos.z);
+    //enemy = translateNode(enemy, 0.5*sin(t + (rand()%20 * 0.01)), 0.6*cos(t + (rand()%20 * 0.01)), cos(t + (rand()%20 * 0.01)));
+
+    
+
+    if(detectColision(enemy))
+      player_hp--;
+    enemies[i].enemy = enemy;
+  }
+  /*point dir = normalizeVector(subtractPoints(player.pos, enemy.pos));
   enemy = translateNode(enemy, dir.x*enemy_speed*elapsed_time*TIME_CONST, dir.y*enemy_speed*elapsed_time*TIME_CONST, dir.z*enemy_speed*elapsed_time*TIME_CONST);
   enemy = rotateNodeX(enemy, ((rand()%100 - 50) * 0.001)*elapsed_time*TIME_CONST, enemy.pos.x, enemy.pos.y, enemy.pos.z);
   enemy = rotateNodeY(enemy, ((rand()%100 - 50) * 0.001)*elapsed_time*TIME_CONST, enemy.pos.x, enemy.pos.y, enemy.pos.z);
   enemy = rotateNodeZ(enemy, (rand()%10 * 0.01)*elapsed_time*TIME_CONST, enemy.pos.x, enemy.pos.y, enemy.pos.z);
-  enemy = translateNode(enemy, 1.7*sin(t + (rand()%20 * 0.01)), 0.6*cos(t + (rand()%20 * 0.01)), cos(t + (rand()%20 * 0.01)));
+  enemy = translateNode(enemy, 0.5*sin(t + (rand()%20 * 0.01)), 0.6*cos(t + (rand()%20 * 0.01)), cos(t + (rand()%20 * 0.01)));
 
   if(detectColision(enemy))
-    player_hp--;
+    player_hp--;*/
   if(player_hp <= 0)
     current_state = GAME_OVER;
 
@@ -459,6 +527,8 @@ void render_scene(){
   qsort(allTris, totalTris, sizeof(tri_map), cmpfunc);
 
   for(int i = 0; i < totalTris; i++){
+    if(!*allTris[i].render)
+      continue;
     triangle tri = *(allTris[i].tri);
     triangle cam_tri = toCameraBasisTriangle(tri);
 
@@ -564,10 +634,11 @@ void render_game_over(){
 
 void free_objects(){
   for(int j = 0; j < nObj; j++)
-      free(objects[j].tris);
-    free(objects);
-    free(lights);
-    free(allTris);
+    free(objects[j].tris);
+  free(objects);
+  free(lights);
+  free(enemies);
+  free(allTris);
 }
 
 
@@ -588,6 +659,8 @@ int main(int argc, char* argv[]){
         case NEW_GAME:
 
           load_objects();
+          load_enemies();
+          load_tri_map();
           load_lights();
           find_walls();
 

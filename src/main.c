@@ -25,8 +25,13 @@ bool wireframe = false;
 bool debug = false;
 
 node player;
+int player_hp = 100;
+
+double player_radius = 10.0;
+double enemy_radius = 10.0;
 
 node enemy;
+int enemy_hp = 10;
 
 int running;
 
@@ -37,6 +42,17 @@ typedef enum game_state {
 } game_state;
 
 game_state current_state;
+
+bool detectColision(node enemy){
+  return vectorLength(subtractPoints(enemy.pos, player.pos)) < player_radius + enemy_radius;
+}
+
+bool playerHits(node enemy){
+  point u = subtractPoints(enemy.pos, player.pos);
+  point v = (point){-camera_dir.x, camera_dir.y, -camera_dir.z};
+  point rejection = subtractPoints(u, scaleVector(v, dotProduct(v, u)));
+  return vectorLength(rejection) < enemy_radius;
+}
 
 void movePlayer(double distX, double distY, double distZ){
   movCamera(distX, distY, distZ);
@@ -49,9 +65,11 @@ void yawPlayer(double rad){
 }
 
 void pitchPlayer(double rad){
-  pitchCamera(rad);
-  player = rotateNodeX(player, -cos(camera_angle_y)*rad, player.pos.x, player.pos.y, player.pos.z);
-  player = rotateNodeZ(player, sin(camera_angle_y)*rad, player.pos.x, player.pos.y, player.pos.z);
+  if(camera_angle_x - rad > -M_PI/2 && camera_angle_x - rad < M_PI/2){
+    pitchCamera(rad);
+    player = rotateNodeX(player, -cos(camera_angle_y)*rad, player.pos.x, player.pos.y, player.pos.z);
+    player = rotateNodeZ(player, sin(camera_angle_y)*rad, player.pos.x, player.pos.y, player.pos.z);
+  }
 }
 
 void handle_input_menu(){
@@ -96,6 +114,7 @@ void render_menu(){
 
 
   drawText(renderer, "GGE v0.0.1", WIDTH-65, HEIGHT-20, 60, 16, 0xFFFFFF, 12);
+  
 
   //SWITCH BUFFERS          
   SDL_RenderPresent(renderer);
@@ -109,10 +128,10 @@ objects = malloc(MAXOBJ*sizeof(object));
   object tri = loadOBJ("OBJ/tri.obj", 0x23D33F, 0, 0, 40, 10);
   object dog = loadOBJ("OBJ/dog.obj", 0x23D33F, 0, 0, 40, 10);
   object get = loadOBJ("OBJ/get.obj", 0x23D33F, 0, 0, 80, 10);
-  object room = loadOBJ("OBJ/room3.obj", 0xE3737F, 0, 10, 0, 100);
-  object sphere1 = loadOBJ("OBJ/sphere.obj", 0xD3b3bF, 0, 10, 0, 10);
-  object sphere2 = loadOBJ("OBJ/sphere.obj", 0x444477, 0, 10, -8, 4);
-  object rifle = loadOBJ("OBJ/rifle.obj", 0x636393, (WIDTH)*0.004, (HEIGHT)*0.01, 0, 10);
+  object room = loadOBJ("OBJ/room2.obj", 0xE3737F, 0, 10, 0, 100);
+  object sphere1 = loadOBJ("OBJ/sphere.obj", 0xD3b3bF, 200, 10, 0, 10);
+  object sphere2 = loadOBJ("OBJ/sphere.obj", 0x444477, 200, 10, -8, 4);
+  object rifle = loadOBJ("OBJ/rifle.obj", 0x636393, (WIDTH)*0.004, (HEIGHT)*0.015, -7, 10);
   
   
   objects[nObj++] = room;
@@ -121,10 +140,11 @@ objects = malloc(MAXOBJ*sizeof(object));
   //objects[nObj++] = monkey;
   //objects[nObj++] = tri;
   //objects[nObj++] = dog;
-  objects[nObj++] = get;
+  //objects[nObj++] = get;
   //objects[nObj++] = teapot;
   objects[nObj++] = sphere1;
   objects[nObj++] = sphere2;
+  //objects[nObj-1] = rotateObjectX(objects[nObj-1], 3.14/2, objects[nObj-1].pos.x, objects[nObj-1].pos.y, objects[nObj-1].pos.z);
 
   player = (node){&objects[GUN], camera_pos, NULL, 0};
   node pupil = {&objects[nObj-1], objects[nObj-1].pos, NULL, 0};
@@ -171,7 +191,7 @@ void handle_input(){
     if(evt.type == SDL_KEYDOWN){
       int keypressed = evt.key.keysym.sym;
       if (keypressed == SDLK_ESCAPE){
-          current_state = GAME_OVER;
+          running = false;
       } else if(keypressed == SDLK_l){//l
           wireframe = !wireframe;
       } else if(keypressed == SDLK_i){//i
@@ -183,6 +203,15 @@ void handle_input(){
         int dy = evt.motion.yrel;
         pitchPlayer((double)dy/300);
         yawPlayer((double)dx/300);
+      }
+    }else if(evt.type == SDL_MOUSEBUTTONDOWN){
+      int x = evt.motion.x;
+      int y = evt.motion.y;
+      if(evt.button.button == SDL_BUTTON_LEFT){
+        if(playerHits(enemy)){
+          enemy_hp -= 3;
+          printf("HIT\n");
+        } else printf("MISS\n");
       }
     }
   }
@@ -230,10 +259,22 @@ void handle_input(){
 
 void update_game_logic(){
   static double t = 0.0;
+  static double enemy_speed = 2.0;
   t += elapsed_time;
-  enemy = rotateNodeX(enemy, 0.007*elapsed_time*TIME_CONST, enemy.pos.x, enemy.pos.y, enemy.pos.z);
-  enemy = rotateNodeY(enemy, 0.03*elapsed_time*TIME_CONST, enemy.pos.x, enemy.pos.y, enemy.pos.z);
-  enemy = translateNode(enemy, 1.7*sin(t), 0.6*cos(t), cos(t));
+  point dir = normalizeVector(subtractPoints(player.pos, enemy.pos));
+  enemy = translateNode(enemy, dir.x*enemy_speed*elapsed_time*TIME_CONST, dir.y*enemy_speed*elapsed_time*TIME_CONST, dir.z*enemy_speed*elapsed_time*TIME_CONST);
+  enemy = rotateNodeX(enemy, ((rand()%100 - 50) * 0.001)*elapsed_time*TIME_CONST, enemy.pos.x, enemy.pos.y, enemy.pos.z);
+  enemy = rotateNodeY(enemy, ((rand()%100 - 50) * 0.001)*elapsed_time*TIME_CONST, enemy.pos.x, enemy.pos.y, enemy.pos.z);
+  enemy = rotateNodeZ(enemy, (rand()%10 * 0.01)*elapsed_time*TIME_CONST, enemy.pos.x, enemy.pos.y, enemy.pos.z);
+  enemy = translateNode(enemy, 1.7*sin(t + (rand()%20 * 0.01)), 0.6*cos(t + (rand()%20 * 0.01)), cos(t + (rand()%20 * 0.01)));
+
+  if(detectColision(enemy))
+    player_hp--;
+  if(player_hp <= 0)
+    current_state = GAME_OVER;
+  
+  //printf("%2.1lf, %2.1lf, %2.1lf\n", camera_dir.x, camera_dir.y, camera_dir.z);
+  //printf("%2.1lf %2.1lf\n", camera_angle_x, camera_angle_y);
 }
 
 void render_scene(){
@@ -252,7 +293,7 @@ void render_scene(){
     triangle* clipped_tris_z = malloc(2*sizeof(triangle));
     clipped_tris_z[0] = cam_tri;
     unsigned int nTrisZ = 1;
-    clipEdge((point){0,0,5} , (point){WIDTH,HEIGHT,5}, &clipped_tris_z, &nTrisZ, 0, 'z');
+    clipEdge((point){0,0,3} , (point){WIDTH,HEIGHT,3}, &clipped_tris_z, &nTrisZ, 0, 'z');
 
     for(int j = 0; j < nTrisZ; j++){
       triangle projected_tri = projectTriangle(clipped_tris_z[j]);
@@ -305,6 +346,13 @@ void render_scene(){
   }
 
   drawText(renderer, "GGE v0.0.1", WIDTH-65, HEIGHT-20, 60, 16, 0xFFFFFF, 12);
+  char hp[9];
+  snprintf(hp, 8, "HP: %3d", player_hp);
+  drawText(renderer, hp, 10, HEIGHT-20, 60, 16, 0xFFFFFF, 12);
+
+  SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+  SDL_RenderDrawLine(renderer, WIDTH/2-10, HEIGHT/1.5, WIDTH/2+10, HEIGHT/1.5);
+  SDL_RenderDrawLine(renderer, WIDTH/2, HEIGHT/1.5-10, WIDTH/2, HEIGHT/1.5+10);
 
   //SWITCH BUFFERS          
   SDL_RenderPresent(renderer);
@@ -380,7 +428,7 @@ int main(int argc, char* argv[]){
 
           update_time();
           //printf("fps: %5u\n", (int)(1/elapsed_time));
-          printf("fov: %5u\n", (int)calcFOV());
+          //printf("fov:%u\n", (int)calcFOV());
           handle_input();
 
           update_game_logic();

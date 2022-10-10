@@ -154,12 +154,20 @@ point roundVector(point p){
   };
 }
 
+point scaleVector(point p, double value){
+  return (point){p.x*value, p.y*value, p.z*value};
+}
+
 double dotProduct(point p1, point p2){
   return p1.x*p2.x + p1.y*p2.y + p1.z*p2.z;
 }
 
 point subtractPoints(point p1, point p2){
   return (point) {p1.x - p2.x, p1.y - p2.y, p1.z - p2.z};
+}
+
+point addPoints(point p1, point p2){
+  return (point) {p1.x + p2.x, p1.y + p2.y, p1.z + p2.z};
 }
 
 double vectorLength(point p){

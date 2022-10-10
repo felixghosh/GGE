@@ -5,15 +5,15 @@
 
 void yawCamera(double rad){
   camera_angle_y += rad;
-  camera_dir.x = cos(rad)*camera_dir.x + sin(rad)*camera_dir.z;
-  camera_dir.z = -sin(rad)*camera_dir.x + cos(rad)*camera_dir.z;
+  camera_dir.x = sin(camera_angle_y);
+  camera_dir.z = cos(camera_angle_y);
 }
 
 void pitchCamera(double rad){
-  if(camera_angle_x - rad > -M_PI/2 && camera_angle_x - rad < M_PI/2)
+  if(camera_angle_x - rad > -M_PI/2 && camera_angle_x - rad < M_PI/2){
     camera_angle_x -= rad;
-  camera_dir.y = cos(rad)*camera_dir.y - sin(rad)*camera_dir.z;
-  camera_dir.z = sin(rad)*camera_dir.y + cos(rad)*camera_dir.z;
+    camera_dir.y = sin(camera_angle_x);
+  }
 }
 
 

@@ -44,6 +44,10 @@ double dotProduct(point p1, point p2);
 
 point subtractPoints(point p1, point p2);
 
+point addPoints(point p1, point p2);
+
+point scaleVector(point p, double value);
+
 double vectorLength(point p);
 
 #endif

@@ -3,6 +3,11 @@
 #define LEVEL 0
 #define GUN 1
 
+#define GRAVITY 0.1
+#define SLOWDOWN 0.5
+#define BASE_MAX_SPEED 5
+#define MAX_VERTICAL_SPEED 15
+
 object* objects;
 unsigned int nObj = 0;
 
@@ -37,11 +42,98 @@ int running;
 
 unsigned int menu_color = 0x999999;
 
-typedef enum game_state {
-  MENU, NEW_GAME, GAME_RUNNING, GAME_OVER
-} game_state;
+double max_vel = BASE_MAX_SPEED;
 
-game_state current_state;
+double x_vel, y_vel, z_vel;
+
+double room_x_max, room_x_min, room_z_max, room_z_min;
+
+static void calc_obj_extremes(object obj, double* x_max, double* x_min, double* y_max, double* y_min, double* z_max, double* z_min) {
+  double maxx = obj.tris[0].a.x;
+  double maxy = obj.tris[0].a.y;
+  double maxz = obj.tris[0].a.z;
+
+  double minx = maxx;
+  double miny = maxy;
+  double minz = maxz;
+
+  for(int i = 0; i < obj.nFaces; i++) {
+    if (obj.tris[i].a.x > maxx) {
+      maxx = obj.tris[i].a.x;
+    }
+    if (obj.tris[i].b.x > maxx) {
+      maxx = obj.tris[i].b.x;
+    }
+    if (obj.tris[i].c.x > maxx) {
+      maxx = obj.tris[i].c.x;
+    }
+    if (obj.tris[i].a.x < minx) {
+      minx = obj.tris[i].a.x;
+    }
+    if (obj.tris[i].b.x < minx) {
+      minx = obj.tris[i].b.x;
+    }
+    if (obj.tris[i].c.x < minx) {
+      minx = obj.tris[i].c.x;
+    }
+
+    if (obj.tris[i].a.y > maxy) {
+      maxy = obj.tris[i].a.y;
+    }
+    if (obj.tris[i].b.x > maxy) {
+      maxy = obj.tris[i].b.y;
+    }
+    if (obj.tris[i].c.y > maxy) {
+      maxy = obj.tris[i].c.y;
+    }
+    if (obj.tris[i].a.y < miny) {
+      miny = obj.tris[i].a.y;
+    }
+    if (obj.tris[i].b.y < miny) {
+      miny = obj.tris[i].b.y;
+    }
+    if (obj.tris[i].c.x < miny) {
+      miny = obj.tris[i].c.y;
+    }
+
+    if (obj.tris[i].a.z > maxz) {
+      maxz = obj.tris[i].a.z;
+    }
+    if (obj.tris[i].b.x > maxz) {
+      maxz = obj.tris[i].b.z;
+    }
+    if (obj.tris[i].c.x > maxz) {
+      maxz = obj.tris[i].c.z;
+    }
+    if (obj.tris[i].a.z < minz) {
+      minz = obj.tris[i].a.z;
+    }
+    if (obj.tris[i].b.z < minz) {
+      minz = obj.tris[i].b.z;
+    }
+    if (obj.tris[i].c.z < minz) {
+      minz = obj.tris[i].c.z;
+    }
+  }
+  *x_max = maxx;
+  *x_min = minx;
+  *y_max = maxy;
+  *y_min = miny;
+  *z_max = maxz;
+  *z_min = minz;
+}
+
+static void find_walls() {
+  double x_max, x_min, y_max, y_min, z_max, z_min;
+
+  calc_obj_extremes(objects[0], &x_max, &x_min, &y_max, &y_min, &z_max, &z_min);
+
+  room_x_max = x_max - camera_dist/10;
+  room_x_min = x_min + camera_dist/10;
+
+  room_z_max = z_max - camera_dist/10;
+  room_z_min = z_min + camera_dist/10;
+}
 
 bool detectColision(node enemy){
   return vectorLength(subtractPoints(enemy.pos, player.pos)) < player_radius + enemy_radius;
@@ -58,6 +150,77 @@ void movePlayer(double distX, double distY, double distZ){
   movCamera(distX, distY, distZ);
   player = translateNode(player, sin(camera_angle_y)*distZ + sin(camera_angle_y + M_PI/2)*distX, distY, cos(camera_angle_y)*distZ + cos(camera_angle_y + M_PI/2)*distX);
 }
+
+void movePlayerWorldSpace(double distX, double distY, double distZ){
+  movCameraWorldSpace(distX, distY, distZ);
+  player = translateNode(player, distX, distY, distZ);
+}
+
+static void update_player_movement() {
+  double x_vel_old = x_vel;
+  double y_vel_old = y_vel;
+  double z_vel_old = z_vel;
+
+  if (x_vel > 0) {
+    x_vel -= SLOWDOWN;
+  }
+  else if (x_vel < 0) {
+    x_vel += SLOWDOWN;
+  }
+  if (camera_pos.y < 0) {
+    y_vel += GRAVITY;
+  }
+  if (z_vel > 0) {
+    z_vel -= SLOWDOWN;
+  }
+  else if (z_vel < 0) {
+    z_vel += SLOWDOWN;
+  }
+
+  if (x_vel * x_vel_old < 0) {
+    x_vel = 0;
+  }
+  if (y_vel * y_vel_old < 0) {
+    y_vel = 0;
+  }
+  if (z_vel * z_vel_old < 0) {
+    z_vel = 0;
+  }
+
+  x_vel = x_vel < max_vel ? x_vel : max_vel;
+  x_vel = x_vel > -1*max_vel ? x_vel : -1*max_vel;
+
+  y_vel = y_vel < MAX_VERTICAL_SPEED ? y_vel : MAX_VERTICAL_SPEED;
+  y_vel = y_vel > -1*MAX_VERTICAL_SPEED ? y_vel : -1*MAX_VERTICAL_SPEED;
+
+  z_vel = z_vel < max_vel ? z_vel : max_vel;
+  z_vel = z_vel > -1*max_vel ? z_vel : -1*max_vel;
+
+  movePlayer(x_vel*elapsed_time*TIME_CONST, y_vel*elapsed_time*TIME_CONST, z_vel*elapsed_time*TIME_CONST);
+
+  if (player.pos.y > 0) {
+    movePlayer(0, -1*player.pos.y, 0);
+    y_vel = 0;
+  }
+
+  if(player.pos.x > room_x_max) {
+    movePlayerWorldSpace(room_x_max - player.pos.x, 0, 0);
+  } else if(player.pos.x < room_x_min) {
+    movePlayerWorldSpace(room_x_min - player.pos.x, 0, 0);
+  }
+
+  if(player.pos.z > room_z_max) {
+    movePlayerWorldSpace(0, 0, room_z_max - player.pos.z);
+  } else if (player.pos.z < room_z_min) {
+    movePlayerWorldSpace(0, 0, room_z_min - player.pos.z);
+  }
+}
+
+typedef enum game_state {
+  MENU, NEW_GAME, GAME_RUNNING, GAME_OVER
+} game_state;
+
+game_state current_state;
 
 void yawPlayer(double rad){
   yawCamera(rad);
@@ -217,17 +380,23 @@ void handle_input(){
   }
 
   if(keystates[SDL_SCANCODE_W]){ //w
-      movePlayer(0.0, 0.0, speed*elapsed_time*TIME_CONST);
+    z_vel = max_vel;
   }if(keystates[SDL_SCANCODE_A]){//a
-      movePlayer(-speed*elapsed_time*TIME_CONST, 0.0, 0.0);
+    x_vel -= max_vel;
   }if(keystates[SDL_SCANCODE_S]){//s
-      movePlayer(0.0, 0.0, -speed*elapsed_time*TIME_CONST);
+    z_vel -= max_vel;
   }if(keystates[SDL_SCANCODE_D]){//d
-      movePlayer(speed*elapsed_time*TIME_CONST, 0.0, 0.0);
+    x_vel += max_vel;
+  }if(keystates[SDL_SCANCODE_SPACE]){
+    if(camera_pos.y == 0) {
+      y_vel -= 10;
+    } else if (y_vel < 0) {
+      y_vel -= 0.01;
+  }
   }if(keystates[SDL_SCANCODE_R]){//r
-      movePlayer(0.0, -speed*elapsed_time*TIME_CONST, 0.0);
+      //movePlayer(0.0, -speed*elapsed_time*TIME_CONST, 0.0);
   }if(keystates[SDL_SCANCODE_F]){//f
-      movePlayer(0.0, speed*elapsed_time*TIME_CONST, 0.0);
+      //movePlayer(0.0, speed*elapsed_time*TIME_CONST, 0.0);
   }if(keystates[SDL_SCANCODE_Q]){//q
       yawPlayer(-0.01*elapsed_time*TIME_CONST);
   }if(keystates[SDL_SCANCODE_E]){//e
@@ -251,9 +420,11 @@ void handle_input(){
   }if(keystates[SDL_SCANCODE_Y]){//y
     lights[0].p.z -= speed_fast*elapsed_time*TIME_CONST;
   }if(keystates[SDL_SCANCODE_LSHIFT]){
-    speed = speed_fast;
-  }else{
-    speed = speed_slow;
+    max_vel = 2 * BASE_MAX_SPEED;
+  } else {
+    max_vel = BASE_MAX_SPEED;
+  }if(keystates[SDL_SCANCODE_M]){//m
+    printf("Camera direction : (%f, %f, %f)\n", camera_dir.x, camera_dir.y, camera_dir.z);
   }
 }
 
@@ -272,6 +443,8 @@ void update_game_logic(){
     player_hp--;
   if(player_hp <= 0)
     current_state = GAME_OVER;
+
+  update_player_movement();
   
   //printf("%2.1lf, %2.1lf, %2.1lf\n", camera_dir.x, camera_dir.y, camera_dir.z);
   //printf("%2.1lf %2.1lf\n", camera_angle_x, camera_angle_y);
@@ -416,6 +589,7 @@ int main(int argc, char* argv[]){
 
           load_objects();
           load_lights();
+          find_walls();
 
           SDL_SetWindowMouseGrab(screen, SDL_TRUE);
           SDL_SetRelativeMouseMode(SDL_TRUE);

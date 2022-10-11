@@ -54,6 +54,7 @@ int enemy_hp = 10;
 
 
 int running;
+double game_time = 0.0;
 
 unsigned int menu_color = 0x999999;
 
@@ -389,6 +390,7 @@ void load_tri_map(){
 void update_time(){
   clock_gettime(CLOCK_REALTIME, &t1);
   elapsed_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec)/1000000000.0;
+  game_time += elapsed_time;
   clock_gettime(CLOCK_REALTIME, &t0);
 }
 

@@ -3,6 +3,7 @@
 
 extern Mix_Chunk* gun_sound;
 extern Mix_Chunk* hit_sound;
+extern Mix_Chunk* damage_sound;
 extern Mix_Music* music;
 
 bool load_media();

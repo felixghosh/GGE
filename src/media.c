@@ -3,6 +3,7 @@
 
 Mix_Chunk* gun_sound = NULL;
 Mix_Chunk* hit_sound = NULL;
+Mix_Chunk* damage_sound = NULL;
 Mix_Music* music = NULL;
 
 bool load_media(){
@@ -10,17 +11,24 @@ bool load_media(){
 
 
     //Load sound effects
-    gun_sound = Mix_LoadWAV( "sounds/gun2.mp3" );
-    if( gun_sound == NULL )
+    gun_sound = Mix_LoadWAV("sounds/gun2.mp3");
+    if(gun_sound == NULL)
     {
         printf( "Failed to load gun sound effect! SDL_mixer Error: %s\n", Mix_GetError() );
         success = false;
     }
 
-    hit_sound = Mix_LoadWAV( "sounds/hit.mp3" );
-    if( hit_sound == NULL )
+    hit_sound = Mix_LoadWAV("sounds/hit.mp3");
+    if(hit_sound == NULL)
     {
-        printf( "Failed to load hut sound effect! SDL_mixer Error: %s\n", Mix_GetError() );
+        printf( "Failed to load hit sound effect! SDL_mixer Error: %s\n", Mix_GetError() );
+        success = false;
+    }
+
+    damage_sound = Mix_LoadWAV("sounds/damage.mp3");
+    if(damage_sound == NULL)
+    {
+        printf( "Failed to load damage sound effect! SDL_mixer Error: %s\n", Mix_GetError() );
         success = false;
     }
 

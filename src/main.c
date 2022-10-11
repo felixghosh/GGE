@@ -632,8 +632,16 @@ void update_game_logic(){
     enemy = rotateNodeZ(enemy, (rand()%10 * 0.01)*elapsed_time*TIME_CONST, enemy.pos.x, enemy.pos.y, enemy.pos.z);
     enemy = translateNode(enemy, 0.5*sin(game_time + (rand()%20 * 0.01)), 0.6*cos(game_time + (rand()%20 * 0.01)), cos(game_time + (rand()%20 * 0.01)));
 
-    if(detectColision(enemy))
+    static double time_damage_sound = 0.0;
+    if(detectColision(enemy)){
+      if(game_time - time_damage_sound > 0.2){
+        Mix_PlayChannel(-1, damage_sound, 0);
+        time_damage_sound = game_time;
+      }
       player_hp--;
+      
+    }
+      
     enemies[i].enemy = enemy;
 
     

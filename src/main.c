@@ -416,8 +416,10 @@ void handle_input(){
       int x = evt.motion.x;
       int y = evt.motion.y;
       if(evt.button.button == SDL_BUTTON_LEFT){
+        Mix_PlayChannel(-1, gun_sound, 0);
         for(int i = 0; i < nEnemies; i++){
           if(playerHits(enemies[i].enemy) && enemies[i].render){
+            Mix_PlayChannel(-1, hit_sound, 0);
             enemies[i].hp -= 3;
             if(enemies[i].hp <= 0)
               enemies[i].render = false;
@@ -647,6 +649,7 @@ int main(int argc, char* argv[]){
     }
     running = 1;
     current_state = MENU;
+    Mix_PlayMusic(music, -1);
 
     while(running){
       switch(current_state){

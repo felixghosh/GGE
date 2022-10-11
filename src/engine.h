@@ -16,6 +16,7 @@
 #include "camera.h"
 #include "global.h"
 #include "light.h"
+#include "media.h"
 
 
 

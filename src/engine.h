@@ -46,6 +46,8 @@ extern SDL_Event evt;
 
 extern double resScale;
 
+void printTriangle(triangle tri);
+
 object translateObject(object obj, double x, double y, double z);
 
 object rotateObjectX(object obj, double angle, double x, double y, double z);

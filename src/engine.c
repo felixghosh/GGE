@@ -26,7 +26,7 @@ SDL_Rect source, destination, dst;
 
 
 
-double camera_dist = 554.0;
+double camera_dist = 330;
 
 point camera_dir = {0.0, 0.0, 1.0};
 
@@ -59,18 +59,21 @@ object translateObject(object obj, double x, double y, double z){
 object rotateObjectX(object obj, double angle, double x, double y, double z){
   for(int i = 0; i < obj.nFaces; i++)
     obj.tris[i] = rotateTriX(obj.tris[i], angle, x, y, z);
+  obj.pos = rotatePointX(obj.pos, angle, x, y, z);
   return obj;
 }
 
 object rotateObjectY(object obj, double angle, double x, double y, double z){
   for(int i = 0; i < obj.nFaces; i++)
     obj.tris[i] = rotateTriY(obj.tris[i], angle, x, y, z);
+  obj.pos = rotatePointY(obj.pos, angle, x, y, z);
   return obj;
 }
 
 object rotateObjectZ(object obj, double angle, double x, double y, double z){
   for(int i = 0; i < obj.nFaces; i++)
     obj.tris[i] = rotateTriZ(obj.tris[i], angle, x, y, z);
+  obj.pos = rotatePointZ(obj.pos, angle, x, y, z);
   return obj;
 }
 
@@ -104,6 +107,10 @@ node rotateNodeZ(node node, double angle, double x, double y, double z){
   for(int i = 0; i < node.nChildren; i++)
     node.children[i] = rotateNodeZ(node.children[i], angle, x, y, z);
   return node;
+}
+
+void printTriangle(triangle tri){
+  printf("(%2.1lf, %2.1lf, %2.1lf)\n(%2.1lf, %2.1lf, %2.1lf)\n(%2.1lf, %2.1lf, %2.1lf)\n\n", tri.a.x, tri.a.y, tri.a.z, tri.b.x, tri.b.y, tri.b.z, tri.c.x, tri.c.y, tri.c.z);
 }
 
 int cmpfunc (const void * a, const void * b) {

@@ -10,7 +10,7 @@ bool load_media(){
 
 
     //Load sound effects
-    gun_sound = Mix_LoadWAV( "sounds/gun.mp3" );
+    gun_sound = Mix_LoadWAV( "sounds/gun2.mp3" );
     if( gun_sound == NULL )
     {
         printf( "Failed to load gun sound effect! SDL_mixer Error: %s\n", Mix_GetError() );

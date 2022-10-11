@@ -3,7 +3,7 @@
 #define LEVEL 0
 #define GUN 1
 
-#define GRAVITY 0.1
+#define GRAVITY 0.2
 #define SLOWDOWN 0.5
 #define BASE_MAX_SPEED 5
 #define MAX_VERTICAL_SPEED 15
@@ -14,8 +14,7 @@
 
 #define MUZZLE 0
 
-#define GUN_ANIMATION_TIME 1.0
-
+#define DEFAULT_CAM_DIST 330
 
 typedef struct enemy_t{
   node enemy;
@@ -43,10 +42,7 @@ tri_map* allTris;
 
 const Uint8* keystates;
 
-int gun_animation_start_time = 0;
 bool animate_gun = false;
-double animation_rotation_x = 0;
-double animation_rotation_z = 0;
 
 double speed_fast = 5.0;
 double speed_slow = 2.0;
@@ -77,6 +73,8 @@ double max_vel = BASE_MAX_SPEED;
 double x_vel, y_vel, z_vel;
 
 double room_x_max, room_x_min, room_z_max, room_z_min;
+
+bool intro_zoom = true;
 
 typedef enum game_state {
   MENU, NEW_GAME, GAME_RUNNING, GAME_OVER
@@ -164,11 +162,11 @@ static void find_walls() {
 
   calc_obj_extremes(objects[0], &x_max, &x_min, &y_max, &y_min, &z_max, &z_min);
 
-  room_x_max = x_max - camera_dist/10;
-  room_x_min = x_min + camera_dist/10;
+  room_x_max = x_max - DEFAULT_CAM_DIST/10;
+  room_x_min = x_min + DEFAULT_CAM_DIST/10;
 
-  room_z_max = z_max - camera_dist/10;
-  room_z_min = z_min + camera_dist/10;
+  room_z_max = z_max - DEFAULT_CAM_DIST/10;
+  room_z_min = z_min + DEFAULT_CAM_DIST/10;
 }
 
 bool detectColision(node enemy){
@@ -179,7 +177,7 @@ bool playerHits(node enemy){
   point u = subtractPoints(enemy.pos, player.pos);
   point v = (point){-camera_dir.x, camera_dir.y, -camera_dir.z};
   point rejection = subtractPoints(u, scaleVector(v, dotProduct(v, u)));
-  return vectorLength(rejection) < enemy_radius*1.3;
+  return vectorLength(rejection) < enemy_radius*1.5;
 }
 
 void movePlayer(double distX, double distY, double distZ){
@@ -265,6 +263,20 @@ void pitchPlayer(double rad){
   }
 }
 
+void free_objects(){
+  for(int j = 0; j < nObj; j++)
+    free(objects[j].tris);
+  free(objects);
+  free(lights);
+  free(enemies);
+  free(allTris);
+
+  nObj = 0;
+  nEnemies = 0;
+  nLights = 0;
+  totalTris = 0;
+}
+
 void handle_input_menu(){
 keystates = SDL_GetKeyboardState(NULL);
         
@@ -288,19 +300,30 @@ keystates = SDL_GetKeyboardState(NULL);
         if(x >= WIDTH*resScale/2-55*(WIDTH*resScale/700) && x <= WIDTH*resScale/2-55*(WIDTH*resScale/700) + 120*(WIDTH*resScale/700)
           && y >= HEIGHT*resScale/2-27*(HEIGHT*resScale/700) && y <= HEIGHT*resScale/2-27*(HEIGHT*resScale/700) + 32*(HEIGHT*resScale/700)){
             current_state = NEW_GAME;
+            free_objects();
         }
       }
     }
   }
 }
 
-void handle_logic_menu(){
-
+void update_logic_menu(){
+  for(int i = 1; i < nObj; i++){
+    if(i == 1){
+       objects[i] = rotateObjectX(objects[i], -0.22*elapsed_time, 0, 0, 200);
+      objects[i] = rotateObjectY(objects[i], -0.113*elapsed_time, 0, 0, 200);
+      objects[i] = rotateObjectZ(objects[i], -0.73*elapsed_time, 0, 0, 200);
+    } else {
+      objects[i] = rotateObjectX(objects[i], 0.2*elapsed_time, 0, 0, 200);
+      objects[i] = rotateObjectY(objects[i], 0.7*elapsed_time, 0, 0, 200);
+      objects[i] = rotateObjectZ(objects[i], 1.1*elapsed_time, 0, 0, 200);
+    }
+  }
+  camera_pos = rotatePointY(camera_pos, 0.001*elapsed_time*TIME_CONST, 0, 0, 200);
+  camera_angle_y += 0.001*elapsed_time*TIME_CONST;
 }
 
 void render_menu(){
-  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-  SDL_RenderClear(renderer);
 
   drawText(renderer, "DASK", WIDTH*resScale/2-90*(WIDTH*resScale/700), HEIGHT*resScale/2-127*(HEIGHT*resScale/700), 180*(WIDTH*resScale/700), 54*(HEIGHT*resScale/700), 0xFF1111, 36);
   drawText(renderer, "START", WIDTH*resScale/2-55*(WIDTH*resScale/700), HEIGHT*resScale/2-27*(HEIGHT*resScale/700), 120*(WIDTH*resScale/700), 32*(HEIGHT*resScale/700), menu_color, 24);
@@ -308,23 +331,20 @@ void render_menu(){
 
   drawText(renderer, "GGE v0.0.1", WIDTH-65, HEIGHT-20, 60, 16, 0xFFFFFF, 12);
   
-
-  //SWITCH BUFFERS          
-  SDL_RenderPresent(renderer);
 }
 
 void load_objects(){
-objects = malloc(MAXOBJ*sizeof(object));
+  objects = malloc(MAXOBJ*sizeof(object));
   object teapot = loadOBJ("OBJ/teapot.obj", 0xDF2332, 0, 0, 30, 10);
   object cube = loadOBJ("OBJ/cube.obj", 0xDF3F32, -20, -20, 20, 10);
   object monkey = loadOBJ("OBJ/monkey.obj", 0x2323DF, 0, -30, 40, 10);
   object tri = loadOBJ("OBJ/tri.obj", 0x23D33F, 0, 0, 40, 10);
   object dog = loadOBJ("OBJ/dog.obj", 0x23D33F, 0, 0, 40, 10);
   object get = loadOBJ("OBJ/get.obj", 0x23D33F, 0, 0, 80, 10);
-  object room = loadOBJ("OBJ/room2.obj", 0xE3737F, 0, 10, 0, 100);
+  object room = loadOBJ("OBJ/room3.obj", 0xE32439, 0, 10, 0, 100);
   object rifle = loadOBJ("OBJ/rifle.obj", 0x636393, (WIDTH)*0.004, (HEIGHT)*0.015, -7, 10);
-  
-  
+
+
   objects[nObj++] = room;
   //objects[nObj++] = cube;
   objects[nObj++] = rifle;
@@ -336,7 +356,7 @@ objects = malloc(MAXOBJ*sizeof(object));
   //objects[nObj-1] = rotateObjectX(objects[nObj-1], 3.14/2, objects[nObj-1].pos.x, objects[nObj-1].pos.y, objects[nObj-1].pos.z);
 
   player = (node){&objects[GUN], camera_pos, NULL, 0};
- 
+
 
   totalTris = 0;
   for(int i = 0; i < nObj; i++)
@@ -347,9 +367,46 @@ objects = malloc(MAXOBJ*sizeof(object));
 void load_lights(){
   lights = malloc(sizeof(light)*MAXLIGHT);
   lights[nLights++] = (light){(point){0, 0, 0,}, 0};  //MUZZLE FLASH
-  lights[nLights++] = (light){(point){20.0, 20.0, -70.0}, 100.0};
-  lights[nLights++] = (light){(point){-500.0, 10.0, 500.0}, 300.0};
-  //lights[nLights++] = (light){(point){0.0, -1000.0, 0.0}, 100};
+  //lights[nLights++] = (light){(point){20.0, 20.0, -70.0}, 100.0};
+  lights[nLights++] = (light){(point){-500.0, 10.0, 500.0}, 50.0};
+  lights[nLights++] = (light){(point){500.0, 10.0, 500.0}, 50.0};
+  lights[nLights++] = (light){(point){500.0, 10.0, -500.0}, 50.0};
+  lights[nLights++] = (light){(point){-500.0, 10.0, -500.0}, 50.0};
+
+  lights[nLights++] = (light){(point){0.0, -1000.0, 0.0}, 100};
+}
+
+void load_menu_objects(){
+  objects = malloc(MAXOBJ*sizeof(object));
+  object cube1 = loadOBJ("OBJ/cube.obj", 0xFF0000, 100, 0, 200, 10);
+  object cube2 = loadOBJ("OBJ/cube.obj", 0x00FF00, -100, 0, 200, 10);
+  object cube3 = loadOBJ("OBJ/cube.obj", 0x0000FF, 0, 100, 200, 10);
+  object cube4 = loadOBJ("OBJ/cube.obj", 0xFFFF00, 0, -100, 200, 10);
+  object cube5 = loadOBJ("OBJ/cube.obj", 0xFF00FF, 0, 0, 300, 10);
+  object cube6 = loadOBJ("OBJ/cube.obj", 0x00FFFF, 0, 0, 100, 10);
+  object get = loadOBJ("OBJ/get.obj", 0xE6408B, 0, 0, 200, 10);
+  object room = loadOBJ("OBJ/room3.obj", 0x32F48D, 0, 20, 200, 100);
+
+
+  objects[nObj++] = room;
+  objects[nObj++] = get;
+  objects[nObj++] = cube1;
+  objects[nObj++] = cube2;
+  objects[nObj++] = cube3;
+  objects[nObj++] = cube4;
+  objects[nObj++] = cube5;
+  objects[nObj++] = cube6;
+  
+  
+
+  totalTris = 0;
+  for(int i = 0; i < nObj; i++)
+    totalTris += objects[i].nFaces;
+}
+
+void load_menu_lights(){
+  lights = malloc(sizeof(light)*MAXLIGHT);
+  lights[nLights++] = (light){(point){100.0, -100.0, -100.0}, 300};
 }
 
 void readTris(node node){
@@ -374,7 +431,7 @@ void load_enemies(){
   object* sphere5 = malloc(sizeof(object));
   object* sphere6 = malloc(sizeof(object));
   *sphere1 = loadOBJ("OBJ/sphere.obj", 0xD3b3bF, 200, 10, 0, 10);
-  *sphere2 = loadOBJ("OBJ/sphere.obj", 0x444477, 200, 10, -8, 4);
+  *sphere2 = loadOBJ("OBJ/sphere.obj", 0x008F1F, 200, 10, -8, 4);
 
   node pupil1 = {sphere1, sphere1->pos, NULL, 0};
   node* children1 = malloc(1*sizeof(node));
@@ -383,7 +440,7 @@ void load_enemies(){
   enemies[nEnemies++] = (enemy_t){enemy1, 10, true, 5.0, 0.0};
 
   *sphere3 = loadOBJ("OBJ/sphere.obj", 0xD3b3bF, 150, 20, 0, 10);
-  *sphere4 = loadOBJ("OBJ/sphere.obj", 0x444477, 150, 20, -8, 4);
+  *sphere4 = loadOBJ("OBJ/sphere.obj", 0x008F1F, 150, 20, -8, 4);
 
   node pupil2 = {sphere3, sphere3->pos, NULL, 0};
   node* children2 = malloc(1*sizeof(node));
@@ -393,7 +450,7 @@ void load_enemies(){
 
 
   *sphere5 = loadOBJ("OBJ/sphere.obj", 0xD3b3bF, 200, 100, 0, 10);
-  *sphere6 = loadOBJ("OBJ/sphere.obj", 0x444477, 200, 100, -8, 4);
+  *sphere6 = loadOBJ("OBJ/sphere.obj", 0x008F1F, 200, 100, -8, 4);
 
   node pupil3 = {sphere5, sphere5->pos, NULL, 0};
   node* children3 = malloc(1*sizeof(node));
@@ -458,9 +515,6 @@ void handle_input(){
       if(evt.button.button == SDL_BUTTON_LEFT){
         if(!animate_gun){
           animate_gun = true;
-          gun_animation_start_time = game_time;
-          animation_rotation_x = 0;
-          animation_rotation_z = 0;
           muzzle_flash = true;
           Mix_PlayChannel(-1, gun_sound, 0);
           for(int i = 0; i < nEnemies; i++){
@@ -472,8 +526,6 @@ void handle_input(){
                 enemies[i].time_of_death = game_time;
                 player_points += 50;
               }
-              printf("HIT\n");
-              printf("hp:%d render:%d\n", enemies[i].hp, enemies[i].render);
             }
           }
         }
@@ -491,9 +543,9 @@ void handle_input(){
     x_vel += max_vel;
   }if(keystates[SDL_SCANCODE_SPACE]){
     if(camera_pos.y == 0) {
-      y_vel -= 10;
+      y_vel -= 3;
     } else if (y_vel < 0) {
-      y_vel -= 0.01;
+      y_vel -= 0.18;
   }
   }if(keystates[SDL_SCANCODE_R]){//r
       //movePlayer(0.0, -speed*elapsed_time*TIME_CONST, 0.0);
@@ -531,9 +583,16 @@ void handle_input(){
 }
 
 void update_game_logic(){
-  static double enemy_speed = 2.0;
+  static double enemy_speed = 2.5;
   static double last_point_time = 0.0;
 
+  if(intro_zoom){
+    camera_dist += 0.07*(DEFAULT_CAM_DIST - camera_dist) + 1;
+    if(camera_dist >= DEFAULT_CAM_DIST){
+      camera_dist = DEFAULT_CAM_DIST;
+      intro_zoom = false;
+    }
+  }
   //Update muzzle light
   lights[MUZZLE].p = (point){camera_dir.x*100+(player.obj->pos.x), (player.obj->pos.y), camera_dir.z*100+(player.obj->pos.z)};
 
@@ -551,10 +610,11 @@ void update_game_logic(){
   if(game_time - last_point_time > 5){
     last_point_time = game_time;
     player_points += 10;
+    enemy_speed += 0.15;
   }
 
   //Update enemies
-  for(int i = 0; i < nEnemies; i++){
+  for(int i = 0; i < nEnemies; i++){//HERE!!!
     if(!enemies[i].render) {
       if(game_time - enemies[i].time_of_death > enemies[i].respawn_time) {
         enemies[i].hp = 10;
@@ -566,7 +626,7 @@ void update_game_logic(){
     }
     node enemy = enemies[i].enemy;
     point dir = normalizeVector(subtractPoints(player.pos, enemy.pos));
-    //enemy = translateNode(enemy, dir.x*enemy_speed*elapsed_time*TIME_CONST, dir.y*enemy_speed*elapsed_time*TIME_CONST, dir.z*enemy_speed*elapsed_time*TIME_CONST);
+    enemy = translateNode(enemy, dir.x*enemy_speed*elapsed_time*TIME_CONST, dir.y*enemy_speed*elapsed_time*TIME_CONST, dir.z*enemy_speed*elapsed_time*TIME_CONST);
     enemy = rotateNodeX(enemy, ((rand()%100 - 50) * 0.001)*elapsed_time*TIME_CONST, enemy.pos.x, enemy.pos.y, enemy.pos.z);
     enemy = rotateNodeY(enemy, ((rand()%100 - 50) * 0.001)*elapsed_time*TIME_CONST, enemy.pos.x, enemy.pos.y, enemy.pos.z);
     enemy = rotateNodeZ(enemy, (rand()%10 * 0.01)*elapsed_time*TIME_CONST, enemy.pos.x, enemy.pos.y, enemy.pos.z);
@@ -604,8 +664,6 @@ void update_game_logic(){
 }
 
 void render_scene(){
-  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-  SDL_RenderClear(renderer);
   SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
 
   //sort triangles for painters algorithm
@@ -634,7 +692,7 @@ void render_scene(){
         point world_normal = normalizeVector(calcNormal(tri));
         
         double lightness = 0.0;
-        double ambient = 0.1;
+        double ambient = 0.0;
         for(int i = 0; i < nLights; i++){
           point light_direction = normalizeVector(subtractPoints(calcCenter(tri), lights[i].p));
           double light_dist = vectorLength(subtractPoints(calcCenter(tri), lights[i].p));
@@ -672,7 +730,9 @@ void render_scene(){
     }
     free(clipped_tris_z);
   }
+}
 
+void render_ui(){
   drawText(renderer, "GGE v0.0.1", WIDTH-65, HEIGHT-20, 60, 16, 0xFFFFFF, 12);
   char hp[9] = {0};
   snprintf(hp, 8, "HP: %3d", player_hp);
@@ -684,9 +744,11 @@ void render_scene(){
   SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
   SDL_RenderDrawLine(renderer, WIDTH/2-10, HEIGHT/1.5, WIDTH/2+10, HEIGHT/1.5);
   SDL_RenderDrawLine(renderer, WIDTH/2, HEIGHT/1.5-10, WIDTH/2, HEIGHT/1.5+10);
+}
 
-  //SWITCH BUFFERS          
-  SDL_RenderPresent(renderer);
+void clear_screen(){
+  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+  SDL_RenderClear(renderer);
 }
 
 void handle_input_game_over(){
@@ -724,14 +786,7 @@ void render_game_over(){
   SDL_RenderPresent(renderer);
 }
 
-void free_objects(){
-  for(int j = 0; j < nObj; j++)
-    free(objects[j].tris);
-  free(objects);
-  free(lights);
-  free(enemies);
-  free(allTris);
-}
+
 
 
 int main(int argc, char* argv[]){
@@ -743,18 +798,34 @@ int main(int argc, char* argv[]){
     }
     running = 1;
     current_state = MENU;
+    load_menu_objects();
+    load_menu_lights();
+    load_tri_map();
     Mix_PlayMusic(music, -1);
+    clock_gettime(CLOCK_REALTIME, &t0);
 
     while(running){
       switch(current_state){
         case MENU:
-          
+          update_time();
           handle_input_menu();
-          handle_logic_menu();
+          update_logic_menu();
+          clear_screen();
+          render_scene();
           render_menu();
+          SDL_RenderPresent(renderer);
           break;
 
         case NEW_GAME:
+
+          clock_gettime(CLOCK_REALTIME, &t0); //set time t0
+          game_time = 0.0;
+          camera_dist = 0.0;
+          current_state = GAME_RUNNING;
+          camera_pos = (point){0, 0, 0};
+          camera_angle_y = 0.0;
+          camera_angle_x = 0.0;
+          camera_dir = (point){0.0, 0.0, 1.0};
 
           load_objects();
           load_enemies();
@@ -764,21 +835,22 @@ int main(int argc, char* argv[]){
 
           SDL_SetWindowMouseGrab(screen, SDL_TRUE);
           SDL_SetRelativeMouseMode(SDL_TRUE);
-           
-          clock_gettime(CLOCK_REALTIME, &t0); //set time t0
-          current_state = GAME_RUNNING;
+          
           break;
 
         case GAME_RUNNING:
 
           update_time();
           //printf("fps: %5u\n", (int)(1/elapsed_time));
-          //printf("fov:%u\n", (int)calcFOV());
+          //printf("fov:%u camera_dist: %2.1lf\n", (int)calcFOV(), camera_dist);
           handle_input();
 
           update_game_logic();
 
+          clear_screen();
           render_scene();
+          render_ui();
+          SDL_RenderPresent(renderer);
           break;
 
         case GAME_OVER:

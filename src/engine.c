@@ -59,18 +59,21 @@ object translateObject(object obj, double x, double y, double z){
 object rotateObjectX(object obj, double angle, double x, double y, double z){
   for(int i = 0; i < obj.nFaces; i++)
     obj.tris[i] = rotateTriX(obj.tris[i], angle, x, y, z);
+  obj.pos = rotatePointX(obj.pos, angle, x, y, z);
   return obj;
 }
 
 object rotateObjectY(object obj, double angle, double x, double y, double z){
   for(int i = 0; i < obj.nFaces; i++)
     obj.tris[i] = rotateTriY(obj.tris[i], angle, x, y, z);
+  obj.pos = rotatePointY(obj.pos, angle, x, y, z);
   return obj;
 }
 
 object rotateObjectZ(object obj, double angle, double x, double y, double z){
   for(int i = 0; i < obj.nFaces; i++)
     obj.tris[i] = rotateTriZ(obj.tris[i], angle, x, y, z);
+  obj.pos = rotatePointZ(obj.pos, angle, x, y, z);
   return obj;
 }
 

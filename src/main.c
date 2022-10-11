@@ -3,7 +3,7 @@
 #define LEVEL 0
 #define GUN 1
 
-#define GRAVITY 0.1
+#define GRAVITY 0.2
 #define SLOWDOWN 0.5
 #define BASE_MAX_SPEED 5
 #define MAX_VERTICAL_SPEED 15
@@ -176,7 +176,7 @@ bool playerHits(node enemy){
   point u = subtractPoints(enemy.pos, player.pos);
   point v = (point){-camera_dir.x, camera_dir.y, -camera_dir.z};
   point rejection = subtractPoints(u, scaleVector(v, dotProduct(v, u)));
-  return vectorLength(rejection) < enemy_radius*1.3;
+  return vectorLength(rejection) < enemy_radius*1.5;
 }
 
 void movePlayer(double distX, double distY, double distZ){
@@ -317,11 +317,9 @@ void update_logic_menu(){
 }
 
 void render_menu(){
-  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-  SDL_RenderClear(renderer);
 
 
-  qsort(allTris, totalTris, sizeof(tri_map), cmpfunc);
+  /*qsort(allTris, totalTris, sizeof(tri_map), cmpfunc);
 
   for(int i = 0; i < totalTris; i++){
     if(!*allTris[i].render)
@@ -387,7 +385,7 @@ void render_menu(){
       }
     }
     free(clipped_tris_z);
-  }
+  }*/
 
 
 
@@ -438,8 +436,8 @@ void load_lights(){
   lights = malloc(sizeof(light)*MAXLIGHT);
   lights[nLights++] = (light){(point){0, 0, 0,}, 0};  //MUZZLE FLASH
   //lights[nLights++] = (light){(point){20.0, 20.0, -70.0}, 100.0};
-  //lights[nLights++] = (light){(point){-500.0, 10.0, 500.0}, 300.0};
-  lights[nLights++] = (light){(point){0.0, -1000.0, 0.0}, 300};
+  lights[nLights++] = (light){(point){-500.0, 10.0, 500.0}, 200.0};
+  lights[nLights++] = (light){(point){0.0, -1000.0, 0.0}, 100};
 }
 
 void load_menu_objects(){
@@ -590,7 +588,6 @@ void handle_input(){
               player_points += 50;
             }
             printf("HIT\n");
-            printf("hp:%d render:%d\n", enemies[i].hp, enemies[i].render);
           }
         }
       }
@@ -607,9 +604,9 @@ void handle_input(){
     x_vel += max_vel;
   }if(keystates[SDL_SCANCODE_SPACE]){
     if(camera_pos.y == 0) {
-      y_vel -= 10;
+      y_vel -= 3;
     } else if (y_vel < 0) {
-      y_vel -= 0.01;
+      y_vel -= 0.18;
   }
   }if(keystates[SDL_SCANCODE_R]){//r
       //movePlayer(0.0, -speed*elapsed_time*TIME_CONST, 0.0);
@@ -677,7 +674,7 @@ void update_game_logic(){
   }
 
   //Update enemies
-  for(int i = 0; i < nEnemies; i++){
+  for(int i = 0; i < nEnemies; i++){//HERE!!!
     if(!enemies[i].render) {
       if(game_time - enemies[i].time_of_death > enemies[i].respawn_time) {
         enemies[i].hp = 10;
@@ -711,8 +708,6 @@ void update_game_logic(){
 }
 
 void render_scene(){
-  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-  SDL_RenderClear(renderer);
   SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
 
   //sort triangles for painters algorithm
@@ -779,7 +774,9 @@ void render_scene(){
     }
     free(clipped_tris_z);
   }
+}
 
+void render_ui(){
   drawText(renderer, "GGE v0.0.1", WIDTH-65, HEIGHT-20, 60, 16, 0xFFFFFF, 12);
   char hp[9] = {0};
   snprintf(hp, 8, "HP: %3d", player_hp);
@@ -791,9 +788,11 @@ void render_scene(){
   SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
   SDL_RenderDrawLine(renderer, WIDTH/2-10, HEIGHT/1.5, WIDTH/2+10, HEIGHT/1.5);
   SDL_RenderDrawLine(renderer, WIDTH/2, HEIGHT/1.5-10, WIDTH/2, HEIGHT/1.5+10);
+}
 
-  //SWITCH BUFFERS          
-  SDL_RenderPresent(renderer);
+void clear_screen(){
+  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+  SDL_RenderClear(renderer);
 }
 
 void handle_input_game_over(){
@@ -855,7 +854,10 @@ int main(int argc, char* argv[]){
           update_time();
           handle_input_menu();
           update_logic_menu();
+          clear_screen();
+          render_scene();
           render_menu();
+          SDL_RenderPresent(renderer);
           break;
 
         case NEW_GAME:
@@ -889,7 +891,10 @@ int main(int argc, char* argv[]){
 
           update_game_logic();
 
+          clear_screen();
           render_scene();
+          render_ui();
+          SDL_RenderPresent(renderer);
           break;
 
         case GAME_OVER:

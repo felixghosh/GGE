@@ -643,7 +643,12 @@ void free_objects(){
 
 
 int main(int argc, char* argv[]){
-    initialize_engine();
+    if(argc == 2){
+      if(strcmp(argv[1], "-f") == 0)
+        initialize_engine(true);
+    } else{
+      initialize_engine(false);
+    }
     running = 1;
     current_state = MENU;
 

@@ -152,7 +152,7 @@ void drawTriangle(SDL_Renderer* renderer, triangle tri){
   }
 }
 
-void initialize_engine(){
+void initialize_engine(bool fullscreen){
     if(SDL_Init(SDL_INIT_EVERYTHING) < 0)
             printf("SDL could not be initialized! %s\n", SDL_GetError());
         else
@@ -163,7 +163,8 @@ void initialize_engine(){
             printf("InitSetup failed to create window\n");
 
         SDL_SetWindowTitle(screen, "GGE");
-        
+        if(fullscreen)
+          SDL_SetWindowFullscreen(screen, SDL_WINDOW_FULLSCREEN);
 
         if(TTF_Init() == -1){
           printf("TTF could not be initialized!\n");
@@ -208,8 +209,6 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri){
 
   if(p[0].y == p[2].y)
     return;
-
-  bool shortSide = (p[1].y - p[0].y) * (p[2].x - p[0].x) < (p[1].x - p[0].x) * (p[2].y - p[0].y); //false = left, true = right
   
   int dy_long = round(p[2].y - p[0].y);
   double denominator = 1.0 / dy_long;
@@ -226,7 +225,7 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri){
     }
   }
   
-  int dy_last = dy_long - dy_short;//round((p[2].y - p[1].y));
+  int dy_last = dy_long - dy_short;
   denominator = 1.0 / dy_last;
   double slope_last[dy_last];
   if(dy_last != 0){
@@ -240,7 +239,6 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri){
     for(i; i < dy_short; i++)
       for(int j = 0; j < resScale; j++){
         SDL_RenderDrawLine(renderer, slope_long[i]*resScale, (i+p[0].y)*resScale+j, (int)slope_short[i]*resScale, (i+p[0].y)*resScale+j);
-        //printf("drawing from (%lf, %lf) to (%lf, %lf)\n", slope_long[i], (i+p[0].y)*resScale+j, slope_short[i]*resScale, ((i+p[0].y)*resScale+j));
       }
   }
   if(dy_last != 0){
@@ -248,7 +246,6 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri){
     for(i; i < dy_long; i++)
       for(int j = 0; j < resScale; j++){
         SDL_RenderDrawLine(renderer, slope_long[i]*resScale, (i+p[0].y)*resScale+j, (int)slope_last[i - origin]*resScale, (i+p[0].y)*resScale+j);
-        //printf("drawing from (%lf, %lf) to (%lf, %lf)\n", slope_long[i], (i+p[0].y)*resScale+j, slope_last[i - origin]*resScale, ((i+p[0].y)*resScale+j));
       }
   }
 }

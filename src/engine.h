@@ -71,7 +71,7 @@ unsigned int colorLightness(double value, unsigned int color);
 
 void drawTriangle(SDL_Renderer* renderer, triangle tri);
 
-void initialize_engine();
+void initialize_engine(bool fullscreen);
 
 void terminate_engine();
 

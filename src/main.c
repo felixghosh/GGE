@@ -308,9 +308,15 @@ keystates = SDL_GetKeyboardState(NULL);
 
 void update_logic_menu(){
   for(int i = 1; i < nObj; i++){
-    objects[i] = rotateObjectX(objects[i], 0.2*elapsed_time, 0, 0, 200);
-    objects[i] = rotateObjectY(objects[i], 0.7*elapsed_time, 0, 0, 200);
-    objects[i] = rotateObjectZ(objects[i], 1.1*elapsed_time, 0, 0, 200);
+    if(i == 1){
+       objects[i] = rotateObjectX(objects[i], -0.22*elapsed_time, 0, 0, 200);
+      objects[i] = rotateObjectY(objects[i], -0.113*elapsed_time, 0, 0, 200);
+      objects[i] = rotateObjectZ(objects[i], -0.73*elapsed_time, 0, 0, 200);
+    } else {
+      objects[i] = rotateObjectX(objects[i], 0.2*elapsed_time, 0, 0, 200);
+      objects[i] = rotateObjectY(objects[i], 0.7*elapsed_time, 0, 0, 200);
+      objects[i] = rotateObjectZ(objects[i], 1.1*elapsed_time, 0, 0, 200);
+    }
   }
   camera_pos = rotatePointY(camera_pos, 0.001*elapsed_time*TIME_CONST, 0, 0, 200);
   camera_angle_y += 0.001*elapsed_time*TIME_CONST;
@@ -318,87 +324,12 @@ void update_logic_menu(){
 
 void render_menu(){
 
-
-  /*qsort(allTris, totalTris, sizeof(tri_map), cmpfunc);
-
-  for(int i = 0; i < totalTris; i++){
-    if(!*allTris[i].render)
-      continue;
-    
-    triangle tri = *(allTris[i].tri);
-    
-    triangle cam_tri = toCameraBasisTriangle(tri);
-
-    //CLIPPING AGAINST CAMERA Z-PLANE
-    triangle* clipped_tris_z = malloc(2*sizeof(triangle));
-    clipped_tris_z[0] = cam_tri;
-    unsigned int nTrisZ = 1;
-    clipEdge((point){0,0,3} , (point){WIDTH,HEIGHT,3}, &clipped_tris_z, &nTrisZ, 0, 'z');
-
-    for(int j = 0; j < nTrisZ; j++){
-      triangle projected_tri = projectTriangle(clipped_tris_z[j]);
-      
-      point projected_normal = calcNormal(projected_tri);
-      projected_normal = normalizeVector(projected_normal);
-
-      //Check normal (backface culling)
-      if(projected_normal.z > 0){
-        
-        
-        point world_normal = normalizeVector(calcNormal(tri));
-        
-        double lightness = 0.0;
-        double ambient = 0.0;
-        for(int i = 0; i < nLights; i++){
-          point light_direction = normalizeVector(subtractPoints(calcCenter(tri), lights[i].p));
-          double light_dist = vectorLength(subtractPoints(calcCenter(tri), lights[i].p));
-          double partial_light = (lights[i].intensity/pow(light_dist, 1.1))*dotProduct(world_normal, light_direction);
-          partial_light = partial_light < 0 ? 0 : partial_light;
-          lightness += partial_light;
-        }
-        unsigned int color = colorLightness(lightness + ambient, tri.color);
-        
-        
-        //CLIPPING AGAINST SCREEN BORDERS
-        unsigned int nTris = 1;
-        triangle* clipped_tris = malloc(16*sizeof(triangle));
-        clipped_tris[0] = projected_tri;
-        clipTriangle(&clipped_tris, &nTris);
-
-        //RENDERING
-        for(int i = 0; i < nTris; i++){
-          if(!wireframe){
-            SDL_SetRenderDrawColor(renderer, 0x0000FF&color>>16, (0x00FF00&color)>>8, 0x0000FF&color, 255);
-            rasterizeTriangle(renderer, clipped_tris[i]);
-          } else{
-            SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
-            triangle scaledTri = (triangle){
-                {clipped_tris[i].a.x*resScale, clipped_tris[i].a.y*resScale, clipped_tris[i].a.z},
-                {clipped_tris[i].b.x*resScale, clipped_tris[i].b.y*resScale, clipped_tris[i].b.z},
-                {clipped_tris[i].c.x*resScale, clipped_tris[i].c.y*resScale, clipped_tris[i].c.z},
-                clipped_tris[i].color
-            };
-            drawTriangle(renderer, scaledTri);
-          }
-        }
-        free(clipped_tris);
-      }
-    }
-    free(clipped_tris_z);
-  }*/
-
-
-
-
   drawText(renderer, "DASK", WIDTH*resScale/2-90*(WIDTH*resScale/700), HEIGHT*resScale/2-127*(HEIGHT*resScale/700), 180*(WIDTH*resScale/700), 54*(HEIGHT*resScale/700), 0xFF1111, 36);
   drawText(renderer, "START", WIDTH*resScale/2-55*(WIDTH*resScale/700), HEIGHT*resScale/2-27*(HEIGHT*resScale/700), 120*(WIDTH*resScale/700), 32*(HEIGHT*resScale/700), menu_color, 24);
 
 
   drawText(renderer, "GGE v0.0.1", WIDTH-65, HEIGHT-20, 60, 16, 0xFFFFFF, 12);
   
-
-  //SWITCH BUFFERS          
-  SDL_RenderPresent(renderer);
 }
 
 void load_objects(){
@@ -449,17 +380,18 @@ void load_menu_objects(){
   object cube5 = loadOBJ("OBJ/cube.obj", 0xFF00FF, 0, 0, 300, 10);
   object cube6 = loadOBJ("OBJ/cube.obj", 0x00FFFF, 0, 0, 100, 10);
   object get = loadOBJ("OBJ/get.obj", 0xE6408B, 0, 0, 200, 10);
-  object room = loadOBJ("OBJ/room3.obj", 0x32F48D, 0, 10, 200, 100);
+  object room = loadOBJ("OBJ/room3.obj", 0x32F48D, 0, 20, 200, 100);
 
 
   objects[nObj++] = room;
+  objects[nObj++] = get;
   objects[nObj++] = cube1;
   objects[nObj++] = cube2;
   objects[nObj++] = cube3;
   objects[nObj++] = cube4;
   objects[nObj++] = cube5;
   objects[nObj++] = cube6;
-  objects[nObj++] = get;
+  
   
 
   totalTris = 0;
@@ -671,6 +603,7 @@ void update_game_logic(){
   if(game_time - last_point_time > 5){
     last_point_time = game_time;
     player_points += 10;
+    enemy_speed += 0.15;
   }
 
   //Update enemies

@@ -47,6 +47,7 @@ bool debug = false;
 
 node player;
 int player_hp = 100;
+long player_points = 0;
 
 double player_radius = 10.0;
 double enemy_radius = 10.0;
@@ -356,14 +357,37 @@ void load_enemies(){
   enemies = malloc(sizeof(enemy_t)*MAXENEMY);
   object* sphere1 = malloc(sizeof(object));
   object* sphere2 = malloc(sizeof(object));
+  object* sphere3 = malloc(sizeof(object));
+  object* sphere4 = malloc(sizeof(object));
+  object* sphere5 = malloc(sizeof(object));
+  object* sphere6 = malloc(sizeof(object));
   *sphere1 = loadOBJ("OBJ/sphere.obj", 0xD3b3bF, 200, 10, 0, 10);
   *sphere2 = loadOBJ("OBJ/sphere.obj", 0x444477, 200, 10, -8, 4);
 
-  node pupil = {sphere1, sphere1->pos, NULL, 0};
-  node* children = malloc(1*sizeof(node));
-  children[0] = pupil;
-  node enemy1 = {sphere2, sphere2->pos, children, 1};
+  node pupil1 = {sphere1, sphere1->pos, NULL, 0};
+  node* children1 = malloc(1*sizeof(node));
+  children1[0] = pupil1;
+  node enemy1 = {sphere2, sphere2->pos, children1, 1};
   enemies[nEnemies++] = (enemy_t){enemy1, 10, true, 5.0, 0.0};
+
+  *sphere3 = loadOBJ("OBJ/sphere.obj", 0xD3b3bF, 150, 20, 0, 10);
+  *sphere4 = loadOBJ("OBJ/sphere.obj", 0x444477, 150, 20, -8, 4);
+
+  node pupil2 = {sphere3, sphere3->pos, NULL, 0};
+  node* children2 = malloc(1*sizeof(node));
+  children2[0] = pupil2;
+  node enemy2 = {sphere4, sphere4->pos, children2, 1};
+  enemies[nEnemies++] = (enemy_t){enemy2, 10, false, 10.0, 0.0};
+
+
+  *sphere5 = loadOBJ("OBJ/sphere.obj", 0xD3b3bF, 200, 100, 0, 10);
+  *sphere6 = loadOBJ("OBJ/sphere.obj", 0x444477, 200, 100, -8, 4);
+
+  node pupil3 = {sphere5, sphere5->pos, NULL, 0};
+  node* children3 = malloc(1*sizeof(node));
+  children3[0] = pupil3;
+  node enemy3 = {sphere6, sphere6->pos, children3, 1};
+  enemies[nEnemies++] = (enemy_t){enemy3, 10, false, 15.0, 0.0};
 
   for(int i = 0; i < nEnemies; i++)
     readTris(enemies[i].enemy);
@@ -425,14 +449,15 @@ void handle_input(){
           if(playerHits(enemies[i].enemy) && enemies[i].render){
             Mix_PlayChannel(-1, hit_sound, 0);
             enemies[i].hp -= 3;
-            if(enemies[i].hp <= 0)
+            if(enemies[i].hp <= 0){
               enemies[i].render = false;
               enemies[i].time_of_death = game_time;
+              player_points += 50;
+            }
             printf("HIT\n");
             printf("hp:%d render:%d\n", enemies[i].hp, enemies[i].render);
           }
         }
-        
       }
     }
   }
@@ -487,16 +512,19 @@ void handle_input(){
 }
 
 void update_game_logic(){
-  static double t = 0.0;
   static double enemy_speed = 2.0;
-  t += elapsed_time;
+  static double last_point_time = 0.0;
+  if(game_time - last_point_time > 5){
+    last_point_time = game_time;
+    player_points += 10;
+  }
   for(int i = 0; i < nEnemies; i++){
     if(!enemies[i].render) {
       if(game_time - enemies[i].time_of_death > enemies[i].respawn_time) {
         enemies[i].hp = 10;
         enemies[i].respawn_time = enemies[i].respawn_time - 1 > 1 ? enemies[i].respawn_time - 1 : 1;
+        translateNode(enemies[i].enemy, rand()%200 - 100, rand()%200 - 100, rand()%200 - 100);
         enemies[i].render = true;
-        printf("respawn_time = %f\n", enemies[i].respawn_time);
       }
       continue;
     }
@@ -506,9 +534,7 @@ void update_game_logic(){
     enemy = rotateNodeX(enemy, ((rand()%100 - 50) * 0.001)*elapsed_time*TIME_CONST, enemy.pos.x, enemy.pos.y, enemy.pos.z);
     enemy = rotateNodeY(enemy, ((rand()%100 - 50) * 0.001)*elapsed_time*TIME_CONST, enemy.pos.x, enemy.pos.y, enemy.pos.z);
     enemy = rotateNodeZ(enemy, (rand()%10 * 0.01)*elapsed_time*TIME_CONST, enemy.pos.x, enemy.pos.y, enemy.pos.z);
-    enemy = translateNode(enemy, 0.5*sin(t + (rand()%20 * 0.01)), 0.6*cos(t + (rand()%20 * 0.01)), cos(t + (rand()%20 * 0.01)));
-
-    
+    enemy = translateNode(enemy, 0.5*sin(game_time + (rand()%20 * 0.01)), 0.6*cos(game_time + (rand()%20 * 0.01)), cos(game_time + (rand()%20 * 0.01)));
 
     if(detectColision(enemy))
       player_hp--;
@@ -594,9 +620,12 @@ void render_scene(){
   }
 
   drawText(renderer, "GGE v0.0.1", WIDTH-65, HEIGHT-20, 60, 16, 0xFFFFFF, 12);
-  char hp[9];
+  char hp[9] = {0};
   snprintf(hp, 8, "HP: %3d", player_hp);
   drawText(renderer, hp, 10, HEIGHT-20, 60, 16, 0xFFFFFF, 12);
+  char points[20] = {0};
+  snprintf(points, 19, "Points: %ld", player_points);
+  drawText(renderer, points, 110, HEIGHT-20, 80, 16, 0xFFFFFF, 12);
 
   SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
   SDL_RenderDrawLine(renderer, WIDTH/2-10, HEIGHT/1.5, WIDTH/2+10, HEIGHT/1.5);
@@ -630,6 +659,10 @@ void render_game_over(){
   SDL_RenderClear(renderer);
 
   drawText(renderer, "GAME OVER", WIDTH/2-90, HEIGHT/2-27, 180, 54, 0xFFFFFF, 32);
+
+  char points[20] = {0};
+  snprintf(points, 19, "Points: %ld", player_points);
+  drawText(renderer, points, WIDTH/2-90, HEIGHT/2+27, 180, 54, 0xFFFFFF, 32);
 
   drawText(renderer, "GGE v0.0.1", WIDTH-65, HEIGHT-20, 60, 16, 0xFFFFFF, 12);
 

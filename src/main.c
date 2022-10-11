@@ -12,6 +12,8 @@
 #define MAXLIGHT 100
 #define MAXENEMY 100
 
+#define MUZZLE 0
+
 
 typedef struct enemy_t{
   node enemy;
@@ -29,6 +31,9 @@ unsigned int nLights = 0;
 
 enemy_t* enemies;
 unsigned int nEnemies = 0;
+
+bool muzzle_flash = false;
+double flash_time = 0.2;
 
 unsigned long totalTris;
 
@@ -335,6 +340,7 @@ objects = malloc(MAXOBJ*sizeof(object));
 
 void load_lights(){
   lights = malloc(sizeof(light)*MAXLIGHT);
+  lights[nLights++] = (light){(point){0, 0, 0,}, 0};  //MUZZLE FLASH
   lights[nLights++] = (light){(point){20.0, 20.0, -70.0}, 100.0};
   lights[nLights++] = (light){(point){-500.0, 10.0, 500.0}, 300.0};
   //lights[nLights++] = (light){(point){0.0, -1000.0, 0.0}, 100};
@@ -444,6 +450,7 @@ void handle_input(){
       int x = evt.motion.x;
       int y = evt.motion.y;
       if(evt.button.button == SDL_BUTTON_LEFT){
+        muzzle_flash = true;
         Mix_PlayChannel(-1, gun_sound, 0);
         for(int i = 0; i < nEnemies; i++){
           if(playerHits(enemies[i].enemy) && enemies[i].render){
@@ -514,10 +521,27 @@ void handle_input(){
 void update_game_logic(){
   static double enemy_speed = 2.0;
   static double last_point_time = 0.0;
+
+  //Update muzzle light
+  lights[MUZZLE].p = (point){camera_dir.x*100+(player.obj->pos.x), (player.obj->pos.y), camera_dir.z*100+(player.obj->pos.z)};
+
+  if(muzzle_flash){
+    lights[MUZZLE].intensity = 500;
+    muzzle_flash = false;
+  }
+  if(lights[MUZZLE].intensity > 0){
+    lights[MUZZLE].intensity -= (500/flash_time)*elapsed_time;
+    if(lights[MUZZLE].intensity < 0)
+      lights[MUZZLE].intensity = 0.0;
+  }
+  
+  //Update points
   if(game_time - last_point_time > 5){
     last_point_time = game_time;
     player_points += 10;
   }
+
+  //Update enemies
   for(int i = 0; i < nEnemies; i++){
     if(!enemies[i].render) {
       if(game_time - enemies[i].time_of_death > enemies[i].respawn_time) {
@@ -540,6 +564,8 @@ void update_game_logic(){
       player_hp--;
     enemies[i].enemy = enemy;
   }
+
+  //Update player
   if(player_hp <= 0)
     current_state = GAME_OVER;
 

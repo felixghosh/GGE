@@ -52,6 +52,7 @@ object translateObject(object obj, double x, double y, double z){
   for(int i = 0; i < obj.nFaces; i++){
     obj.tris[i] = translateTriangle(obj.tris[i], x, y, z);
   }
+  obj.pos = translatePoint(obj.pos, x, y, z);
   return obj;
 }
 

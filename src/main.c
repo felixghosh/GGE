@@ -17,6 +17,8 @@ typedef struct enemy_t{
   node enemy;
   int hp;
   bool render;
+  double respawn_time;
+  double time_of_death;
 } enemy_t;
 
 object* objects;
@@ -361,7 +363,7 @@ void load_enemies(){
   node* children = malloc(1*sizeof(node));
   children[0] = pupil;
   node enemy1 = {sphere2, sphere2->pos, children, 1};
-  enemies[nEnemies++] = (enemy_t){enemy1, 10, true};
+  enemies[nEnemies++] = (enemy_t){enemy1, 10, true, 5.0, 0.0};
 
   for(int i = 0; i < nEnemies; i++)
     readTris(enemies[i].enemy);
@@ -425,6 +427,7 @@ void handle_input(){
             enemies[i].hp -= 3;
             if(enemies[i].hp <= 0)
               enemies[i].render = false;
+              enemies[i].time_of_death = game_time;
             printf("HIT\n");
             printf("hp:%d render:%d\n", enemies[i].hp, enemies[i].render);
           }
@@ -489,19 +492,21 @@ void update_game_logic(){
   t += elapsed_time;
   for(int i = 0; i < nEnemies; i++){
     if(!enemies[i].render) {
-      if(rand()%100 > 98) {
+      if(game_time - enemies[i].time_of_death > enemies[i].respawn_time) {
         enemies[i].hp = 10;
+        enemies[i].respawn_time = enemies[i].respawn_time - 1 > 1 ? enemies[i].respawn_time - 1 : 1;
         enemies[i].render = true;
+        printf("respawn_time = %f\n", enemies[i].respawn_time);
       }
-       continue;
+      continue;
     }
     node enemy = enemies[i].enemy;
     point dir = normalizeVector(subtractPoints(player.pos, enemy.pos));
-    //enemy = translateNode(enemy, dir.x*enemy_speed*elapsed_time*TIME_CONST, dir.y*enemy_speed*elapsed_time*TIME_CONST, dir.z*enemy_speed*elapsed_time*TIME_CONST);
+    enemy = translateNode(enemy, dir.x*enemy_speed*elapsed_time*TIME_CONST, dir.y*enemy_speed*elapsed_time*TIME_CONST, dir.z*enemy_speed*elapsed_time*TIME_CONST);
     enemy = rotateNodeX(enemy, ((rand()%100 - 50) * 0.001)*elapsed_time*TIME_CONST, enemy.pos.x, enemy.pos.y, enemy.pos.z);
     enemy = rotateNodeY(enemy, ((rand()%100 - 50) * 0.001)*elapsed_time*TIME_CONST, enemy.pos.x, enemy.pos.y, enemy.pos.z);
     enemy = rotateNodeZ(enemy, (rand()%10 * 0.01)*elapsed_time*TIME_CONST, enemy.pos.x, enemy.pos.y, enemy.pos.z);
-    //enemy = translateNode(enemy, 0.5*sin(t + (rand()%20 * 0.01)), 0.6*cos(t + (rand()%20 * 0.01)), cos(t + (rand()%20 * 0.01)));
+    enemy = translateNode(enemy, 0.5*sin(t + (rand()%20 * 0.01)), 0.6*cos(t + (rand()%20 * 0.01)), cos(t + (rand()%20 * 0.01)));
 
     
 

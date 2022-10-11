@@ -416,8 +416,10 @@ void handle_input(){
       int x = evt.motion.x;
       int y = evt.motion.y;
       if(evt.button.button == SDL_BUTTON_LEFT){
+        Mix_PlayChannel(-1, gun_sound, 0);
         for(int i = 0; i < nEnemies; i++){
           if(playerHits(enemies[i].enemy)){
+            Mix_PlayChannel(-1, hit_sound, 0);
             enemies[i].hp -= 3;
             if(enemies[i].hp <= 0)
               enemies[i].render = false;
@@ -500,15 +502,7 @@ void update_game_logic(){
       player_hp--;
     enemies[i].enemy = enemy;
   }
-  /*point dir = normalizeVector(subtractPoints(player.pos, enemy.pos));
-  enemy = translateNode(enemy, dir.x*enemy_speed*elapsed_time*TIME_CONST, dir.y*enemy_speed*elapsed_time*TIME_CONST, dir.z*enemy_speed*elapsed_time*TIME_CONST);
-  enemy = rotateNodeX(enemy, ((rand()%100 - 50) * 0.001)*elapsed_time*TIME_CONST, enemy.pos.x, enemy.pos.y, enemy.pos.z);
-  enemy = rotateNodeY(enemy, ((rand()%100 - 50) * 0.001)*elapsed_time*TIME_CONST, enemy.pos.x, enemy.pos.y, enemy.pos.z);
-  enemy = rotateNodeZ(enemy, (rand()%10 * 0.01)*elapsed_time*TIME_CONST, enemy.pos.x, enemy.pos.y, enemy.pos.z);
-  enemy = translateNode(enemy, 0.5*sin(t + (rand()%20 * 0.01)), 0.6*cos(t + (rand()%20 * 0.01)), cos(t + (rand()%20 * 0.01)));
 
-  if(detectColision(enemy))
-    player_hp--;*/
   if(player_hp <= 0)
     current_state = GAME_OVER;
 
@@ -651,6 +645,7 @@ int main(int argc, char* argv[]){
     }
     running = 1;
     current_state = MENU;
+    Mix_PlayMusic(music, -1);
 
     while(running){
       switch(current_state){

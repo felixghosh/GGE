@@ -1,5 +1,6 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include <SDL2/SDL_mixer.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -165,15 +166,27 @@ void initialize_engine(bool fullscreen){
         SDL_SetWindowTitle(screen, "GGE");
         if(fullscreen)
           SDL_SetWindowFullscreen(screen, SDL_WINDOW_FULLSCREEN);
-
+        
+        //Initialize SDL_ttf
         if(TTF_Init() == -1){
-          printf("TTF could not be initialized!\n");
+          printf("TTF could not be initialized! SDL_ttf Error: %s\n", TTF_GetError());
+        }
+
+        //Initialize SDL_mixer
+        if( Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 256 ) < 0 )
+        {
+            printf( "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError());
+        }
+
+        if(!load_media()){
+          printf("Could not load all media!\n");
         }
 }
 
 void terminate_engine(){
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(screen);
+    free_media();
     SDL_Quit();
     exit(0);
 }
@@ -269,7 +282,6 @@ object loadOBJ(const char* filePath, unsigned int color, double x, double y, dou
     nFaces++;
   nVertices--;
 
-  printf("nvertices %lu nface %lu\n", nVertices, nFaces);
   rewind(fp);
 
   point* vertices = malloc(nVertices * sizeof(point));

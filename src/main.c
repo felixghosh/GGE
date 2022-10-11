@@ -636,9 +636,10 @@ void update_game_logic(){
       player_hp--;
     enemies[i].enemy = enemy;
 
-    static int c = 0;
-
-    if(animate_gun) {
+    
+  }
+  static int c = 0;
+  if(animate_gun) {
       if(c < 5) {
         *player.obj = translateObject((*player.obj), cos(camera_angle_y)*elapsed_time*10, 0, -sin(camera_angle_y)*elapsed_time*10);
         c++;
@@ -651,7 +652,6 @@ void update_game_logic(){
         c = 0;
       }
     }
-  }
 
   //Update player
   if(player_hp <= 0)

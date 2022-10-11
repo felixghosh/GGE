@@ -114,13 +114,10 @@ void printTriangle(triangle tri){
 }
 
 int cmpfunc (const void * a, const void * b) {
-   //triangle* pa = (triangle*)a;
-   //triangle* pb = (triangle*)b;
    tri_map* tma = (tri_map*)a;
    tri_map* tmb = (tri_map*)b;
    triangle* pa = tma->tri;
    triangle* pb = tmb->tri;
-   //return calcCenter(*pb).z - calcCenter(*pa).z;
    return (vectorLength(subtractPoints(calcCenter(*pb), camera_pos)) - vectorLength(subtractPoints(calcCenter(*pa), camera_pos)));
 }
 

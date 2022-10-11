@@ -14,6 +14,8 @@
 
 #define MUZZLE 0
 
+#define GUN_ANIMATION_TIME 1.0
+
 
 typedef struct enemy_t{
   node enemy;
@@ -41,6 +43,10 @@ tri_map* allTris;
 
 const Uint8* keystates;
 
+int gun_animation_start_time = 0;
+bool animate_gun = false;
+double animation_rotation_x = 0;
+double animation_rotation_z = 0;
 
 double speed_fast = 5.0;
 double speed_slow = 2.0;
@@ -450,19 +456,25 @@ void handle_input(){
       int x = evt.motion.x;
       int y = evt.motion.y;
       if(evt.button.button == SDL_BUTTON_LEFT){
-        muzzle_flash = true;
-        Mix_PlayChannel(-1, gun_sound, 0);
-        for(int i = 0; i < nEnemies; i++){
-          if(playerHits(enemies[i].enemy) && enemies[i].render){
-            Mix_PlayChannel(-1, hit_sound, 0);
-            enemies[i].hp -= 3;
-            if(enemies[i].hp <= 0){
-              enemies[i].render = false;
-              enemies[i].time_of_death = game_time;
-              player_points += 50;
+        if(!animate_gun){
+          animate_gun = true;
+          gun_animation_start_time = game_time;
+          animation_rotation_x = 0;
+          animation_rotation_z = 0;
+          muzzle_flash = true;
+          Mix_PlayChannel(-1, gun_sound, 0);
+          for(int i = 0; i < nEnemies; i++){
+            if(playerHits(enemies[i].enemy) && enemies[i].render){
+              Mix_PlayChannel(-1, hit_sound, 0);
+              enemies[i].hp -= 3;
+              if(enemies[i].hp <= 0){
+                enemies[i].render = false;
+                enemies[i].time_of_death = game_time;
+                player_points += 50;
+              }
+              printf("HIT\n");
+              printf("hp:%d render:%d\n", enemies[i].hp, enemies[i].render);
             }
-            printf("HIT\n");
-            printf("hp:%d render:%d\n", enemies[i].hp, enemies[i].render);
           }
         }
       }
@@ -547,14 +559,14 @@ void update_game_logic(){
       if(game_time - enemies[i].time_of_death > enemies[i].respawn_time) {
         enemies[i].hp = 10;
         enemies[i].respawn_time = enemies[i].respawn_time - 1 > 1 ? enemies[i].respawn_time - 1 : 1;
-        translateNode(enemies[i].enemy, rand()%200 - 100, rand()%200 - 100, rand()%200 - 100);
+        enemies[i].enemy = translateNode(enemies[i].enemy, rand()%200 - 100, rand()%200 - 100, rand()%200 - 100);
         enemies[i].render = true;
       }
       continue;
     }
     node enemy = enemies[i].enemy;
     point dir = normalizeVector(subtractPoints(player.pos, enemy.pos));
-    enemy = translateNode(enemy, dir.x*enemy_speed*elapsed_time*TIME_CONST, dir.y*enemy_speed*elapsed_time*TIME_CONST, dir.z*enemy_speed*elapsed_time*TIME_CONST);
+    //enemy = translateNode(enemy, dir.x*enemy_speed*elapsed_time*TIME_CONST, dir.y*enemy_speed*elapsed_time*TIME_CONST, dir.z*enemy_speed*elapsed_time*TIME_CONST);
     enemy = rotateNodeX(enemy, ((rand()%100 - 50) * 0.001)*elapsed_time*TIME_CONST, enemy.pos.x, enemy.pos.y, enemy.pos.z);
     enemy = rotateNodeY(enemy, ((rand()%100 - 50) * 0.001)*elapsed_time*TIME_CONST, enemy.pos.x, enemy.pos.y, enemy.pos.z);
     enemy = rotateNodeZ(enemy, (rand()%10 * 0.01)*elapsed_time*TIME_CONST, enemy.pos.x, enemy.pos.y, enemy.pos.z);
@@ -563,6 +575,22 @@ void update_game_logic(){
     if(detectColision(enemy))
       player_hp--;
     enemies[i].enemy = enemy;
+
+    static int c = 0;
+
+    if(animate_gun) {
+      if(c < 5) {
+        *player.obj = translateObject((*player.obj), cos(camera_angle_y)*elapsed_time*10, 0, -sin(camera_angle_y)*elapsed_time*10);
+        c++;
+      } else {
+        *player.obj = translateObject((*player.obj), -cos(camera_angle_y)*elapsed_time*10, 0, sin(camera_angle_y)*elapsed_time*10);
+        c++;
+      }
+      if (c == 10) {
+        animate_gun = false;
+        c = 0;
+      }
+    }
   }
 
   //Update player

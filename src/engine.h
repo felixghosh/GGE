@@ -80,7 +80,7 @@ void terminate_engine();
 
 void sortPoints(point points[], int a, int b);
 
-void rasterizeTriangle(SDL_Renderer* renderer, triangle tri);
+void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf, unsigned int color);
 
 object loadOBJ(const char* filePath, unsigned int color, double x, double y, double z, double scale);
 
@@ -88,7 +88,7 @@ void drawText(SDL_Renderer* renderer, const char* message, int x, int y, int wid
 
 point calcIntersect(point p0, point p1, char axis, unsigned int value);
 
-void clipEdge(point p1, point p2, triangle** clipped_tris, unsigned int* nTris, int index, char axis);
+void clipEdge(point p1, point p2, triangle** clipped_tris, unsigned int* nTris, int* index, char axis);
 
 void clipTriangle(triangle** clipped_tris, unsigned int* nTris);
 

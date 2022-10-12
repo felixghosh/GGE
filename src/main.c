@@ -82,6 +82,8 @@ typedef enum game_state {
 
 game_state current_state;
 
+SDL_Surface* surf;
+
 static void calc_obj_extremes(object obj, double* x_max, double* x_min, double* y_max, double* y_min, double* z_max, double* z_min) {
   double maxx = obj.tris[0].a.x;
   double maxy = obj.tris[0].a.y;
@@ -486,6 +488,7 @@ void update_time(){
   clock_gettime(CLOCK_REALTIME, &t1);
   elapsed_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec)/1000000000.0;
   game_time += elapsed_time;
+  printf("fps: %5u\n", (int)(1/elapsed_time));
   clock_gettime(CLOCK_REALTIME, &t0);
 }
 
@@ -594,7 +597,7 @@ void update_game_logic(){
     }
   }
   //Update muzzle light
-  lights[MUZZLE].p = (point){camera_dir.x*100+(player.obj->pos.x), (player.obj->pos.y), camera_dir.z*100+(player.obj->pos.z)};
+  lights[MUZZLE].p = (point){camera_dir.x*50+(player.obj->pos.x), (player.obj->pos.y), camera_dir.z*50+(player.obj->pos.z)};
 
   if(muzzle_flash){
     lights[MUZZLE].intensity = 500;
@@ -673,6 +676,8 @@ void update_game_logic(){
 
 void render_scene(){
   SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+  SDL_Rect clear = {0, 0, WIDTH, HEIGHT};
+  SDL_FillRect(surf, &clear, 0);
 
   //sort triangles for painters algorithm
   qsort(allTris, totalTris, sizeof(tri_map), cmpfunc);
@@ -687,7 +692,8 @@ void render_scene(){
     triangle* clipped_tris_z = malloc(2*sizeof(triangle));
     clipped_tris_z[0] = cam_tri;
     unsigned int nTrisZ = 1;
-    clipEdge((point){0,0,3} , (point){WIDTH,HEIGHT,3}, &clipped_tris_z, &nTrisZ, 0, 'z');
+    int i = 0;
+    clipEdge((point){0,0,3} , (point){WIDTH,HEIGHT,3}, &clipped_tris_z, &nTrisZ, &i, 'z');
 
     for(int j = 0; j < nTrisZ; j++){
       triangle projected_tri = projectTriangle(clipped_tris_z[j]);
@@ -721,7 +727,7 @@ void render_scene(){
         for(int i = 0; i < nTris; i++){
           if(!wireframe){
             SDL_SetRenderDrawColor(renderer, 0x0000FF&color>>16, (0x00FF00&color)>>8, 0x0000FF&color, 255);
-            rasterizeTriangle(renderer, clipped_tris[i]);
+            rasterizeTriangle(renderer, clipped_tris[i], surf, color);
           } else{
             SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
             triangle scaledTri = (triangle){
@@ -738,6 +744,12 @@ void render_scene(){
     }
     free(clipped_tris_z);
   }
+  if(!wireframe){
+    SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf);
+    SDL_RenderCopy(renderer, tex, NULL, NULL);
+    SDL_DestroyTexture(tex);
+  }
+  
 }
 
 void render_ui(){
@@ -809,6 +821,7 @@ int main(int argc, char* argv[]){
     load_menu_objects();
     load_menu_lights();
     load_tri_map();
+    surf = SDL_CreateRGBSurface(0,WIDTH,HEIGHT,32,0,0,0,0);
     Mix_PlayMusic(music, -1);
     clock_gettime(CLOCK_REALTIME, &t0);
 
@@ -849,7 +862,6 @@ int main(int argc, char* argv[]){
         case GAME_RUNNING:
 
           update_time();
-          //printf("fps: %5u\n", (int)(1/elapsed_time));
           //printf("fov:%u camera_dist: %2.1lf\n", (int)calcFOV(), camera_dist);
           handle_input();
 

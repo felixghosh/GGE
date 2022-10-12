@@ -214,7 +214,15 @@ void sortPoints(point points[], int a, int b){
   }
 }
 
-void rasterizeTriangle(SDL_Renderer* renderer, triangle tri){
+void set_pixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
+{
+  Uint32 * const target_pixel = (Uint32 *) ((Uint8 *) surface->pixels
+                                             + y * surface->pitch
+                                             + x * surface->format->BytesPerPixel);
+  *target_pixel = pixel;
+}
+
+void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf, unsigned int color){
   //sort points by height
   int i ;
   point p[3];
@@ -254,17 +262,43 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri){
   //scanline
   i = 0;
   if(dy_short != 0){
-    for(i; i < dy_short; i++)
-      for(int j = 0; j < resScale; j++){
-        SDL_RenderDrawLine(renderer, slope_long[i]*resScale, (i+p[0].y)*resScale+j, (int)slope_short[i]*resScale, (i+p[0].y)*resScale+j);
+    for(i; i < dy_short; i++){
+      if((slope_short[i]*resScale) - (slope_long[i]*resScale) < 0){
+        for(int j = 0; j < resScale; j++){
+          for(int k  = slope_long[i]*resScale; k > slope_short[i]*resScale; k--){
+            set_pixel(surf, k, (i+p[0].y)*resScale+j, color);
+            //SDL_RenderDrawPoint(renderer, k, (i+p[0].y)*resScale+j);
+          }
+        }
+      } else{
+        for(int j = 0; j < resScale; j++){
+          for(int k  = slope_long[i]*resScale; k <= slope_short[i]*resScale; k++){
+            set_pixel(surf, k, (i+p[0].y)*resScale+j, color);
+            //SDL_RenderDrawPoint(renderer, k, (i+p[0].y)*resScale+j);
+          }
+        }
       }
+    }      
   }
   if(dy_last != 0){
     int origin = i;
-    for(i; i < dy_long; i++)
-      for(int j = 0; j < resScale; j++){
-        SDL_RenderDrawLine(renderer, slope_long[i]*resScale, (i+p[0].y)*resScale+j, (int)slope_last[i - origin]*resScale, (i+p[0].y)*resScale+j);
+    for(i; i < dy_long; i++){
+      if((slope_last[i - origin]*resScale) - (slope_long[i]*resScale) < 0){
+        for(int j = 0; j < resScale; j++){
+          for(int k = slope_long[i]*resScale; k > slope_last[i - origin]*resScale; k--){
+            set_pixel(surf, k, (i+p[0].y)*resScale+j, color);
+            //SDL_RenderDrawPoint(renderer, k, (i+p[0].y)*resScale+j);
+          }
+        }
+      }else{
+        for(int j = 0; j < resScale; j++){
+          for(int k = slope_long[i]*resScale; k <= slope_last[i - origin]*resScale; k++){
+            set_pixel(surf, k, (i+p[0].y)*resScale+j, color);
+            //SDL_RenderDrawPoint(renderer, k, (i+p[0].y)*resScale+j);
+          }
+        }
       }
+    }
   }
 }
 
@@ -348,14 +382,10 @@ point calcIntersect(point p0, point p1, char axis, unsigned int value){
   if(axis == 'x'){
     intersect.x = value;
     intersect.y = round(((p0.x - value)/(p0.x - p1.x))*(p1.y - p0.y) + p0.y);
-    intersect.y = intersect.y < 0.0 ? 0.0 : intersect.y;
-    intersect.y = intersect.y > HEIGHT ? HEIGHT : intersect.y;
     
     intersect.z = 1.0;
   } else if(axis == 'y'){
     intersect.x = round(((p0.y - value)/(p0.y - p1.y))*(p1.x - p0.x) + p0.x);
-    intersect.x = intersect.x < 0.0 ? 0.0 : intersect.x;
-    intersect.x = intersect.x > WIDTH ? WIDTH : intersect.x;
     intersect.y = value;
     intersect.z = 1.0;
   } else if(axis == 'z'){
@@ -366,8 +396,8 @@ point calcIntersect(point p0, point p1, char axis, unsigned int value){
   return intersect;
 }
 
-void clipEdge(point p1, point p2, triangle** clipped_tris, unsigned int* nTris, int index, char axis){
-  triangle tri = (*clipped_tris)[index];
+void clipEdge(point p1, point p2, triangle** clipped_tris, unsigned int* nTris, int* index, char axis){
+  triangle tri = (*clipped_tris)[*index];
   point points[3] = {tri.a, tri.b, tri.c};
   unsigned int value;
 
@@ -425,7 +455,7 @@ void clipEdge(point p1, point p2, triangle** clipped_tris, unsigned int* nTris, 
     }
     point intersect1 = calcIntersect(points[firstOut], points[(firstOut+1)%3], axis, value);
     point intersect2 = calcIntersect(points[firstOut], points[(firstOut+2)%3], axis, value);
-    (*clipped_tris)[index] = (triangle){points[(firstOut+1)%3], points[(firstOut+2)%3], intersect1, tri.color};
+    (*clipped_tris)[*index] = (triangle){points[(firstOut+1)%3], points[(firstOut+2)%3], intersect1, tri.color};
     (*clipped_tris)[*nTris] = (triangle){points[(firstOut+2)%3], intersect2, intersect1, tri.color};
     (*nTris)++;
   } else if(nOutside == 2){
@@ -439,29 +469,32 @@ void clipEdge(point p1, point p2, triangle** clipped_tris, unsigned int* nTris, 
     }
     point intersect1 = calcIntersect(points[firstIn], points[(firstIn+1)%3], axis, value);
     point intersect2 = calcIntersect(points[firstIn], points[(firstIn+2)%3], axis, value);
-    (*clipped_tris)[index] = (triangle){points[firstIn], intersect1, intersect2, tri.color};
+    (*clipped_tris)[*index] = (triangle){points[firstIn], intersect1, intersect2, tri.color};
   } else if(nOutside == 3){
     //Don't render this triangle at all
-    for(int i = index; i < *nTris-1; i++)
+    for(int i = *index; i < *nTris-1; i++){
       (*clipped_tris)[i] = (*clipped_tris)[i+1];
+    }
+    (*index)--;  
     (*nTris)--;
   }
 }
 
 void clipTriangle(triangle** clipped_tris, unsigned int* nTris){
+  int i = 0;
   //left
-  clipEdge((point){0,0,0}, (point){0,HEIGHT,0}, clipped_tris, nTris, 0, 'x');
+  clipEdge((point){0,0,0}, (point){0,HEIGHT,0}, clipped_tris, nTris, &i, 'x');
   //top
-  for(int i = 0; i < *nTris; i++){
-    clipEdge((point){WIDTH,0,0}, (point){0,0,0}, clipped_tris, nTris, i, 'y');
+  for(i = 0; i < *nTris; i++){
+    clipEdge((point){WIDTH,0,0}, (point){0,0,0}, clipped_tris, nTris, &i, 'y');
   }
   //right
-  for(int i = 0; i < *nTris; i++){
-    clipEdge((point){WIDTH,HEIGHT,0}, (point){WIDTH,0,0}, clipped_tris, nTris, i, 'x');
+  for(i = 0; i < *nTris; i++){
+    clipEdge((point){WIDTH,HEIGHT,0}, (point){WIDTH,0,0}, clipped_tris, nTris, &i, 'x');
   }
   //bottom
-  for(int i = 0; i < *nTris; i++){
-    clipEdge((point){0,HEIGHT,0}, (point){WIDTH,HEIGHT,0}, clipped_tris, nTris, i, 'y');
+  for(i = 0; i < *nTris; i++){
+    clipEdge((point){0,HEIGHT,0}, (point){WIDTH,HEIGHT,0}, clipped_tris, nTris, &i, 'y');
   }
 }
 

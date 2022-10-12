@@ -348,14 +348,14 @@ point calcIntersect(point p0, point p1, char axis, unsigned int value){
   if(axis == 'x'){
     intersect.x = value;
     intersect.y = round(((p0.x - value)/(p0.x - p1.x))*(p1.y - p0.y) + p0.y);
-    //intersect.y = intersect.y < 0.0 ? 0.0 : intersect.y;
-    //intersect.y = intersect.y > HEIGHT ? HEIGHT : intersect.y;
+    intersect.y = intersect.y < 0.0 ? 0.0 : intersect.y;
+    intersect.y = intersect.y > HEIGHT ? HEIGHT : intersect.y;
     
     intersect.z = 1.0;
   } else if(axis == 'y'){
     intersect.x = round(((p0.y - value)/(p0.y - p1.y))*(p1.x - p0.x) + p0.x);
-    //intersect.x = intersect.x < 0.0 ? 0.0 : intersect.x;
-    //intersect.x = intersect.x > WIDTH ? WIDTH : intersect.x;
+    intersect.x = intersect.x < 0.0 ? 0.0 : intersect.x;
+    intersect.x = intersect.x > WIDTH ? WIDTH : intersect.x;
     intersect.y = value;
     intersect.z = 1.0;
   } else if(axis == 'z'){
@@ -453,11 +453,11 @@ void clipTriangle(triangle** clipped_tris, unsigned int* nTris){
   clipEdge((point){0,0,0}, (point){0,HEIGHT,0}, clipped_tris, nTris, 0, 'x');
   //top
   for(int i = 0; i < *nTris; i++){
-    clipEdge((point){0,0,0}, (point){-WIDTH,0,0}, clipped_tris, nTris, i, 'y');
+    clipEdge((point){WIDTH,0,0}, (point){0,0,0}, clipped_tris, nTris, i, 'y');
   }
   //right
   for(int i = 0; i < *nTris; i++){
-    clipEdge((point){WIDTH,0,0}, (point){WIDTH,-HEIGHT,0}, clipped_tris, nTris, i, 'x');
+    clipEdge((point){WIDTH,HEIGHT,0}, (point){WIDTH,0,0}, clipped_tris, nTris, i, 'x');
   }
   //bottom
   for(int i = 0; i < *nTris; i++){

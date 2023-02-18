@@ -5,7 +5,7 @@
 #include <SDL2/SDL_ttf.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
+// #include <unistd.h>
 #include <math.h>
 #include <time.h>
 #include <stdbool.h>
@@ -88,8 +88,8 @@ void drawText(SDL_Renderer* renderer, const char* message, int x, int y, int wid
 
 point calcIntersect(point p0, point p1, char axis, unsigned int value);
 
-void clipEdge(point p1, point p2, triangle** clipped_tris, unsigned int* nTris, int* index, char axis);
+void clipEdge(point p1, point p2, triangle* clipped_tris, unsigned int* nTris, int* index, char axis);
 
-void clipTriangle(triangle** clipped_tris, unsigned int* nTris);
+void clipTriangle(triangle* clipped_tris, unsigned int* nTris);
 
 #endif

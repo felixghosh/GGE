@@ -3,7 +3,7 @@
 #include <SDL2/SDL_mixer.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
+//#include <unistd.h>
 #include <math.h>
 #include <time.h>
 #include <stdbool.h>
@@ -396,8 +396,8 @@ point calcIntersect(point p0, point p1, char axis, unsigned int value){
   return intersect;
 }
 
-void clipEdge(point p1, point p2, triangle** clipped_tris, unsigned int* nTris, int* index, char axis){
-  triangle tri = (*clipped_tris)[*index];
+void clipEdge(point p1, point p2, triangle* clipped_tris, unsigned int* nTris, int* index, char axis){
+  triangle tri = clipped_tris[*index];
   point points[3] = {tri.a, tri.b, tri.c};
   unsigned int value;
 
@@ -455,8 +455,8 @@ void clipEdge(point p1, point p2, triangle** clipped_tris, unsigned int* nTris, 
     }
     point intersect1 = calcIntersect(points[firstOut], points[(firstOut+1)%3], axis, value);
     point intersect2 = calcIntersect(points[firstOut], points[(firstOut+2)%3], axis, value);
-    (*clipped_tris)[*index] = (triangle){points[(firstOut+1)%3], points[(firstOut+2)%3], intersect1, tri.color};
-    (*clipped_tris)[*nTris] = (triangle){points[(firstOut+2)%3], intersect2, intersect1, tri.color};
+    clipped_tris[*index] = (triangle){points[(firstOut+1)%3], points[(firstOut+2)%3], intersect1, tri.color};
+    clipped_tris[*nTris] = (triangle){points[(firstOut+2)%3], intersect2, intersect1, tri.color};
     (*nTris)++;
   } else if(nOutside == 2){
     //create one new triangle
@@ -469,18 +469,18 @@ void clipEdge(point p1, point p2, triangle** clipped_tris, unsigned int* nTris, 
     }
     point intersect1 = calcIntersect(points[firstIn], points[(firstIn+1)%3], axis, value);
     point intersect2 = calcIntersect(points[firstIn], points[(firstIn+2)%3], axis, value);
-    (*clipped_tris)[*index] = (triangle){points[firstIn], intersect1, intersect2, tri.color};
+    clipped_tris[*index] = (triangle){points[firstIn], intersect1, intersect2, tri.color};
   } else if(nOutside == 3){
     //Don't render this triangle at all
     for(int i = *index; i < *nTris-1; i++){
-      (*clipped_tris)[i] = (*clipped_tris)[i+1];
+      clipped_tris[i] = clipped_tris[i+1];
     }
     (*index)--;  
     (*nTris)--;
   }
 }
 
-void clipTriangle(triangle** clipped_tris, unsigned int* nTris){
+void clipTriangle(triangle* clipped_tris, unsigned int* nTris){
   int i = 0;
   //left
   clipEdge((point){0,0,0}, (point){0,HEIGHT,0}, clipped_tris, nTris, &i, 'x');

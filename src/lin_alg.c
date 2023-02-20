@@ -2,6 +2,7 @@
 #include "global.h"
 #include <math.h>
 
+
 point translatePoint(point p, double x, double y, double z){
   point newPoint = {p.x + x, p.y + y, p.z + z};
   return newPoint;
@@ -172,4 +173,57 @@ point addPoints(point p1, point p2){
 
 double vectorLength(point p){
   return sqrt(p.x*p.x + p.y*p.y + p.z*p.z);
+}
+
+point calcBCC(point p, triangle t){
+  point p0 = t.a;
+  point p1 = t.b;
+  point p2 = t.c;
+  
+  double A1 = 0.5*((p.x - p0.x)*(p2.y - p0.y)-(p.y - p0.y)*(p2.x -  p0.x));
+  double A2 = 0.5*((p.x - p1.x)*(p0.y - p1.y)-(p.y - p1.y)*(p0.x -  p1.x));
+  double A3 = 0.5*((p.x - p2.x)*(p1.y - p2.y)-(p.y - p2.y)*(p1.x -  p2.x));
+  double area = A1 + A2 + A3;
+  double divisor = 1 / area;
+  double u = A1 * divisor;
+  double v = A2 * divisor;
+  double w = A3 * divisor;
+  u = u < 0.0 ? 0.0 : u;
+  v = v < 0.0 ? 0.0 : v;
+  w = w < 0.0 ? 0.0 : w;
+  u = u > 1.0 ? 1.0 : u;
+  v = v > 1.0 ? 1.0 : v;
+  w = w > 1.0 ? 1.0 : w;
+
+  
+  // double area = calcTriArea(t);
+  // double divisor = 1 / (2*area);
+  // double u = edgeFunc(p, p0, p2) * divisor;
+  // double v = edgeFunc(p, p1, p0) * divisor;
+  // double w = 1.0 - u - v;
+  return (point){u, v, w};
+}
+
+double calcTriArea(triangle t){
+  point p0 = t.a;
+  point p1 = t.b;
+  point p2 = t.c;
+  double a = sqrt(pow((p0.x - p1.x), 2) + pow((p0.x - p1.y), 2));
+  double b = sqrt(pow((p1.x - p2.x), 2) + pow((p1.x - p2.y), 2));
+  double c = sqrt(pow((p2.x - p0.x), 2) + pow((p2.x - p0.y), 2));
+  // printf("abc(%5.2lf,%5.2lf,%5.2lf)\n", a, b, c);
+
+  double area = ((a+b+c)*(-a+b+c)*(a-b+c)*(a+b-c));
+  area = area < 0 ? -area : area;
+  area = 0.25*sqrt(area);
+  // printf("area:%5.2lf\n", area);
+  return area;
+}
+
+double edgeFunc(point p, point p1, point p0){
+  double a = -(p1.y - p0.y);
+  double b = p1.x- p0.x;
+
+  return a * (p.x - p0.x) + b * (p.y - p0.y);
+
 }

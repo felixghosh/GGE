@@ -50,4 +50,10 @@ point scaleVector(point p, double value);
 
 double vectorLength(point p);
 
+point calcBCC(point p, triangle t);
+
+double calcTriArea(triangle t);
+
+double edgeFunc(point p, point p1, point p0);
+
 #endif

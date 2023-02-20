@@ -1,4 +1,5 @@
 #include "engine.h"
+#include <stdio.h>
 
 #define MAXOBJ 100
 #define MAXLIGHT 100
@@ -150,7 +151,7 @@ void update_time()
   clock_gettime(CLOCK_REALTIME, &t1);
   elapsed_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec) / 1000000000.0;
   game_time += elapsed_time;
-  printf("fps: %5u\n", (int)(1 / elapsed_time));
+  // printf("fps: %5u\n", (int)(1 / elapsed_time));
   clock_gettime(CLOCK_REALTIME, &t0);
 }
 
@@ -293,7 +294,7 @@ void render_scene()
   SDL_FillRect(surf, &clear, 0);
 
   // sort triangles for painters algorithm
-  qsort(allTris, totalTris, sizeof(tri_map), cmpfunc);
+  //qsort(allTris, totalTris, sizeof(tri_map), cmpfunc);
 
   for (int i = 0; i < totalTris; i++)
   {
@@ -322,17 +323,27 @@ void render_scene()
 
         point world_normal = normalizeVector(calcNormal(tri));
 
-        double lightness = 0.0;
-        double ambient = 0.0;
-        for (int i = 0; i < nLights; i++)
-        {
-          point light_direction = normalizeVector(subtractPoints(calcCenter(tri), lights[i].p));
-          double light_dist = vectorLength(subtractPoints(calcCenter(tri), lights[i].p));
-          double partial_light = (lights[i].intensity / pow(light_dist, 1.1)) * dotProduct(world_normal, light_direction);
-          partial_light = partial_light < 0 ? 0 : partial_light;
-          lightness += partial_light;
+        unsigned int colors[3];
+        for(int i = 0; i < 3; i++){
+          point corner;
+          if(i == 0) corner = tri.a;
+          else if(i == 1) corner = tri.b;
+          else corner = tri.c; 
+          double lightness = 0.0;
+          double ambient = 0.0;
+          for (int i = 0; i < nLights; i++)
+          {
+            point light_direction = normalizeVector(subtractPoints(corner, lights[i].p));
+            double light_dist = vectorLength(subtractPoints(corner, lights[i].p));
+            double partial_light = (lights[i].intensity / pow(light_dist, 1.1)) * dotProduct(world_normal, light_direction);
+            partial_light = partial_light < 0 ? 0 : partial_light;
+            lightness += partial_light;
+          }
+          unsigned int color = colorLightness(lightness + ambient, tri.color);
+          colors[i] = color;
+          //printf("color[%d]:%x\n", i, colors[i]);
         }
-        unsigned int color = colorLightness(lightness + ambient, tri.color);
+        //printf("Tri\n{%3.2lf, %3.2lf, %3.2lf}\n{%3.2lf, %3.2lf, %3.2lf}\n{%3.2lf, %3.2lf, %3.2lf}\ncolors{%lu, %lu, %lu}\n", tri.a.x, tri.a.y, tri.a.z, tri.b.x, tri.b.y, tri.b.z, tri.c.x, tri.c.y, tri.c.z, colors[0], colors[1], colors[2]);
 
         // CLIPPING AGAINST SCREEN BORDERS
         unsigned int nTris = 1;
@@ -345,8 +356,8 @@ void render_scene()
         {
           if (!wireframe)
           {
-            SDL_SetRenderDrawColor(renderer, 0x0000FF & color >> 16, (0x00FF00 & color) >> 8, 0x0000FF & color, 255);
-            rasterizeTriangle(renderer, clipped_tris[i], surf, color);
+            //SDL_SetRenderDrawColor(renderer, 0x0000FF & colors >> 16, (0x00FF00 & colors) >> 8, 0x0000FF & colors, 255);
+            rasterizeTriangle(renderer, clipped_tris[i], surf, colors);
           }
           else
           {

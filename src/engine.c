@@ -127,8 +127,30 @@ double radToDeg(double rad){
 }
 
 double calcFOV(){
-  double fov = 2 * atan((WIDTH*resScale/2)/camera_dist);
+  double fov = 2 * atan((WIDTH/2)/camera_dist);
   return radToDeg(fov);
+}
+
+unsigned int interpolateColor(unsigned int colors[3], point bcc){
+  unsigned int r, g, b, r0, g0, b0, r1, g1, b1, r2, g2, b2, rValue, gValue, bValue;
+  r = 0x00FF0000;
+  g = 0x0000FF00;
+  b = 0x000000FF;
+  r0 = (unsigned int)((double)(colors[1] & r)*bcc.x);
+  g0 = (unsigned int)((double)(colors[1] & g)*bcc.x);
+  b0 = (unsigned int)((double)(colors[1] & b)*bcc.x);
+  r1 = (unsigned int)((double)(colors[2] & r)*bcc.y);
+  g1 = (unsigned int)((double)(colors[2] & g)*bcc.y);
+  b1 = (unsigned int)((double)(colors[2] & b)*bcc.y);
+  r2 = (unsigned int)((double)(colors[0] & r)*bcc.z);
+  g2 = (unsigned int)((double)(colors[0] & g)*bcc.z);
+  b2 = (unsigned int)((double)(colors[0] & b)*bcc.z);
+  
+  rValue = ((r0 + r1 + r2) & r);
+  gValue = ((g0 + g1 + g2) & g);
+  bValue = ((b0 + b1 + b2) & b);
+
+  return rValue + gValue + bValue;
 }
 
 unsigned int colorLightness(double value, unsigned int color){
@@ -164,7 +186,7 @@ void initialize_engine(bool fullscreen){
         else
             printf("SDL video system is initialized and ready to go!\n");
         
-        SDL_CreateWindowAndRenderer(WIDTH*resScale, HEIGHT*resScale, SDL_WINDOW_SHOWN, &screen, &renderer);
+        SDL_CreateWindowAndRenderer(WIDTH, HEIGHT, SDL_WINDOW_SHOWN, &screen, &renderer);
         if(!screen)
             printf("InitSetup failed to create window\n");
 
@@ -222,7 +244,7 @@ void set_pixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
   *target_pixel = pixel;
 }
 
-void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf, unsigned int color){
+void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf, unsigned int colors[3]){
   //sort points by height
   int i ;
   point p[3];
@@ -232,7 +254,7 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf, 
   sortPoints(p, 0, 1);
   sortPoints(p, 1, 2);
   sortPoints(p, 0, 1);
-
+  
   if(p[0].y == p[2].y)
     return;
   
@@ -263,19 +285,17 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf, 
   i = 0;
   if(dy_short != 0){
     for(i; i < dy_short; i++){
-      if((slope_short[i]*resScale) - (slope_long[i]*resScale) < 0){
-        for(int j = 0; j < resScale; j++){
-          for(int k  = slope_long[i]*resScale; k > slope_short[i]*resScale; k--){
-            set_pixel(surf, k, (i+p[0].y)*resScale+j, color);
-            //SDL_RenderDrawPoint(renderer, k, (i+p[0].y)*resScale+j);
-          }
+      if((slope_short[i]) - (slope_long[i]) < 0){
+        for(int k  = slope_long[i]; k > slope_short[i]; k--){
+          point bcc = calcBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
+          unsigned int interpolated_color = interpolateColor(colors, bcc);
+          set_pixel(surf, k, (i+p[0].y), interpolated_color);
         }
       } else{
-        for(int j = 0; j < resScale; j++){
-          for(int k  = slope_long[i]*resScale; k <= slope_short[i]*resScale; k++){
-            set_pixel(surf, k, (i+p[0].y)*resScale+j, color);
-            //SDL_RenderDrawPoint(renderer, k, (i+p[0].y)*resScale+j);
-          }
+        for(int k  = slope_long[i]; k <= slope_short[i]; k++){
+          point bcc = calcBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
+          unsigned int interpolated_color = interpolateColor(colors, bcc);
+          set_pixel(surf, k, (i+p[0].y), interpolated_color);
         }
       }
     }      
@@ -283,19 +303,17 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf, 
   if(dy_last != 0){
     int origin = i;
     for(i; i < dy_long; i++){
-      if((slope_last[i - origin]*resScale) - (slope_long[i]*resScale) < 0){
-        for(int j = 0; j < resScale; j++){
-          for(int k = slope_long[i]*resScale; k > slope_last[i - origin]*resScale; k--){
-            set_pixel(surf, k, (i+p[0].y)*resScale+j, color);
-            //SDL_RenderDrawPoint(renderer, k, (i+p[0].y)*resScale+j);
-          }
+      if((slope_last[i - origin]) - (slope_long[i]) < 0){
+        for(int k = slope_long[i]; k > slope_last[i - origin]; k--){
+          point bcc = calcBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
+          unsigned int interpolated_color = interpolateColor(colors, bcc);
+          set_pixel(surf, k, (i+p[0].y), interpolated_color);
         }
       }else{
-        for(int j = 0; j < resScale; j++){
-          for(int k = slope_long[i]*resScale; k <= slope_last[i - origin]*resScale; k++){
-            set_pixel(surf, k, (i+p[0].y)*resScale+j, color);
-            //SDL_RenderDrawPoint(renderer, k, (i+p[0].y)*resScale+j);
-          }
+        for(int k = slope_long[i]; k <= slope_last[i - origin]; k++){
+          point bcc = calcBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
+          unsigned int interpolated_color = interpolateColor(colors, bcc);
+          set_pixel(surf, k, (i+p[0].y), interpolated_color);
         }
       }
     }
@@ -355,7 +373,7 @@ object loadOBJ(const char* filePath, unsigned int color, double x, double y, dou
 }
 
 void drawText(SDL_Renderer* renderer, const char* message, int x, int y, int width, int height, unsigned int color, int pt){
-  TTF_Font* font = TTF_OpenFont("fonts/TerminusTTF-4.49.2.ttf", pt*resScale);
+  TTF_Font* font = TTF_OpenFont("fonts/TerminusTTF-4.49.2.ttf", pt);
   if(font == NULL){
     printf("FONT COULD NOT BE LOADED!\n");
     exit(1);
@@ -365,10 +383,10 @@ void drawText(SDL_Renderer* renderer, const char* message, int x, int y, int wid
   SDL_Texture* Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage); 
 
   SDL_Rect Message_rect;
-  Message_rect.x = x*resScale;
-  Message_rect.y = y*resScale;
-  Message_rect.w = width*resScale; 
-  Message_rect.h = height*resScale;
+  Message_rect.x = x;
+  Message_rect.y = y;
+  Message_rect.w = width; 
+  Message_rect.h = height;
 
   SDL_RenderCopy(renderer, Message, NULL, &Message_rect);
 
@@ -382,12 +400,11 @@ point calcIntersect(point p0, point p1, char axis, unsigned int value){
   if(axis == 'x'){
     intersect.x = value;
     intersect.y = round(((p0.x - value)/(p0.x - p1.x))*(p1.y - p0.y) + p0.y);
-    
-    intersect.z = 1.0;
+    intersect.z = round(((p0.x - value)/(p0.x - p1.x))*(p1.z - p0.z) + p0.z);
   } else if(axis == 'y'){
     intersect.x = round(((p0.y - value)/(p0.y - p1.y))*(p1.x - p0.x) + p0.x);
     intersect.y = value;
-    intersect.z = 1.0;
+    intersect.z = round(((p0.y - value)/(p0.y - p1.y))*(p1.z - p0.z) + p0.z);
   } else if(axis == 'z'){
     intersect.x = round(((p0.z - value)/(p0.z - p1.z))*(p1.x - p0.x) + p0.x);
     intersect.y = round(((p0.z - value)/(p0.z - p1.z))*(p1.y - p0.y) + p0.y);

@@ -88,7 +88,7 @@ void load_objects()
   // objects[nObj++] = quad;
   objects[nObj++] = quad;
   // objects[nObj++] = room;
-  // objects[nObj++] = cube;
+  objects[nObj++] = cube;
   // objects[nObj++] = sphere;
   //objects[nObj++] = monkey;
   // objects[nObj++] = quad;

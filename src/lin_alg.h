@@ -12,6 +12,9 @@ typedef struct triangle{
   point b;
   point c;
   unsigned int color;
+  point texA;
+  point texB;
+  point texC;
 } triangle;
 
 
@@ -52,8 +55,12 @@ double vectorLength(point p);
 
 point calcBCC(point p, triangle t);
 
+point calcPCBCC(point p, triangle t, double h_w0, double h_w1, double h_w2);
+
 double calcTriArea(triangle t);
 
 double edgeFunc(point p, point p1, point p0);
+
+void printTriangle(triangle tri);
 
 #endif

@@ -26,4 +26,8 @@ triangle toCameraBasisTriangle(triangle tri);
 
 triangle projectTriangle(triangle tri);
 
+point projectPoint(point p);
+
+triangle screenToEyeSpace(triangle tri);
+
 #endif

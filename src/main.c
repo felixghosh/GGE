@@ -73,20 +73,26 @@ void free_objects()
 void load_objects()
 {
   objects = malloc(MAXOBJ * sizeof(object));
-  object teapot = loadOBJ("OBJ/teapot.obj", 0xDF2332, 0, 0, 30, 10);
-  object cube = loadOBJ("OBJ/cube.obj", 0xDF3F32, -20, -20, 20, 10);
-  object monkey = loadOBJ("OBJ/monkey.obj", 0x2323DF, 0, -30, 40, 10);
-  object tri = loadOBJ("OBJ/tri.obj", 0x23D33F, 0, 0, 40, 10);
-  object dog = loadOBJ("OBJ/dog.obj", 0x23D33F, 0, 0, 40, 10);
-  object get = loadOBJ("OBJ/get.obj", 0x23D33F, 0, 0, 80, 10);
-  object room = loadOBJ("OBJ/room3.obj", 0x32F48D, 0, 20, 200, 100);
-  object rifle = loadOBJ("OBJ/rifle.obj", 0x636393, (WIDTH)*0.004, (HEIGHT)*0.015, -7, 10);
+  // object teapot = loadOBJ("OBJ/teapot.obj", 0xDF2332, 0, 0, 30, 10);
+  object cube = loadOBJ("OBJ/cube.obj", 0xDF3F32, 0, 0, 80, 20);
+  // object sphere = loadOBJ("OBJ/sphere.obj", 0xDF3F32, -20, -20, 20, 300);
+  //object monkey = loadOBJ("OBJ/monkey.obj", 0x2323DF, 0, -30, 40, 10);
+  // object quad = loadOBJ("OBJ/quad.obj", 0x23D33F, 0, 0, 40, 10);
+  // object dog = loadOBJ("OBJ/dog.obj", 0x23D33F, 0, 0, 40, 10);
+  // object get = loadOBJ("OBJ/get.obj", 0x23D33F, 0, 0, 80, 10);
+  // object room = loadOBJ("OBJ/room3.obj", 0x32F48D, 0, 20, 200, 100);
+  // object rifle = loadOBJ("OBJ/rifle.obj", 0x636393, (WIDTH)*0.004, (HEIGHT)*0.015, -7, 10);
+  object quad = loadOBJ("OBJ/texTest.obj", 0xFF0000, 0, 0, 200, 10);
+  object tri = loadOBJ("OBJ/tri.obj", 0xFF0000, 0, 0, 200, 10);
 
-  objects[nObj++] = room;
-  objects[nObj++] = cube;
-  // objects[nObj++] = monkey;
-  // objects[nObj++] = tri;
-  // objects[nObj++] = dog;
+  // objects[nObj++] = quad;
+  objects[nObj++] = quad;
+  // objects[nObj++] = room;
+  // objects[nObj++] = cube;
+  // objects[nObj++] = sphere;
+  //objects[nObj++] = monkey;
+  // objects[nObj++] = quad;
+  //  objects[nObj++] = dog;
   // objects[nObj++] = get;
   // objects[nObj++] = teapot;
   // objects[nObj-1] = rotateObjectX(objects[nObj-1], 3.14/2, objects[nObj-1].pos.x, objects[nObj-1].pos.y, objects[nObj-1].pos.z);
@@ -151,7 +157,7 @@ void update_time()
   clock_gettime(CLOCK_REALTIME, &t1);
   elapsed_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec) / 1000000000.0;
   game_time += elapsed_time;
-  // printf("fps: %5u\n", (int)(1 / elapsed_time));
+  printf("fps: %5u\n", (int)(1 / elapsed_time));
   clock_gettime(CLOCK_REALTIME, &t0);
 }
 
@@ -254,7 +260,7 @@ void handle_input()
   }
   if (keystates[SDL_SCANCODE_O])
   { // o
-    for (int j = 1; j < nObj; j++)
+    for (int j = 0; j < nObj; j++)
     {
       objects[j] = rotateObjectX(objects[j], 0.007 * elapsed_time * TIME_CONST, 0, 0, 40);
       objects[j] = rotateObjectY(objects[j], 0.013 * elapsed_time * TIME_CONST, 0, 0, 40);
@@ -294,10 +300,21 @@ void render_scene()
   SDL_FillRect(surf, &clear, 0);
 
   // sort triangles for painters algorithm
-  //qsort(allTris, totalTris, sizeof(tri_map), cmpfunc);
+  qsort(allTris, totalTris, sizeof(tri_map), cmpfunc);
 
   for (int i = 0; i < totalTris; i++)
   {
+    
+    // if(i == 0){
+    //   triangle tri = *(allTris[0].tri);
+    //   triangle cam_tri = toCameraBasisTriangle(tri);
+    //   triangle screen_tri = projectTriangle(cam_tri);
+    //   // printf("world space pos: %2.1lf, %2.1lf, %2.1lf\n", tri.a.x, tri.a.y, tri.a.z);
+    //   // printf("eye space pos: %2.1lf, %2.1lf, %2.1lf\n", cam_tri.a.x, cam_tri.a.y, cam_tri.a.z);
+    //   // printf("screen space pos: %2.1lf, %2.1lf, %2.1lf\n", screen_tri.a.x, screen_tri.a.y, screen_tri.a.z);
+    //   triangle new_cam_tri = screenToEyeSpace(screen_tri);
+    //   // printf("new eye space pos: %2.1lf, %2.1lf, %2.1lf\n", new_cam_tri.a.x, new_cam_tri.a.y, new_cam_tri.a.z);
+    // }
     if (!*allTris[i].render)
       continue;
     triangle tri = *(allTris[i].tri);
@@ -323,26 +340,7 @@ void render_scene()
 
         point world_normal = normalizeVector(calcNormal(tri));
 
-        unsigned int colors[3];
-        for(int i = 0; i < 3; i++){
-          point corner;
-          if(i == 0) corner = tri.a;
-          else if(i == 1) corner = tri.b;
-          else corner = tri.c; 
-          double lightness = 0.0;
-          double ambient = 0.0;
-          for (int i = 0; i < nLights; i++)
-          {
-            point light_direction = normalizeVector(subtractPoints(corner, lights[i].p));
-            double light_dist = vectorLength(subtractPoints(corner, lights[i].p));
-            double partial_light = (lights[i].intensity / pow(light_dist, 1.1)) * dotProduct(world_normal, light_direction);
-            partial_light = partial_light < 0 ? 0 : partial_light;
-            lightness += partial_light;
-          }
-          unsigned int color = colorLightness(lightness + ambient, tri.color);
-          colors[i] = color;
-          //printf("color[%d]:%x\n", i, colors[i]);
-        }
+        
         //printf("Tri\n{%3.2lf, %3.2lf, %3.2lf}\n{%3.2lf, %3.2lf, %3.2lf}\n{%3.2lf, %3.2lf, %3.2lf}\ncolors{%lu, %lu, %lu}\n", tri.a.x, tri.a.y, tri.a.z, tri.b.x, tri.b.y, tri.b.z, tri.c.x, tri.c.y, tri.c.z, colors[0], colors[1], colors[2]);
 
         // CLIPPING AGAINST SCREEN BORDERS
@@ -352,12 +350,34 @@ void render_scene()
         clipTriangle(clipped_tris, &nTris);
 
         // RENDERING
-        for (int i = 0; i < nTris; i++)
+        for (int c = 0; c < nTris; c++)
         {
           if (!wireframe)
           {
-            //SDL_SetRenderDrawColor(renderer, 0x0000FF & colors >> 16, (0x00FF00 & colors) >> 8, 0x0000FF & colors, 255);
-            rasterizeTriangle(renderer, clipped_tris[i], surf, colors);
+            triangle t = clipped_tris[c];
+            //t = triToWorldSpace(t);
+            unsigned int colors[3];
+            for(int i = 0; i < 3; i++){
+              point corner;
+              if(i == 0) corner = t.a;
+              else if(i == 1) corner = t.b;
+              else corner = t.c; 
+              double lightness = 0.0;
+              double ambient = 0.0;
+              //printf("corner: %3.1lf %3.1lf %3.1lf\n", corner.x, corner.y, corner.z);              
+              for (int i = 0; i < nLights; i++)
+              {
+                point light_direction = normalizeVector(subtractPoints(corner, lights[i].p));
+                double light_dist = vectorLength(subtractPoints(corner, lights[i].p));
+                double partial_light = (lights[i].intensity / pow(light_dist, 1.1)) * dotProduct(world_normal, light_direction);
+                partial_light = partial_light < 0 ? 0 : partial_light;
+                lightness += partial_light;
+              }
+              unsigned int color = colorLightness(lightness + ambient, tri.color);
+              colors[i] = color;
+              //printf("color[%d]:%x\n", i, colors[i]);
+            }
+            rasterizeTriangle(renderer, clipped_tris[c], surf, colors);
           }
           else
           {
@@ -393,8 +413,6 @@ void clear_screen()
   SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
   SDL_RenderClear(renderer);
 }
-
-
 
 int main(int argc, char *argv[])
 {

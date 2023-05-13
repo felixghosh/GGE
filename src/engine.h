@@ -21,6 +21,7 @@
 
 
 
+
 typedef struct object{
   triangle* tris;
   unsigned int nFaces;
@@ -91,5 +92,7 @@ point calcIntersect(point p0, point p1, char axis, unsigned int value);
 void clipEdge(point p1, point p2, triangle* clipped_tris, unsigned int* nTris, int* index, char axis);
 
 void clipTriangle(triangle* clipped_tris, unsigned int* nTris);
+
+point calcInterpolatedTexCoords(point in, point out, double ratiox, double ratioy);
 
 #endif

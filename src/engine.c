@@ -43,9 +43,17 @@ double camera_angle_x = 0.0;
 triangle camera_basis = { //Currently not used
   {1.0, 0.0, 0.0},
   {0.0, 1.0, 0.0},
-  {0.0, 0.0, 1.0},
+  {0.0, 0, 1.0},
   0
 };
+
+unsigned int texture[2][2] = 
+{{0xff0000,0x00ff00}, 
+ {0x0000ff,0xffff00}};
+
+unsigned int* load_texture(unsigned int width, unsigned int height, char* filepath){
+  
+}
 
 
 object translateObject(object obj, double x, double y, double z){
@@ -109,10 +117,6 @@ node rotateNodeZ(node node, double angle, double x, double y, double z){
   return node;
 }
 
-void printTriangle(triangle tri){
-  printf("(%2.1lf, %2.1lf, %2.1lf)\n(%2.1lf, %2.1lf, %2.1lf)\n(%2.1lf, %2.1lf, %2.1lf)\n\n", tri.a.x, tri.a.y, tri.a.z, tri.b.x, tri.b.y, tri.b.z, tri.c.x, tri.c.y, tri.c.z);
-}
-
 int cmpfunc (const void * a, const void * b) {
    tri_map* tma = (tri_map*)a;
    tri_map* tmb = (tri_map*)b;
@@ -149,6 +153,48 @@ unsigned int interpolateColor(unsigned int colors[3], point bcc){
   rValue = ((r0 + r1 + r2) & r);
   gValue = ((g0 + g1 + g2) & g);
   bValue = ((b0 + b1 + b2) & b);
+
+  return rValue + gValue + bValue;
+}
+
+point interpolateTexCoords(triangle tri, point bcc){
+  double u = tri.texA.x * bcc.x + tri.texB.x * bcc.y + tri.texC.x * bcc.z;
+  double v = tri.texA.y * bcc.x + tri.texB.y * bcc.y + tri.texC.y * bcc.z;
+  // printf("Ax: %2.1lf,Bx: %2.1lf, Cx: %2.1lf\n", tri.texA.x, tri.texB.x, tri.texC.x);
+  // printf("u: %2.2lf, v: %2.2lf\n", u, v);
+  return (point){u, v, 0.0};
+}
+
+point interpolatePoint(point a, point b, point c, point bcc){
+  double x0, x1, x2, y0, y1, y2, z0, z1, z2;
+  x0 = a.x * bcc.x;
+  x1 = b.x * bcc.y;
+  x2 = c.x * bcc.z;
+  y0 = a.y * bcc.x;
+  y1 = b.y * bcc.y;
+  y2 = c.y * bcc.z;
+  z0 = a.z * bcc.x;
+  z1 = b.z * bcc.y;
+  z2 = c.z * bcc.z;
+
+  return (point){(x0+x1+x2), (y0+y1+y2), (z0+z1+z2)};
+}
+
+unsigned int sampleTexture(double u, double v, int len){
+  unsigned int r, g, b, rshift, gshift, rValue, gValue, bValue;
+  int u_index = (int)(u*len);
+  int v_index = (int)(v*len);
+  u_index = u_index == len ? len-1 : u_index;
+  v_index = v_index == len ? len-1 : v_index;
+  r = 0x00FF0000;
+  g = 0x0000FF00;
+  b = 0x000000FF;
+  rshift = 16;
+  gshift = 8;
+
+  rValue = (texture[v_index][u_index]) & r;
+  gValue = (texture[v_index][u_index]) & g;
+  bValue = (texture[v_index][u_index]) & b;
 
   return rValue + gValue + bValue;
 }
@@ -251,9 +297,31 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf, 
   p[0] = tri.a;
   p[1] = tri.b;
   p[2] = tri.c;
+
+  for(int i = 0; i < 3; i++){
+    p[i].x = round(p[i].x);
+    p[i].y = round(p[i].y);
+    p[i].z = round(p[i].z);
+  }
   sortPoints(p, 0, 1);
   sortPoints(p, 1, 2);
   sortPoints(p, 0, 1);
+  // point p1 = (point){-3, -2.0, 200.0};
+  // p1 = projectPoint(toCameraBasis(p1));
+  // point b1 = calcBCC(p1, tri);
+  // point tc1 = interpolateTexCoords(tri, b1);
+  // unsigned int c1 = sampleTexture(tc1.x, tc1.y, 2);
+  // point p2 = (point){-3.0, -2.0, 200.0};
+  // p2 = projectPoint(toCameraBasis(p2));
+  // point b2 = calcBCC(p2, tri);
+  // point tc2 = interpolateTexCoords(tri, b2);
+  // unsigned int c2 = sampleTexture(tc2.x, tc2.y, 2);
+  // printf("bcc x: %2.2lf, y: %2.2lf, z: %2.2lf\n", b1.x, b1.y, b1.z);
+  // printf("u: %2.2lf, v: %2.2lf\n", tc1.x, tc1.y);
+  // printf("2u: %2.2lf, v: %2.2lf\n", tc2.x, tc2.y);
+  // printf("color: %6x\n", c1);
+  // printf("2color: %6x\n", c2);
+  // printf("u: %lf v: %lf\n", tri.texA, tri.texB);
   
   if(p[0].y == p[2].y)
     return;
@@ -282,20 +350,25 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf, 
     }
   }
   //scanline
+  unsigned int cols[3] = {0xff0000, 0x00ff00, 0x0000ff};
   i = 0;
   if(dy_short != 0){
     for(i; i < dy_short; i++){
       if((slope_short[i]) - (slope_long[i]) < 0){
         for(int k  = slope_long[i]; k > slope_short[i]; k--){
           point bcc = calcBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
-          unsigned int interpolated_color = interpolateColor(colors, bcc);
-          set_pixel(surf, k, (i+p[0].y), interpolated_color);
+          point texCoords = interpolateTexCoords(tri, bcc);
+          unsigned int texture_color = sampleTexture(texCoords.x, texCoords.y, 2);
+          unsigned int interpolated_color = interpolateColor(cols, bcc);
+          set_pixel(surf, k, (i+p[0].y), texture_color);
         }
       } else{
         for(int k  = slope_long[i]; k <= slope_short[i]; k++){
           point bcc = calcBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
-          unsigned int interpolated_color = interpolateColor(colors, bcc);
-          set_pixel(surf, k, (i+p[0].y), interpolated_color);
+          point texCoords = interpolateTexCoords(tri, bcc);
+          unsigned int texture_color = sampleTexture(texCoords.x, texCoords.y, 2);
+          unsigned int interpolated_color = interpolateColor(cols, bcc);
+          set_pixel(surf, k, (i+p[0].y), texture_color);
         }
       }
     }      
@@ -306,14 +379,19 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf, 
       if((slope_last[i - origin]) - (slope_long[i]) < 0){
         for(int k = slope_long[i]; k > slope_last[i - origin]; k--){
           point bcc = calcBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
-          unsigned int interpolated_color = interpolateColor(colors, bcc);
-          set_pixel(surf, k, (i+p[0].y), interpolated_color);
+          point texCoords = interpolateTexCoords(tri, bcc);
+          unsigned int texture_color = sampleTexture(texCoords.x, texCoords.y, 2);
+          unsigned int interpolated_color = interpolateColor(cols, bcc);
+          set_pixel(surf, k, (i+p[0].y), texture_color);
         }
       }else{
         for(int k = slope_long[i]; k <= slope_last[i - origin]; k++){
           point bcc = calcBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
-          unsigned int interpolated_color = interpolateColor(colors, bcc);
-          set_pixel(surf, k, (i+p[0].y), interpolated_color);
+          //printf("bcc: %3.1lf %3.1lf %3.1lf\n", bcc.x, bcc.y, bcc.z);   
+          point texCoords = interpolateTexCoords(tri, bcc);
+          unsigned int texture_color = sampleTexture(texCoords.x, texCoords.y, 2);
+          unsigned int interpolated_color = interpolateColor(cols, bcc);
+          set_pixel(surf, k, (i+p[0].y), texture_color);
         }
       }
     }
@@ -323,6 +401,7 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf, 
 object loadOBJ(const char* filePath, unsigned int color, double x, double y, double z, double scale){
   unsigned long int nFaces = 0;
   unsigned long int nVertices = 0;
+  unsigned long int nCoords = 0;
   FILE* fp;
   fp = fopen(filePath, "r");
   
@@ -335,9 +414,18 @@ object loadOBJ(const char* filePath, unsigned int color, double x, double y, dou
     nVertices++;
   } while(buf[0] == 'v');
 
+  getline(&buf, &buf_size, fp);
+
+  do{
+    getline(&buf, &buf_size, fp);
+    nCoords++;
+  } while(buf[0] == 'v');
+
   while(getline(&buf, &buf_size, fp)>0)
     nFaces++;
   nVertices--;
+
+  printf("nvert:%d nface:%d\n", nVertices, nFaces);
 
   rewind(fp);
 
@@ -346,11 +434,29 @@ object loadOBJ(const char* filePath, unsigned int color, double x, double y, dou
     getline(&buf, &buf_size, fp);
     endptr = buf;
     double values[3];
-    for(int i = 0; i < 3; i++)
+    for(int i = 0; i < 3; i++){
       values[i] = scale*strtod(endptr+1, &endptr);
+      // printf("%lf\n", values[i]);
+    }
+    // printf("\n");
     vertices[i] = (point){-values[0] + x, -values[1] + y, -values[2] + z};
   }
   
+  getline(&buf, &buf_size, fp);
+
+  point* texCoords = malloc(nCoords * sizeof(point));
+
+  for(int i = 0; i < nCoords; i++){
+    getline(&buf, &buf_size, fp);
+    endptr = buf;
+    double values[2];
+    values[0] = strtod(endptr+2, &endptr);
+    values[1] = strtod(endptr+1, &endptr);
+    // printf("tex %lf\n", values[0]);
+    // printf("tex %lf\n", values[1]); 
+    texCoords[i] = (point){values[0], values[1], 0.0};
+  }
+
   getline(&buf, &buf_size, fp);
 
   triangle* tris = malloc(nFaces * sizeof(triangle));
@@ -358,14 +464,25 @@ object loadOBJ(const char* filePath, unsigned int color, double x, double y, dou
     getline(&buf, &buf_size, fp);
     endptr = buf;
     long int values[3];
-    for(int i = 0; i < 3; i++)
+    long int tex[3];
+    for(int i = 0; i < 3; i++){
       values[i] = strtol(endptr+1, &endptr, 10) - 1;
+      tex[i] = strtol(endptr+1, &endptr, 10) - 1;
+      // printf("val %ld\n", values[i]);
+      // printf("tex %ld\n", tex[i]); 
+    }
+      
     tris[i] = (triangle){
       vertices[values[0]],
       vertices[values[1]],
       vertices[values[2]],
-      color
+      color,
+      texCoords[tex[0]],
+      texCoords[tex[1]],
+      texCoords[tex[2]]
       };
+
+      // printf("trix: %2.1lf, %2.1lf, %2.1lf\ntexu: %2.1lf, %2.1lf, %2.1lf\n", vertices[values[0]].x, vertices[values[1]].x, vertices[values[2]].x, texCoords[tex[0]].x, texCoords[tex[1]].x,texCoords[tex[2]].x);
   }
   free(buf);
   object obj = {tris, nFaces, (point){x,y,z}};
@@ -472,9 +589,38 @@ void clipEdge(point p1, point p2, triangle* clipped_tris, unsigned int* nTris, i
     }
     point intersect1 = calcIntersect(points[firstOut], points[(firstOut+1)%3], axis, value);
     point intersect2 = calcIntersect(points[firstOut], points[(firstOut+2)%3], axis, value);
-    clipped_tris[*index] = (triangle){points[(firstOut+1)%3], points[(firstOut+2)%3], intersect1, tri.color};
-    clipped_tris[*nTris] = (triangle){points[(firstOut+2)%3], intersect2, intersect1, tri.color};
-    (*nTris)++;
+
+    double ratio1x = points[(firstOut+1)%3].x == points[firstOut].x ? 1.0 : (intersect1.x-points[firstOut].x)/(points[(firstOut+1)%3].x - points[firstOut].x);
+    double ratio2x = points[(firstOut+2)%3].x == points[firstOut].x ? 1.0 : (intersect2.x-points[firstOut].x)/(points[(firstOut+2)%3].x - points[firstOut].x);
+    double ratio1y = points[(firstOut+1)%3].y == points[firstOut].y ? 1.0 : (intersect1.y-points[firstOut].y)/(points[(firstOut+1)%3].y - points[firstOut].y);
+    double ratio2y = points[(firstOut+2)%3].y == points[firstOut].y ? 1.0 : (intersect2.y-points[firstOut].y)/(points[(firstOut+2)%3].y - points[firstOut].y);
+
+
+    point tex1, tex2;
+
+    if(firstOut == 0){
+      tex1 = calcInterpolatedTexCoords(tri.texB, tri.texA, ratio1x, ratio1y);
+      tex2 = calcInterpolatedTexCoords(tri.texC, tri.texA, ratio2x, ratio2y);
+      clipped_tris[*index] = (triangle){intersect1, points[(firstOut+1)%3], points[(firstOut+2)%3], tri.color, tex1, tri.texB, tri.texC};
+      clipped_tris[*nTris] = (triangle){intersect1, points[(firstOut+2)%3], intersect2, tri.color, tex1, tri.texC, tex2};
+      (*nTris)++;
+    }
+    else if(firstOut == 1){
+      tex1 = calcInterpolatedTexCoords(tri.texC, tri.texB, ratio1x, ratio1y);
+      tex2 = calcInterpolatedTexCoords(tri.texA, tri.texB, ratio2x, ratio2y);
+      clipped_tris[*index] = (triangle){intersect1, points[(firstOut+1)%3], points[(firstOut+2)%3], tri.color, tex1, tri.texC, tri.texA};
+      clipped_tris[*nTris] = (triangle){intersect1, points[(firstOut+2)%3], intersect2, tri.color, tex1, tri.texA, tex2};
+      (*nTris)++;
+    }
+    else{
+      tex1 = calcInterpolatedTexCoords(tri.texA, tri.texC, ratio1x, ratio1y);
+      tex2 = calcInterpolatedTexCoords(tri.texB, tri.texC, ratio2x, ratio2y);
+      clipped_tris[*index] = (triangle){intersect1, points[(firstOut+1)%3], points[(firstOut+2)%3], tri.color, tex1, tri.texA, tri.texB};
+      clipped_tris[*nTris] = (triangle){intersect1, points[(firstOut+2)%3], intersect2, tri.color, tex1, tri.texB, tex2};
+      (*nTris)++;
+    }
+
+    
   } else if(nOutside == 2){
     //create one new triangle
     int firstIn = 0;
@@ -486,7 +632,33 @@ void clipEdge(point p1, point p2, triangle* clipped_tris, unsigned int* nTris, i
     }
     point intersect1 = calcIntersect(points[firstIn], points[(firstIn+1)%3], axis, value);
     point intersect2 = calcIntersect(points[firstIn], points[(firstIn+2)%3], axis, value);
-    clipped_tris[*index] = (triangle){points[firstIn], intersect1, intersect2, tri.color};
+
+    double ratio1x = points[firstIn].x == points[(firstIn+1)%3].x ? 1.0 : (intersect1.x-points[(firstIn+1)%3].x)/(points[firstIn].x - points[(firstIn+1)%3].x);
+    double ratio2x = points[firstIn].x == points[(firstIn+2)%3].x ? 1.0 : (intersect2.x-points[(firstIn+2)%3].x)/(points[firstIn].x - points[(firstIn+2)%3].x);
+    double ratio1y = points[firstIn].y == points[(firstIn+1)%3].y ? 1.0 : (intersect1.y-points[(firstIn+1)%3].y)/(points[firstIn].y - points[(firstIn+1)%3].y);
+    double ratio2y = points[firstIn].y == points[(firstIn+2)%3].y ? 1.0 : (intersect2.y-points[(firstIn+2)%3].y)/(points[firstIn].y - points[(firstIn+2)%3].y);
+
+    point texA, texB, texC;
+
+    if(firstIn == 0){
+      texA = tri.texA;
+      texB = calcInterpolatedTexCoords(tri.texA, tri.texB, ratio1x, ratio1y);
+      texC = calcInterpolatedTexCoords(tri.texA, tri.texC, ratio2x, ratio2y);
+      clipped_tris[*index] = (triangle){points[firstIn], intersect1, intersect2, tri.color, texA, texB, texC};
+    }
+    else if(firstIn == 1){
+      texA = calcInterpolatedTexCoords(tri.texB, tri.texA, ratio2x, ratio2y);
+      texB = tri.texB;
+      texC = calcInterpolatedTexCoords(tri.texB, tri.texC, ratio1x, ratio1y);
+      clipped_tris[*index] = (triangle){intersect2, points[firstIn], intersect1, tri.color, texA, texB, texC};
+    }
+    else{
+      texA = calcInterpolatedTexCoords(tri.texC, tri.texA, ratio1x, ratio1y);
+      texB = calcInterpolatedTexCoords(tri.texC, tri.texB, ratio2x, ratio2y);
+      texC = tri.texC;
+      clipped_tris[*index] = (triangle){intersect1, intersect2, points[firstIn], tri.color, texA, texB, texC};
+    }
+    
   } else if(nOutside == 3){
     //Don't render this triangle at all
     for(int i = *index; i < *nTris-1; i++){
@@ -513,5 +685,15 @@ void clipTriangle(triangle* clipped_tris, unsigned int* nTris){
   for(i = 0; i < *nTris; i++){
     clipEdge((point){0,HEIGHT,0}, (point){WIDTH,HEIGHT,0}, clipped_tris, nTris, &i, 'y');
   }
+}
+
+point calcInterpolatedTexCoords(point in, point out, double ratiox, double ratioy){
+  double newU = out.x + (in.x - out.x)*ratiox;
+  double newV = out.y + (in.y - out.y)*ratioy;
+  if(isnan(newU))
+    printf("U IS NAN!\n");
+  if(isnan(newV))
+    printf("V IS NAN!\n");
+  return (point){newU, newV, out.z};
 }
 

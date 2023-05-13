@@ -1,5 +1,6 @@
 #include "lin_alg.h"
 #include "global.h"
+#include <stdio.h>
 #include <math.h>
 
 
@@ -180,20 +181,33 @@ point calcBCC(point p, triangle t){
   point p1 = t.b;
   point p2 = t.c;
   
-  double A1 = 0.5*((p.x - p0.x)*(p2.y - p0.y)-(p.y - p0.y)*(p2.x -  p0.x));
-  double A2 = 0.5*((p.x - p1.x)*(p0.y - p1.y)-(p.y - p1.y)*(p0.x -  p1.x));
-  double A3 = 0.5*((p.x - p2.x)*(p1.y - p2.y)-(p.y - p2.y)*(p1.x -  p2.x));
+  double A1 = 0.5*((p.x - p2.x)*(p1.y - p2.y)-(p.y - p2.y)*(p1.x -  p2.x));
+  double A2 = 0.5*((p.x - p0.x)*(p2.y - p0.y)-(p.y - p0.y)*(p2.x -  p0.x));
+  double A3 = 0.5*((p.x - p1.x)*(p0.y - p1.y)-(p.y - p1.y)*(p0.x -  p1.x));
+  
   double area = A1 + A2 + A3;
+  
   double divisor = 1 / area;
   double u = A1 * divisor;
   double v = A2 * divisor;
-  double w = A3 * divisor;
   u = u < 0.0 ? 0.0 : u;
   v = v < 0.0 ? 0.0 : v;
-  w = w < 0.0 ? 0.0 : w;
+  
   u = u > 1.0 ? 1.0 : u;
   v = v > 1.0 ? 1.0 : v;
+  
+  u = isnan(u) ? 0.0 : u;
+  v = isnan(v) ? 0.0 : v;
+
+  double w = 1.0 - u - v;
+  w = w < 0.0 ? 0.0 : w;
   w = w > 1.0 ? 1.0 : w;
+  w = isnan(w) ? 0.0 : w;
+  // printf("p: %2.2lf, %2.2lf, %2.2lf\n", p.x, p.y, p.z);
+  // printf("Area: %lf\n", area);
+  // printf("u: %2.2lf, v: %2.2lf, w: %2.2lf\n", u, v, w);
+  // sleep(10);
+  
 
   
   // double area = calcTriArea(t);
@@ -201,6 +215,27 @@ point calcBCC(point p, triangle t){
   // double u = edgeFunc(p, p0, p2) * divisor;
   // double v = edgeFunc(p, p1, p0) * divisor;
   // double w = 1.0 - u - v;
+ 
+  return (point){u, v, w};
+}
+
+point calcPCBCC(point p, triangle t, double h_w0, double h_w1, double h_w2){
+  point p0 = t.a;
+  point p1 = t.b;
+  point p2 = t.c;
+  
+  double e0 = edgeFunc(p, p2, p1);
+  double e1 = edgeFunc(p, p0, p2);
+  double e2 = edgeFunc(p, p1, p0);
+
+  double f0 = e0 / h_w0;
+  double f1 = e1 / h_w1;
+  double f2 = e2 / h_w2;
+  
+  double divisor = 1 / (f0+f1+f2);
+  double u = f1 * divisor;
+  double v = f2 * divisor;
+  double w = 1.0 - u - v;
   return (point){u, v, w};
 }
 
@@ -226,4 +261,8 @@ double edgeFunc(point p, point p1, point p0){
 
   return a * (p.x - p0.x) + b * (p.y - p0.y);
 
+}
+
+void printTriangle(triangle tri){
+  printf("a{%2.2lf, %2.2lf, %2.2lf} b{%2.2lf, %2.2lf, %2.2lf} c{%2.2lf, %2.2lf, %2.2lf}\n", tri.a.x, tri.a.y, tri.a.z, tri.b.x, tri.b.y, tri.b.z, tri.c.x, tri.c.y, tri.c.z);
 }

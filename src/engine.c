@@ -47,9 +47,10 @@ triangle camera_basis = { //Currently not used
   0
 };
 
-unsigned int texture[2][2] = 
-{{0xff0000,0x00ff00}, 
- {0x0000ff,0xffff00}};
+unsigned int texture[3][3] = 
+{{0xff0000,0x00ff00, 0x0000ff}, 
+ {0xffff00,0x00ffff, 0xff00ff},
+ {0xff9933,0x99ff33, 0x3399ff}};
 
 unsigned int* load_texture(unsigned int width, unsigned int height, char* filepath){
   
@@ -309,6 +310,7 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf, 
   // point p1 = (point){-3, -2.0, 200.0};
   // p1 = projectPoint(toCameraBasis(p1));
   // point b1 = calcBCC(p1, tri);
+  // point b2 = calcPCBCC(p1, tri);
   // point tc1 = interpolateTexCoords(tri, b1);
   // unsigned int c1 = sampleTexture(tc1.x, tc1.y, 2);
   // point p2 = (point){-3.0, -2.0, 200.0};
@@ -317,6 +319,7 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf, 
   // point tc2 = interpolateTexCoords(tri, b2);
   // unsigned int c2 = sampleTexture(tc2.x, tc2.y, 2);
   // printf("bcc x: %2.2lf, y: %2.2lf, z: %2.2lf\n", b1.x, b1.y, b1.z);
+  // printf("bcc2 x: %2.2lf, y: %2.2lf, z: %2.2lf\n", b2.x, b2.y, b2.z);
   // printf("u: %2.2lf, v: %2.2lf\n", tc1.x, tc1.y);
   // printf("2u: %2.2lf, v: %2.2lf\n", tc2.x, tc2.y);
   // printf("color: %6x\n", c1);
@@ -356,17 +359,19 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf, 
     for(i; i < dy_short; i++){
       if((slope_short[i]) - (slope_long[i]) < 0){
         for(int k  = slope_long[i]; k > slope_short[i]; k--){
-          point bcc = calcBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
+          // point bcc = calcBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
+          point bcc = calcPCBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
           point texCoords = interpolateTexCoords(tri, bcc);
-          unsigned int texture_color = sampleTexture(texCoords.x, texCoords.y, 2);
+          unsigned int texture_color = sampleTexture(texCoords.x, texCoords.y, 3);
           unsigned int interpolated_color = interpolateColor(cols, bcc);
           set_pixel(surf, k, (i+p[0].y), texture_color);
         }
       } else{
         for(int k  = slope_long[i]; k <= slope_short[i]; k++){
-          point bcc = calcBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
+          // point bcc = calcBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
+          point bcc = calcPCBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
           point texCoords = interpolateTexCoords(tri, bcc);
-          unsigned int texture_color = sampleTexture(texCoords.x, texCoords.y, 2);
+          unsigned int texture_color = sampleTexture(texCoords.x, texCoords.y, 3);
           unsigned int interpolated_color = interpolateColor(cols, bcc);
           set_pixel(surf, k, (i+p[0].y), texture_color);
         }
@@ -378,18 +383,20 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf, 
     for(i; i < dy_long; i++){
       if((slope_last[i - origin]) - (slope_long[i]) < 0){
         for(int k = slope_long[i]; k > slope_last[i - origin]; k--){
-          point bcc = calcBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
+          // point bcc = calcBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
+          point bcc = calcPCBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
           point texCoords = interpolateTexCoords(tri, bcc);
-          unsigned int texture_color = sampleTexture(texCoords.x, texCoords.y, 2);
+          unsigned int texture_color = sampleTexture(texCoords.x, texCoords.y, 3);
           unsigned int interpolated_color = interpolateColor(cols, bcc);
           set_pixel(surf, k, (i+p[0].y), texture_color);
         }
       }else{
         for(int k = slope_long[i]; k <= slope_last[i - origin]; k++){
-          point bcc = calcBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
+          // point bcc = calcBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
+          point bcc = calcPCBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
           //printf("bcc: %3.1lf %3.1lf %3.1lf\n", bcc.x, bcc.y, bcc.z);   
           point texCoords = interpolateTexCoords(tri, bcc);
-          unsigned int texture_color = sampleTexture(texCoords.x, texCoords.y, 2);
+          unsigned int texture_color = sampleTexture(texCoords.x, texCoords.y, 3);
           unsigned int interpolated_color = interpolateColor(cols, bcc);
           set_pixel(surf, k, (i+p[0].y), texture_color);
         }
@@ -516,21 +523,28 @@ point calcIntersect(point p0, point p1, char axis, unsigned int value){
   point intersect;
   if(axis == 'x'){
     intersect.x = value;
-    intersect.y = round(((p0.x - value)/(p0.x - p1.x))*(p1.y - p0.y) + p0.y);
-    intersect.z = round(((p0.x - value)/(p0.x - p1.x))*(p1.z - p0.z) + p0.z);
+    intersect.y = ((p0.x - value)/(p0.x - p1.x))*(p1.y - p0.y) + p0.y;
+    intersect.z = ((p0.x - value)/(p0.x - p1.x))*(p1.z - p0.z) + p0.z;
   } else if(axis == 'y'){
-    intersect.x = round(((p0.y - value)/(p0.y - p1.y))*(p1.x - p0.x) + p0.x);
+    intersect.x = ((p0.y - value)/(p0.y - p1.y))*(p1.x - p0.x) + p0.x;
     intersect.y = value;
-    intersect.z = round(((p0.y - value)/(p0.y - p1.y))*(p1.z - p0.z) + p0.z);
+    intersect.z = ((p0.y - value)/(p0.y - p1.y))*(p1.z - p0.z) + p0.z;
   } else if(axis == 'z'){
-    intersect.x = round(((p0.z - value)/(p0.z - p1.z))*(p1.x - p0.x) + p0.x);
-    intersect.y = round(((p0.z - value)/(p0.z - p1.z))*(p1.y - p0.y) + p0.y);
+    intersect.x = ((p0.z - value)/(p0.z - p1.z))*(p1.x - p0.x) + p0.x;
+    intersect.y = ((p0.z - value)/(p0.z - p1.z))*(p1.y - p0.y) + p0.y;
     intersect.z = value;
   }
+  intersect.x = intersect.x == 0.0 ? 1.0 : intersect.x;
+  intersect.x = intersect.x == WIDTH ? WIDTH - 1 : intersect.x;
+  intersect.y = intersect.y == 0.0 ? 1.0 : intersect.y;
+  intersect.y = intersect.y == HEIGHT ? HEIGHT - 1 : intersect.y; 
+  intersect.z = intersect.z == 0.0 ? 1.0 : intersect.z;
   return intersect;
 }
 
 void clipEdge(point p1, point p2, triangle* clipped_tris, unsigned int* nTris, int* index, char axis){
+  if(axis == 'x' || axis == 'y')
+    printf("ntris: %u \n", *nTris);
   triangle tri = clipped_tris[*index];
   point points[3] = {tri.a, tri.b, tri.c};
   unsigned int value;
@@ -587,6 +601,7 @@ void clipEdge(point p1, point p2, triangle* clipped_tris, unsigned int* nTris, i
         break;
       }
     }
+    printf("firstOut: %d\n", firstOut);
     point intersect1 = calcIntersect(points[firstOut], points[(firstOut+1)%3], axis, value);
     point intersect2 = calcIntersect(points[firstOut], points[(firstOut+2)%3], axis, value);
 
@@ -599,25 +614,22 @@ void clipEdge(point p1, point p2, triangle* clipped_tris, unsigned int* nTris, i
     point tex1, tex2;
 
     if(firstOut == 0){
-      tex1 = calcInterpolatedTexCoords(tri.texB, tri.texA, ratio1x, ratio1y);
-      tex2 = calcInterpolatedTexCoords(tri.texC, tri.texA, ratio2x, ratio2y);
+      tex1 = calcInterpolatedTexCoords(tri.texB, tri.texA, ratio1x, ratio1y, tri.b.z, tri.a.z, intersect1.z);
+      tex2 = calcInterpolatedTexCoords(tri.texC, tri.texA, ratio2x, ratio2y, tri.c.z, tri.a.z, intersect2.z);
       clipped_tris[*index] = (triangle){intersect1, points[(firstOut+1)%3], points[(firstOut+2)%3], tri.color, tex1, tri.texB, tri.texC};
-      clipped_tris[*nTris] = (triangle){intersect1, points[(firstOut+2)%3], intersect2, tri.color, tex1, tri.texC, tex2};
-      (*nTris)++;
+      clipped_tris[(*nTris)++] = (triangle){intersect1, points[(firstOut+2)%3], intersect2, tri.color, tex1, tri.texC, tex2};
     }
     else if(firstOut == 1){
-      tex1 = calcInterpolatedTexCoords(tri.texC, tri.texB, ratio1x, ratio1y);
-      tex2 = calcInterpolatedTexCoords(tri.texA, tri.texB, ratio2x, ratio2y);
+      tex1 = calcInterpolatedTexCoords(tri.texC, tri.texB, ratio1x, ratio1y, tri.c.z, tri.b.z, intersect1.z);
+      tex2 = calcInterpolatedTexCoords(tri.texA, tri.texB, ratio2x, ratio2y, tri.a.z, tri.b.z, intersect2.z);
       clipped_tris[*index] = (triangle){intersect1, points[(firstOut+1)%3], points[(firstOut+2)%3], tri.color, tex1, tri.texC, tri.texA};
-      clipped_tris[*nTris] = (triangle){intersect1, points[(firstOut+2)%3], intersect2, tri.color, tex1, tri.texA, tex2};
-      (*nTris)++;
+      clipped_tris[(*nTris)++] = (triangle){intersect1, points[(firstOut+2)%3], intersect2, tri.color, tex1, tri.texA, tex2};
     }
     else{
-      tex1 = calcInterpolatedTexCoords(tri.texA, tri.texC, ratio1x, ratio1y);
-      tex2 = calcInterpolatedTexCoords(tri.texB, tri.texC, ratio2x, ratio2y);
+      tex1 = calcInterpolatedTexCoords(tri.texA, tri.texC, ratio1x, ratio1y, tri.a.z, tri.c.z, intersect1.z);
+      tex2 = calcInterpolatedTexCoords(tri.texB, tri.texC, ratio2x, ratio2y, tri.b.z, tri.c.z, intersect2.z);
       clipped_tris[*index] = (triangle){intersect1, points[(firstOut+1)%3], points[(firstOut+2)%3], tri.color, tex1, tri.texA, tri.texB};
-      clipped_tris[*nTris] = (triangle){intersect1, points[(firstOut+2)%3], intersect2, tri.color, tex1, tri.texB, tex2};
-      (*nTris)++;
+      clipped_tris[(*nTris)++] = (triangle){intersect1, points[(firstOut+2)%3], intersect2, tri.color, tex1, tri.texB, tex2};
     }
 
     
@@ -630,6 +642,7 @@ void clipEdge(point p1, point p2, triangle* clipped_tris, unsigned int* nTris, i
         break;
       }
     }
+    printf("firstIn: %d\n", firstIn);
     point intersect1 = calcIntersect(points[firstIn], points[(firstIn+1)%3], axis, value);
     point intersect2 = calcIntersect(points[firstIn], points[(firstIn+2)%3], axis, value);
 
@@ -642,19 +655,19 @@ void clipEdge(point p1, point p2, triangle* clipped_tris, unsigned int* nTris, i
 
     if(firstIn == 0){
       texA = tri.texA;
-      texB = calcInterpolatedTexCoords(tri.texA, tri.texB, ratio1x, ratio1y);
-      texC = calcInterpolatedTexCoords(tri.texA, tri.texC, ratio2x, ratio2y);
+      texB = calcInterpolatedTexCoords(tri.texA, tri.texB, ratio1x, ratio1y, tri.a.z, tri.b.z, intersect1.z);
+      texC = calcInterpolatedTexCoords(tri.texA, tri.texC, ratio2x, ratio2y, tri.a.z, tri.c.z, intersect2.z);
       clipped_tris[*index] = (triangle){points[firstIn], intersect1, intersect2, tri.color, texA, texB, texC};
     }
     else if(firstIn == 1){
-      texA = calcInterpolatedTexCoords(tri.texB, tri.texA, ratio2x, ratio2y);
+      texA = calcInterpolatedTexCoords(tri.texB, tri.texA, ratio2x, ratio2y, tri.b.z, tri.a.z, intersect2.z);
       texB = tri.texB;
-      texC = calcInterpolatedTexCoords(tri.texB, tri.texC, ratio1x, ratio1y);
+      texC = calcInterpolatedTexCoords(tri.texB, tri.texC, ratio1x, ratio1y, tri.b.z, tri.c.z, intersect1.z);
       clipped_tris[*index] = (triangle){intersect2, points[firstIn], intersect1, tri.color, texA, texB, texC};
     }
     else{
-      texA = calcInterpolatedTexCoords(tri.texC, tri.texA, ratio1x, ratio1y);
-      texB = calcInterpolatedTexCoords(tri.texC, tri.texB, ratio2x, ratio2y);
+      texA = calcInterpolatedTexCoords(tri.texC, tri.texA, ratio1x, ratio1y, tri.c.z, tri.a.z, intersect1.z);
+      texB = calcInterpolatedTexCoords(tri.texC, tri.texB, ratio2x, ratio2y, tri.c.z, tri.b.z, intersect2.z);
       texC = tri.texC;
       clipped_tris[*index] = (triangle){intersect1, intersect2, points[firstIn], tri.color, texA, texB, texC};
     }
@@ -687,13 +700,13 @@ void clipTriangle(triangle* clipped_tris, unsigned int* nTris){
   }
 }
 
-point calcInterpolatedTexCoords(point in, point out, double ratiox, double ratioy){
-  double newU = out.x + (in.x - out.x)*ratiox;
-  double newV = out.y + (in.y - out.y)*ratioy;
-  if(isnan(newU))
-    printf("U IS NAN!\n");
-  if(isnan(newV))
-    printf("V IS NAN!\n");
+point calcInterpolatedTexCoords(point in, point out, double ratiox, double ratioy, double in_z, double out_z, double intersect_z){
+  double zx_t = 1 / ((1/out_z + ratiox*(1/in_z - 1/out_z)));
+  double zy_t = 1 / ((1/out_z + ratioy*(1/in_z - 1/out_z)));
+
+  double newU = (out.x/out_z + (in.x/in_z - out.x/out_z)*ratiox)*zx_t;
+  double newV = (out.y/out_z + (in.y/in_z - out.y/out_z)*ratioy)*zy_t;
+
   return (point){newU, newV, out.z};
 }
 

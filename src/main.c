@@ -74,7 +74,7 @@ void load_objects()
 {
   objects = malloc(MAXOBJ * sizeof(object));
   // object teapot = loadOBJ("OBJ/teapot.obj", 0xDF2332, 0, 0, 30, 10);
-  object cube = loadOBJ("OBJ/cube.obj", 0xDF3F32, 0, 0, 80, 20);
+  object cube = loadOBJ("OBJ/cube.obj", 0xDF3F32, 0, 0, 100, 20);
   // object sphere = loadOBJ("OBJ/sphere.obj", 0xDF3F32, -20, -20, 20, 300);
   //object monkey = loadOBJ("OBJ/monkey.obj", 0x2323DF, 0, -30, 40, 10);
   // object quad = loadOBJ("OBJ/quad.obj", 0x23D33F, 0, 0, 40, 10);
@@ -82,13 +82,13 @@ void load_objects()
   // object get = loadOBJ("OBJ/get.obj", 0x23D33F, 0, 0, 80, 10);
   // object room = loadOBJ("OBJ/room3.obj", 0x32F48D, 0, 20, 200, 100);
   // object rifle = loadOBJ("OBJ/rifle.obj", 0x636393, (WIDTH)*0.004, (HEIGHT)*0.015, -7, 10);
-  object quad = loadOBJ("OBJ/texTest.obj", 0xFF0000, 0, 0, 200, 10);
+  object quad = loadOBJ("OBJ/texTest.obj", 0xFF0000, 0, 0, 40, 20);
   object tri = loadOBJ("OBJ/tri.obj", 0xFF0000, 0, 0, 200, 10);
 
   // objects[nObj++] = quad;
-  objects[nObj++] = quad;
+  objects[nObj++] = tri;
   // objects[nObj++] = room;
-  objects[nObj++] = cube;
+  // objects[nObj++] = cube;
   // objects[nObj++] = sphere;
   //objects[nObj++] = monkey;
   // objects[nObj++] = quad;
@@ -157,7 +157,7 @@ void update_time()
   clock_gettime(CLOCK_REALTIME, &t1);
   elapsed_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec) / 1000000000.0;
   game_time += elapsed_time;
-  printf("fps: %5u\n", (int)(1 / elapsed_time));
+  // printf("fps: %5u\n", (int)(1 / elapsed_time));
   clock_gettime(CLOCK_REALTIME, &t0);
 }
 
@@ -309,11 +309,11 @@ void render_scene()
     //   triangle tri = *(allTris[0].tri);
     //   triangle cam_tri = toCameraBasisTriangle(tri);
     //   triangle screen_tri = projectTriangle(cam_tri);
-    //   // printf("world space pos: %2.1lf, %2.1lf, %2.1lf\n", tri.a.x, tri.a.y, tri.a.z);
-    //   // printf("eye space pos: %2.1lf, %2.1lf, %2.1lf\n", cam_tri.a.x, cam_tri.a.y, cam_tri.a.z);
-    //   // printf("screen space pos: %2.1lf, %2.1lf, %2.1lf\n", screen_tri.a.x, screen_tri.a.y, screen_tri.a.z);
+    //   printf("world space pos: %2.1lf, %2.1lf, %2.1lf\n", tri.a.x, tri.a.y, tri.a.z);
+    //   printf("eye space pos: %2.1lf, %2.1lf, %2.1lf\n", cam_tri.a.x, cam_tri.a.y, cam_tri.a.z);
+    //   printf("screen space pos: %2.1lf, %2.1lf, %2.1lf\n", screen_tri.a.x, screen_tri.a.y, screen_tri.a.z);
     //   triangle new_cam_tri = screenToEyeSpace(screen_tri);
-    //   // printf("new eye space pos: %2.1lf, %2.1lf, %2.1lf\n", new_cam_tri.a.x, new_cam_tri.a.y, new_cam_tri.a.z);
+    //   printf("new eye space pos: %2.1lf, %2.1lf, %2.1lf\n", new_cam_tri.a.x, new_cam_tri.a.y, new_cam_tri.a.z);
     // }
     if (!*allTris[i].render)
       continue;

@@ -55,7 +55,7 @@ double vectorLength(point p);
 
 point calcBCC(point p, triangle t);
 
-point calcPCBCC(point p, triangle t, double h_w0, double h_w1, double h_w2);
+point calcPCBCC(point p, triangle t);
 
 double calcTriArea(triangle t);
 

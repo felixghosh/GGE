@@ -93,6 +93,6 @@ void clipEdge(point p1, point p2, triangle* clipped_tris, unsigned int* nTris, i
 
 void clipTriangle(triangle* clipped_tris, unsigned int* nTris);
 
-point calcInterpolatedTexCoords(point in, point out, double ratiox, double ratioy);
+point calcInterpolatedTexCoords(point in, point out, double ratiox, double ratioy, double in_z, double out_z, double intersect_z);
 
 #endif

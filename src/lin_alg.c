@@ -223,10 +223,14 @@ point calcBCC(point p, triangle t){
   return (point){u, v, w};
 }
 
-point calcPCBCC(point p, triangle t, double h_w0, double h_w1, double h_w2){
+point calcPCBCC(point p, triangle t){
   point p0 = t.a;
   point p1 = t.b;
   point p2 = t.c;
+
+  double h_w0 = -t.a.z;
+  double h_w1 = -t.b.z;
+  double h_w2 = -t.c.z;
   
   double e0 = edgeFunc(p, p2, p1);
   double e1 = edgeFunc(p, p0, p2);
@@ -237,9 +241,22 @@ point calcPCBCC(point p, triangle t, double h_w0, double h_w1, double h_w2){
   double f2 = e2 / h_w2;
   
   double divisor = 1 / (f0+f1+f2);
-  double u = f1 * divisor;
-  double v = f2 * divisor;
+
+  double u = f0 * divisor;
+  double v = f1 * divisor;
+  u = u < 0.0 ? 0.0 : u;
+  v = v < 0.0 ? 0.0 : v;
+  
+  u = u > 1.0 ? 1.0 : u;
+  v = v > 1.0 ? 1.0 : v;
+  
+  u = isnan(u) ? 0.0 : u;
+  v = isnan(v) ? 0.0 : v;
+
   double w = 1.0 - u - v;
+  w = w < 0.0 ? 0.0 : w;
+  w = w > 1.0 ? 1.0 : w;
+  w = isnan(w) ? 0.0 : w;
   return (point){u, v, w};
 }
 

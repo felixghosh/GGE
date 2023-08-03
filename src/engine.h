@@ -87,7 +87,7 @@ object loadOBJ(const char* filePath, unsigned int color, double x, double y, dou
 
 void drawText(SDL_Renderer* renderer, const char* message, int x, int y, int width, int height, unsigned int color, int pt);
 
-point calcIntersect(point p0, point p1, char axis, unsigned int value);
+point calcIntersect(point p0, point p1, char axis, double value);
 
 void clipEdge(point p1, point p2, triangle* clipped_tris, unsigned int* nTris, int* index, char axis);
 

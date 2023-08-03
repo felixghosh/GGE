@@ -260,6 +260,10 @@ point calcPCBCC(point p, triangle t){
   return (point){u, v, w};
 }
 
+double interpolate_attrib(point bcc, double s0, double s1, double s2){
+
+}
+
 double calcTriArea(triangle t){
   point p0 = t.a;
   point p1 = t.b;

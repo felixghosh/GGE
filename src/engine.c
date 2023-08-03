@@ -519,7 +519,7 @@ void drawText(SDL_Renderer* renderer, const char* message, int x, int y, int wid
   TTF_CloseFont(font);
 }
 
-point calcIntersect(point p0, point p1, char axis, unsigned int value){
+point calcIntersect(point p0, point p1, char axis, double value){
   point intersect;
   if(axis == 'x'){
     intersect.x = value;
@@ -547,7 +547,7 @@ void clipEdge(point p1, point p2, triangle* clipped_tris, unsigned int* nTris, i
     printf("ntris: %u \n", *nTris);
   triangle tri = clipped_tris[*index];
   point points[3] = {tri.a, tri.b, tri.c};
-  unsigned int value;
+  double value;
 
   if(axis == 'x'){
     value = p1.x;
@@ -593,6 +593,7 @@ void clipEdge(point p1, point p2, triangle* clipped_tris, unsigned int* nTris, i
   if(nOutside == 0){
     //do nothing, leave triangle in
   } else if(nOutside == 1){
+    printf("NOUTSIDE: 1\n");
     //create two new triangles
     int firstOut = 0;
     for(int i = 0; i < 3; i++){
@@ -605,35 +606,43 @@ void clipEdge(point p1, point p2, triangle* clipped_tris, unsigned int* nTris, i
     point intersect1 = calcIntersect(points[firstOut], points[(firstOut+1)%3], axis, value);
     point intersect2 = calcIntersect(points[firstOut], points[(firstOut+2)%3], axis, value);
 
-    double ratio1x = points[(firstOut+1)%3].x == points[firstOut].x ? 1.0 : (intersect1.x-points[firstOut].x)/(points[(firstOut+1)%3].x - points[firstOut].x);
-    double ratio2x = points[(firstOut+2)%3].x == points[firstOut].x ? 1.0 : (intersect2.x-points[firstOut].x)/(points[(firstOut+2)%3].x - points[firstOut].x);
-    double ratio1y = points[(firstOut+1)%3].y == points[firstOut].y ? 1.0 : (intersect1.y-points[firstOut].y)/(points[(firstOut+1)%3].y - points[firstOut].y);
-    double ratio2y = points[(firstOut+2)%3].y == points[firstOut].y ? 1.0 : (intersect2.y-points[firstOut].y)/(points[(firstOut+2)%3].y - points[firstOut].y);
-
+    point bcc1 = calcPCBCC(intersect1, tri);
+    point bcc2 = calcPCBCC(intersect2, tri);
 
     point tex1, tex2;
+    tex1 = interpolateTexCoords(tri, bcc1);
+    tex2 = interpolateTexCoords(tri, bcc2);
+
+    // double ratio1x = points[(firstOut+1)%3].x == points[firstOut].x ? 1.0 : (intersect1.x-points[firstOut].x)/(points[(firstOut+1)%3].x - points[firstOut].x);
+    // double ratio2x = points[(firstOut+2)%3].x == points[firstOut].x ? 1.0 : (intersect2.x-points[firstOut].x)/(points[(firstOut+2)%3].x - points[firstOut].x);
+    // double ratio1y = points[(firstOut+1)%3].y == points[firstOut].y ? 1.0 : (intersect1.y-points[firstOut].y)/(points[(firstOut+1)%3].y - points[firstOut].y);
+    // double ratio2y = points[(firstOut+2)%3].y == points[firstOut].y ? 1.0 : (intersect2.y-points[firstOut].y)/(points[(firstOut+2)%3].y - points[firstOut].y);
+
+
+    
 
     if(firstOut == 0){
-      tex1 = calcInterpolatedTexCoords(tri.texB, tri.texA, ratio1x, ratio1y, tri.b.z, tri.a.z, intersect1.z);
-      tex2 = calcInterpolatedTexCoords(tri.texC, tri.texA, ratio2x, ratio2y, tri.c.z, tri.a.z, intersect2.z);
+      // tex1 = calcInterpolatedTexCoords(tri.texB, tri.texA, ratio1x, ratio1y, tri.b.z, tri.a.z, intersect1.z);
+      // tex2 = calcInterpolatedTexCoords(tri.texC, tri.texA, ratio2x, ratio2y, tri.c.z, tri.a.z, intersect2.z);
       clipped_tris[*index] = (triangle){intersect1, points[(firstOut+1)%3], points[(firstOut+2)%3], tri.color, tex1, tri.texB, tri.texC};
       clipped_tris[(*nTris)++] = (triangle){intersect1, points[(firstOut+2)%3], intersect2, tri.color, tex1, tri.texC, tex2};
     }
     else if(firstOut == 1){
-      tex1 = calcInterpolatedTexCoords(tri.texC, tri.texB, ratio1x, ratio1y, tri.c.z, tri.b.z, intersect1.z);
-      tex2 = calcInterpolatedTexCoords(tri.texA, tri.texB, ratio2x, ratio2y, tri.a.z, tri.b.z, intersect2.z);
+      // tex1 = calcInterpolatedTexCoords(tri.texC, tri.texB, ratio1x, ratio1y, tri.c.z, tri.b.z, intersect1.z);
+      // tex2 = calcInterpolatedTexCoords(tri.texA, tri.texB, ratio2x, ratio2y, tri.a.z, tri.b.z, intersect2.z);
       clipped_tris[*index] = (triangle){intersect1, points[(firstOut+1)%3], points[(firstOut+2)%3], tri.color, tex1, tri.texC, tri.texA};
       clipped_tris[(*nTris)++] = (triangle){intersect1, points[(firstOut+2)%3], intersect2, tri.color, tex1, tri.texA, tex2};
     }
     else{
-      tex1 = calcInterpolatedTexCoords(tri.texA, tri.texC, ratio1x, ratio1y, tri.a.z, tri.c.z, intersect1.z);
-      tex2 = calcInterpolatedTexCoords(tri.texB, tri.texC, ratio2x, ratio2y, tri.b.z, tri.c.z, intersect2.z);
+      // tex1 = calcInterpolatedTexCoords(tri.texA, tri.texC, ratio1x, ratio1y, tri.a.z, tri.c.z, intersect1.z);
+      // tex2 = calcInterpolatedTexCoords(tri.texB, tri.texC, ratio2x, ratio2y, tri.b.z, tri.c.z, intersect2.z);
       clipped_tris[*index] = (triangle){intersect1, points[(firstOut+1)%3], points[(firstOut+2)%3], tri.color, tex1, tri.texA, tri.texB};
       clipped_tris[(*nTris)++] = (triangle){intersect1, points[(firstOut+2)%3], intersect2, tri.color, tex1, tri.texB, tex2};
     }
 
     
   } else if(nOutside == 2){
+    printf("NOUTSIDE: 2\n");
     //create one new triangle
     int firstIn = 0;
     for(int i = 0; i < 3; i++){
@@ -642,9 +651,16 @@ void clipEdge(point p1, point p2, triangle* clipped_tris, unsigned int* nTris, i
         break;
       }
     }
-    printf("firstIn: %d\n", firstIn);
+    // printf("firstIn: %d\n", firstIn);
     point intersect1 = calcIntersect(points[firstIn], points[(firstIn+1)%3], axis, value);
     point intersect2 = calcIntersect(points[firstIn], points[(firstIn+2)%3], axis, value);
+
+    point bcc1 = calcPCBCC(intersect1, tri);
+    point bcc2 = calcPCBCC(intersect2, tri);
+
+    point tex1, tex2;
+    tex1 = interpolateTexCoords(tri, bcc1);
+    tex2 = interpolateTexCoords(tri, bcc2);
 
     double ratio1x = points[firstIn].x == points[(firstIn+1)%3].x ? 1.0 : (intersect1.x-points[(firstIn+1)%3].x)/(points[firstIn].x - points[(firstIn+1)%3].x);
     double ratio2x = points[firstIn].x == points[(firstIn+2)%3].x ? 1.0 : (intersect2.x-points[(firstIn+2)%3].x)/(points[firstIn].x - points[(firstIn+2)%3].x);
@@ -655,19 +671,25 @@ void clipEdge(point p1, point p2, triangle* clipped_tris, unsigned int* nTris, i
 
     if(firstIn == 0){
       texA = tri.texA;
-      texB = calcInterpolatedTexCoords(tri.texA, tri.texB, ratio1x, ratio1y, tri.a.z, tri.b.z, intersect1.z);
-      texC = calcInterpolatedTexCoords(tri.texA, tri.texC, ratio2x, ratio2y, tri.a.z, tri.c.z, intersect2.z);
+      // texB = calcInterpolatedTexCoords(tri.texA, tri.texB, ratio1x, ratio1y, tri.a.z, tri.b.z, intersect1.z);
+      // texC = calcInterpolatedTexCoords(tri.texA, tri.texC, ratio2x, ratio2y, tri.a.z, tri.c.z, intersect2.z);
+      texB = tex1;
+      texC = tex2;
       clipped_tris[*index] = (triangle){points[firstIn], intersect1, intersect2, tri.color, texA, texB, texC};
     }
     else if(firstIn == 1){
-      texA = calcInterpolatedTexCoords(tri.texB, tri.texA, ratio2x, ratio2y, tri.b.z, tri.a.z, intersect2.z);
+      // texA = calcInterpolatedTexCoords(tri.texB, tri.texA, ratio2x, ratio2y, tri.b.z, tri.a.z, intersect2.z);
+      texA = tex2;
       texB = tri.texB;
-      texC = calcInterpolatedTexCoords(tri.texB, tri.texC, ratio1x, ratio1y, tri.b.z, tri.c.z, intersect1.z);
+      texC = tex1;
+      // texC = calcInterpolatedTexCoords(tri.texB, tri.texC, ratio1x, ratio1y, tri.b.z, tri.c.z, intersect1.z);
       clipped_tris[*index] = (triangle){intersect2, points[firstIn], intersect1, tri.color, texA, texB, texC};
     }
     else{
-      texA = calcInterpolatedTexCoords(tri.texC, tri.texA, ratio1x, ratio1y, tri.c.z, tri.a.z, intersect1.z);
-      texB = calcInterpolatedTexCoords(tri.texC, tri.texB, ratio2x, ratio2y, tri.c.z, tri.b.z, intersect2.z);
+      // texA = calcInterpolatedTexCoords(tri.texC, tri.texA, ratio1x, ratio1y, tri.c.z, tri.a.z, intersect1.z);
+      // texB = calcInterpolatedTexCoords(tri.texC, tri.texB, ratio2x, ratio2y, tri.c.z, tri.b.z, intersect2.z);
+      texA = tex1;
+      texB = tex2;
       texC = tri.texC;
       clipped_tris[*index] = (triangle){intersect1, intersect2, points[firstIn], tri.color, texA, texB, texC};
     }

@@ -347,9 +347,8 @@ void render_scene()
         unsigned int nTris = 1;
         triangle *clipped_tris = malloc(16 * sizeof(triangle));
         clipped_tris[0] = projected_tri;
-        // if(debug)
-        //   printf("DEBUG!\n");
-        clipTriangle(clipped_tris, &nTris);
+        clipTriangle(clipped_tris, &nTris); 
+          
 
         // RENDERING
         for (int c = 0; c < nTris; c++)
@@ -389,8 +388,7 @@ void render_scene()
                 {clipped_tris[c].b.x * resScale, clipped_tris[c].b.y * resScale, clipped_tris[c].b.z},
                 {clipped_tris[c].c.x * resScale, clipped_tris[c].c.y * resScale, clipped_tris[c].c.z},
                 clipped_tris[c].color};
-            // drawTriangle(renderer, scaledTri);
-            drawTriangle(renderer, clipped_tris[c]);
+            drawTriangle(renderer, scaledTri);
           }
         }
         free(clipped_tris);

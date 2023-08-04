@@ -163,11 +163,12 @@ point interpolateTexCoords(triangle tri, point bcc){
   double u = tri.texA.x * bcc.x + tri.texB.x * bcc.y + tri.texC.x * bcc.z;
   double v = tri.texA.y * bcc.x + tri.texB.y * bcc.y + tri.texC.y * bcc.z;
 
-  u = u < epsilon ? 0.0 : u;
-  v = v < epsilon ? 0.0 : v;
-  // printf("Ax: %2.1lf,Bx: %2.1lf, Cx: %2.1lf\n", tri.texA.x, tri.texB.x, tri.texC.x);
-  // printf("u: %2.2lf, v: %2.2lf\n", u, v);
   return (point){u, v, 0.0};
+}
+
+double interpolateZ(triangle tri, point bcc){
+  double z = tri.a.z * bcc.x + tri.b.z * bcc.y + tri.c.z * bcc.z;
+  return z;
 }
 
 point interpolatePoint(point a, point b, point c, point bcc){
@@ -365,19 +366,27 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf, 
         for(int k  = slope_long[i]; k > slope_short[i]; k--){
           // point bcc = calcBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
           point bcc = calcPCBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
-          point texCoords = interpolateTexCoords(tri, bcc);
-          unsigned int texture_color = sampleTexture(texCoords.x, texCoords.y, 3);
-          unsigned int interpolated_color = interpolateColor(cols, bcc);
-          set_pixel(surf, k, (i+p[0].y), texture_color);
+          double frag_z = interpolateZ(tri, bcc);
+          if(depth_buffer[k][(i+(int)p[0].y)] > frag_z){
+            depth_buffer[k][(i+(int)p[0].y)] = frag_z;
+            point texCoords = interpolateTexCoords(tri, bcc);
+            unsigned int texture_color = sampleTexture(texCoords.x, texCoords.y, 3);
+            unsigned int interpolated_color = interpolateColor(cols, bcc);
+            set_pixel(surf, k, (i+(int)p[0].y), texture_color);
+          }
         }
       } else{
         for(int k  = slope_long[i]; k <= slope_short[i]; k++){
           // point bcc = calcBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
           point bcc = calcPCBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
-          point texCoords = interpolateTexCoords(tri, bcc);
-          unsigned int texture_color = sampleTexture(texCoords.x, texCoords.y, 3);
-          unsigned int interpolated_color = interpolateColor(cols, bcc);
-          set_pixel(surf, k, (i+p[0].y), texture_color);
+          double frag_z = interpolateZ(tri, bcc);
+          if(depth_buffer[k][(i+(int)p[0].y)] > frag_z){
+            depth_buffer[k][(i+(int)p[0].y)] = frag_z;
+            point texCoords = interpolateTexCoords(tri, bcc);
+            unsigned int texture_color = sampleTexture(texCoords.x, texCoords.y, 3);
+            unsigned int interpolated_color = interpolateColor(cols, bcc);
+            set_pixel(surf, k, (i+(int)p[0].y), texture_color);
+          }
         }
       }
     }      
@@ -389,20 +398,27 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf, 
         for(int k = slope_long[i]; k > slope_last[i - origin]; k--){
           // point bcc = calcBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
           point bcc = calcPCBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
-          point texCoords = interpolateTexCoords(tri, bcc);
-          unsigned int texture_color = sampleTexture(texCoords.x, texCoords.y, 3);
-          unsigned int interpolated_color = interpolateColor(cols, bcc);
-          set_pixel(surf, k, (i+p[0].y), texture_color);
+          double frag_z = interpolateZ(tri, bcc);
+          if(depth_buffer[k][(i+(int)p[0].y)] > frag_z){
+            depth_buffer[k][(i+(int)p[0].y)] = frag_z;
+            point texCoords = interpolateTexCoords(tri, bcc);
+            unsigned int texture_color = sampleTexture(texCoords.x, texCoords.y, 3);
+            unsigned int interpolated_color = interpolateColor(cols, bcc);
+            set_pixel(surf, k, (i+(int)p[0].y), texture_color);
+          }
         }
       }else{
         for(int k = slope_long[i]; k <= slope_last[i - origin]; k++){
           // point bcc = calcBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
           point bcc = calcPCBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
-          //printf("bcc: %3.1lf %3.1lf %3.1lf\n", bcc.x, bcc.y, bcc.z);   
-          point texCoords = interpolateTexCoords(tri, bcc);
-          unsigned int texture_color = sampleTexture(texCoords.x, texCoords.y, 3);
-          unsigned int interpolated_color = interpolateColor(cols, bcc);
-          set_pixel(surf, k, (i+p[0].y), texture_color);
+          double frag_z = interpolateZ(tri, bcc);
+          if(depth_buffer[k][(i+(int)p[0].y)] > frag_z){  
+            depth_buffer[k][(i+(int)p[0].y)] = frag_z;
+            point texCoords = interpolateTexCoords(tri, bcc);
+            unsigned int texture_color = sampleTexture(texCoords.x, texCoords.y, 3);
+            unsigned int interpolated_color = interpolateColor(cols, bcc);
+            set_pixel(surf, k, (i+(int)p[0].y), texture_color);
+          }
         }
       }
     }
@@ -694,18 +710,18 @@ void clipEdge(point p1, point p2, triangle* clipped_tris, unsigned int* nTris, i
 void clipTriangle(triangle* clipped_tris, unsigned int* nTris){
   int i = 0;
   //left
-  clipEdge((point){0.0,0.0,0.0}, (point){0.0,(double)HEIGHT-1.0,0.0}, clipped_tris, nTris, &i, 'x');
+  clipEdge((point){0.0,0.0,0.0}, (point){0.0,HEIGHT-1.0,0.0}, clipped_tris, nTris, &i, 'x');
   //top
   for(i = 0; i < *nTris; i++){
-    clipEdge((point){(double)WIDTH-1.0,0.0,0.0}, (point){0.0,0.0,0.0}, clipped_tris, nTris, &i, 'y');
+    clipEdge((point){WIDTH-1.0,0.0,0.0}, (point){0.0,0.0,0.0}, clipped_tris, nTris, &i, 'y');
   }
   //right
   for(i = 0; i < *nTris; i++){
-    clipEdge((point){(double)WIDTH-1.0,(double)HEIGHT-1.0,0.0}, (point){(double)WIDTH-1.0,0.0,0.0}, clipped_tris, nTris, &i, 'x');
+    clipEdge((point){WIDTH-1.0,HEIGHT-1.0,0.0}, (point){WIDTH-1.0,0.0,0.0}, clipped_tris, nTris, &i, 'x');
   }
   //bottom
   for(i = 0; i < *nTris; i++){
-    clipEdge((point){0.0,(double)HEIGHT-1.0,0.0}, (point){(double)WIDTH-1.0,(double)HEIGHT-1.0,0.0}, clipped_tris, nTris, &i, 'y');
+    clipEdge((point){0.0,HEIGHT-1.0,0.0}, (point){WIDTH-1.0,HEIGHT-1.0,0.0}, clipped_tris, nTris, &i, 'y');
   }
 }
 

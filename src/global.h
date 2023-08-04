@@ -9,3 +9,4 @@ extern double elapsed_time;
 extern struct timespec t0, t1;
 extern light *lights;
 extern bool debug;
+extern double depth_buffer[(int)WIDTH][(int)HEIGHT];

@@ -1,4 +1,5 @@
 #include "engine.h"
+#include <float.h>
 #include <stdio.h>
 
 #define MAXOBJ 100
@@ -28,6 +29,8 @@ double max_vel = 5;
 double x_vel, y_vel, z_vel;
 bool wireframe = false;
 bool debug = false;
+
+double depth_buffer[(int)WIDTH][(int)HEIGHT];
 
 
 void movePlayer(double distX, double distY, double distZ)
@@ -88,7 +91,7 @@ void load_objects()
   objects[nObj++] = quad;
   // objects[nObj++] = tri;
   // objects[nObj++] = room;
-  // objects[nObj++] = cube;
+  objects[nObj++] = cube;
   // objects[nObj++] = sphere;
   // objects[nObj++] = monkey;
   // objects[nObj++] = quad;
@@ -157,7 +160,7 @@ void update_time()
   clock_gettime(CLOCK_REALTIME, &t1);
   elapsed_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec) / 1000000000.0;
   game_time += elapsed_time;
-  // printf("fps: %5u\n", (int)(1 / elapsed_time));
+  printf("fps: %5u\n", (int)(1 / elapsed_time));
   clock_gettime(CLOCK_REALTIME, &t0);
 }
 
@@ -295,12 +298,16 @@ void update_game_logic()
 
 void render_scene()
 {
+  for(int x = 0; x < WIDTH; x++){
+    for(int y = 0; y < HEIGHT; y++)
+      depth_buffer[x][y] = DBL_MAX;
+  }
   SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
   SDL_Rect clear = {0, 0, WIDTH, HEIGHT};
   SDL_FillRect(surf, &clear, 0);
 
   // sort triangles for painters algorithm
-  qsort(allTris, totalTris, sizeof(tri_map), cmpfunc);
+  // qsort(allTris, totalTris, sizeof(tri_map), cmpfunc);
 
   for (int i = 0; i < totalTris; i++)
   {
@@ -325,7 +332,7 @@ void render_scene()
     clipped_tris_z[0] = cam_tri;
     unsigned int nTrisZ = 1;
     int i = 0;
-    const int NEAR_PLANE_Z = 10;
+    const int NEAR_PLANE_Z = 30;
     clipEdge((point){0, 0, NEAR_PLANE_Z}, (point){WIDTH, HEIGHT, NEAR_PLANE_Z}, clipped_tris_z, &nTrisZ, &i, 'z');
 
     for (int j = 0; j < nTrisZ; j++)
@@ -358,26 +365,26 @@ void render_scene()
             triangle t = clipped_tris[c];
             //t = triToWorldSpace(t);
             unsigned int colors[3];
-            for(int i = 0; i < 3; i++){
-              point corner;
-              if(i == 0) corner = t.a;
-              else if(i == 1) corner = t.b;
-              else corner = t.c; 
-              double lightness = 0.0;
-              double ambient = 0.0;
-              //printf("corner: %3.1lf %3.1lf %3.1lf\n", corner.x, corner.y, corner.z);              
-              for (int i = 0; i < nLights; i++)
-              {
-                point light_direction = normalizeVector(subtractPoints(corner, lights[i].p));
-                double light_dist = vectorLength(subtractPoints(corner, lights[i].p));
-                double partial_light = (lights[i].intensity / pow(light_dist, 1.1)) * dotProduct(world_normal, light_direction);
-                partial_light = partial_light < 0 ? 0 : partial_light;
-                lightness += partial_light;
-              }
-              unsigned int color = colorLightness(lightness + ambient, tri.color);
-              colors[i] = color;
-              //printf("color[%d]:%x\n", i, colors[i]);
-            }
+            // for(int i = 0; i < 3; i++){
+            //   point corner;
+            //   if(i == 0) corner = t.a;
+            //   else if(i == 1) corner = t.b;
+            //   else corner = t.c; 
+            //   double lightness = 0.0;
+            //   double ambient = 0.0;
+            //   //printf("corner: %3.1lf %3.1lf %3.1lf\n", corner.x, corner.y, corner.z);              
+            //   for (int i = 0; i < nLights; i++)
+            //   {
+            //     point light_direction = normalizeVector(subtractPoints(corner, lights[i].p));
+            //     double light_dist = vectorLength(subtractPoints(corner, lights[i].p));
+            //     double partial_light = (lights[i].intensity / pow(light_dist, 1.1)) * dotProduct(world_normal, light_direction);
+            //     partial_light = partial_light < 0 ? 0 : partial_light;
+            //     lightness += partial_light;
+            //   }
+            //   unsigned int color = colorLightness(lightness + ambient, tri.color);
+            //   colors[i] = color;
+            //   //printf("color[%d]:%x\n", i, colors[i]);
+            // }
             rasterizeTriangle(renderer, clipped_tris[c], surf, colors);
           }
           else

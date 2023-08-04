@@ -76,21 +76,21 @@ void load_objects()
   // object teapot = loadOBJ("OBJ/teapot.obj", 0xDF2332, 0, 0, 30, 10);
   object cube = loadOBJ("OBJ/cube.obj", 0xDF3F32, 0, 0, 100, 20);
   // object sphere = loadOBJ("OBJ/sphere.obj", 0xDF3F32, -20, -20, 20, 300);
-  //object monkey = loadOBJ("OBJ/monkey.obj", 0x2323DF, 0, -30, 40, 10);
+  object monkey = loadOBJ("OBJ/monkey.obj", 0x2323DF, 0, -30, 40, 10);
   // object quad = loadOBJ("OBJ/quad.obj", 0x23D33F, 0, 0, 40, 10);
   // object dog = loadOBJ("OBJ/dog.obj", 0x23D33F, 0, 0, 40, 10);
   // object get = loadOBJ("OBJ/get.obj", 0x23D33F, 0, 0, 80, 10);
   // object room = loadOBJ("OBJ/room3.obj", 0x32F48D, 0, 20, 200, 100);
   // object rifle = loadOBJ("OBJ/rifle.obj", 0x636393, (WIDTH)*0.004, (HEIGHT)*0.015, -7, 10);
-  object quad = loadOBJ("OBJ/texTest.obj", 0xFF0000, 0, 0, 40, 20);
+  object quad = loadOBJ("OBJ/texTest.obj", 0xFF0000, 0, 0, 40, 100);
   object tri = loadOBJ("OBJ/tri.obj", 0xFF0000, 0, 0, 200, 10);
 
-  // objects[nObj++] = quad;
-  objects[nObj++] = tri;
+  objects[nObj++] = quad;
+  // objects[nObj++] = tri;
   // objects[nObj++] = room;
   // objects[nObj++] = cube;
   // objects[nObj++] = sphere;
-  //objects[nObj++] = monkey;
+  // objects[nObj++] = monkey;
   // objects[nObj++] = quad;
   //  objects[nObj++] = dog;
   // objects[nObj++] = get;
@@ -325,7 +325,7 @@ void render_scene()
     clipped_tris_z[0] = cam_tri;
     unsigned int nTrisZ = 1;
     int i = 0;
-    const int NEAR_PLANE_Z = 5;
+    const int NEAR_PLANE_Z = 10;
     clipEdge((point){0, 0, NEAR_PLANE_Z}, (point){WIDTH, HEIGHT, NEAR_PLANE_Z}, clipped_tris_z, &nTrisZ, &i, 'z');
 
     for (int j = 0; j < nTrisZ; j++)

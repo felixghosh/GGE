@@ -599,11 +599,18 @@ void clipEdge(point p1, point p2, triangle* clipped_tris, unsigned int* nTris, i
     point intersect1 = calcIntersect(points[firstOut], points[(firstOut+1)%3], axis, value);
     point intersect2 = calcIntersect(points[firstOut], points[(firstOut+2)%3], axis, value);
 
-    point bcc1 = calcPCBCC(intersect1, tri);
-    point bcc2 = calcPCBCC(intersect2, tri);
+    point bcc1, bcc2;
 
-    intersect1.z = tri.a.z * bcc1.x + tri.b.z * bcc1.y + tri.c.z * bcc1.z;
-    intersect2.z = tri.a.z * bcc2.x + tri.b.z * bcc2.y + tri.c.z * bcc2.z;
+  
+    if(axis != 'z'){
+      bcc1 = calcPCBCC(intersect1, tri);
+      bcc2 = calcPCBCC(intersect2, tri);
+      intersect1.z = tri.a.z * bcc1.x + tri.b.z * bcc1.y + tri.c.z * bcc1.z;
+      intersect2.z = tri.a.z * bcc2.x + tri.b.z * bcc2.y + tri.c.z * bcc2.z;
+    } else{
+      bcc1 = calcBCC(intersect1, tri);
+      bcc2 = calcBCC(intersect2, tri);
+    }
 
     point tex1, tex2;
     tex1 = interpolateTexCoords(tri, bcc1);
@@ -635,11 +642,19 @@ void clipEdge(point p1, point p2, triangle* clipped_tris, unsigned int* nTris, i
     point intersect1 = calcIntersect(points[firstIn], points[(firstIn+1)%3], axis, value);
     point intersect2 = calcIntersect(points[firstIn], points[(firstIn+2)%3], axis, value);
 
-    point bcc1 = calcPCBCC(intersect1, tri);
-    point bcc2 = calcPCBCC(intersect2, tri);
+    point bcc1, bcc2;
 
-    intersect1.z = tri.a.z * bcc1.x + tri.b.z * bcc1.y + tri.c.z * bcc1.z;
-    intersect2.z = tri.a.z * bcc2.x + tri.b.z * bcc2.y + tri.c.z * bcc2.z;
+  
+    if(axis != 'z'){
+      bcc1 = calcPCBCC(intersect1, tri);
+      bcc2 = calcPCBCC(intersect2, tri);
+      intersect1.z = tri.a.z * bcc1.x + tri.b.z * bcc1.y + tri.c.z * bcc1.z;
+      intersect2.z = tri.a.z * bcc2.x + tri.b.z * bcc2.y + tri.c.z * bcc2.z;
+    } else{
+      bcc1 = calcBCC(intersect1, tri);
+      bcc2 = calcBCC(intersect2, tri);
+    }
+    
 
     point tex1, tex2;
     tex1 = interpolateTexCoords(tri, bcc1);

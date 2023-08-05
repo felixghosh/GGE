@@ -81,7 +81,7 @@ void terminate_engine();
 
 void sortPoints(point points[], int a, int b);
 
-void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf, unsigned int colors[3]);
+void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf);
 
 object loadOBJ(const char* filePath, unsigned int color, double x, double y, double z, double scale);
 

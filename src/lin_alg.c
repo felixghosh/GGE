@@ -15,7 +15,8 @@ triangle translateTriangle(triangle tri, double x, double y, double z){
     {tri.b.x + x, tri.b.y + y, tri.b.z + z},
     {tri.c.x + x, tri.c.y + y, tri.c.z + z},
     tri.color,
-    tri.texA, tri.texB, tri.texC
+    tri.texA, tri.texB, tri.texC,
+    tri.normA, tri.normB, tri.normC
   };
   return translated_tri;
 }
@@ -64,12 +65,16 @@ triangle rotateTriX(triangle tri, double angle, double x, double y, double z){
   z1 = sin(angle)*tri.a.y + cos(angle)*tri.a.z;
   z2 = sin(angle)*tri.b.y + cos(angle)*tri.b.z;
   z3 = sin(angle)*tri.c.y + cos(angle)*tri.c.z;
+  point normA = rotatePointX(tri.normA, angle, x, y, z);
+  point normB = rotatePointX(tri.normB, angle, x, y, z);
+  point normC = rotatePointX(tri.normC, angle, x, y, z);
   triangle rotated_tri = {
     {x1, y1, z1},
     {x2, y2, z2},
     {x3, y3, z3},
     tri.color,
-    tri.texA, tri.texB, tri.texC
+    tri.texA, tri.texB, tri.texC,
+    normA, normB, normC
   };
   rotated_tri = translateTriangle(rotated_tri, x, y, z);
   return rotated_tri;
@@ -87,12 +92,16 @@ triangle rotateTriY(triangle tri, double angle, double x, double y, double z){
   z1 = -sin(angle)*tri.a.x + cos(angle)*tri.a.z;
   z2 = -sin(angle)*tri.b.x + cos(angle)*tri.b.z;
   z3 = -sin(angle)*tri.c.x + cos(angle)*tri.c.z;
+  point normA = rotatePointY(tri.normA, angle, x, y, z);
+  point normB = rotatePointY(tri.normB, angle, x, y, z);
+  point normC = rotatePointY(tri.normC, angle, x, y, z);
   triangle rotated_tri = {
     {x1, y1, z1},
     {x2, y2, z2},
     {x3, y3, z3},
     tri.color,
-    tri.texA, tri.texB, tri.texC
+    tri.texA, tri.texB, tri.texC,
+    normA, normB, normC
   };
   rotated_tri = translateTriangle(rotated_tri, x, y, z);
   return rotated_tri;
@@ -110,12 +119,16 @@ triangle rotateTriZ(triangle tri, double angle, double x, double y, double z){
   z1 = tri.a.z;
   z2 = tri.b.z;
   z3 = tri.c.z;
+  point normA = rotatePointZ(tri.normA, angle, x, y, z);
+  point normB = rotatePointZ(tri.normB, angle, x, y, z);
+  point normC = rotatePointZ(tri.normC, angle, x, y, z);
   triangle rotated_tri = {
     {x1, y1, z1},
     {x2, y2, z2},
     {x3, y3, z3},
     tri.color,
-    tri.texA, tri.texB, tri.texC
+    tri.texA, tri.texB, tri.texC,
+    normA, normB, normC
   };
   rotated_tri = translateTriangle(rotated_tri, x, y, z);
   return rotated_tri;

@@ -28,6 +28,10 @@ triangle projectTriangle(triangle tri);
 
 point projectPoint(point p);
 
-triangle screenToEyeSpace(triangle tri);
+triangle screenToCameraSpaceTriangle(triangle tri);
+
+point screenToCameraSpace(point p);
+
+point camToWorldSpace(point p);
 
 #endif

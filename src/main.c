@@ -77,19 +77,19 @@ void load_objects()
 {
   objects = malloc(MAXOBJ * sizeof(object));
   // object teapot = loadOBJ("OBJ/teapot.obj", 0xDF2332, 0, 0, 30, 10);
-  object cube = loadOBJ("OBJ/cube.obj", 0xDF3F32, 0, 0, 100, 20);
-  // object sphere = loadOBJ("OBJ/sphere.obj", 0xDF3F32, -20, -20, 20, 300);
-  object monkey = loadOBJ("OBJ/monkey.obj", 0x2323DF, 0, -30, 40, 10);
+  object cube = loadOBJ("OBJ/cube_normals.obj", 0xDF3F32, 0, 0, 100, 20);
+  // object sphere = loadOBJ("OBJ/sphere_normals.obj", 0xDF3F32, -20, -20, 20, 300);
+  // object monkey = loadOBJ("OBJ/monkey.obj", 0x2323DF, 0, -30, 40, 10);
   // object quad = loadOBJ("OBJ/quad.obj", 0x23D33F, 0, 0, 40, 10);
   // object dog = loadOBJ("OBJ/dog.obj", 0x23D33F, 0, 0, 40, 10);
   // object get = loadOBJ("OBJ/get.obj", 0x23D33F, 0, 0, 80, 10);
   // object room = loadOBJ("OBJ/room3.obj", 0x32F48D, 0, 20, 200, 100);
   // object rifle = loadOBJ("OBJ/rifle.obj", 0x636393, (WIDTH)*0.004, (HEIGHT)*0.015, -7, 10);
-  object quad = loadOBJ("OBJ/texTest.obj", 0xFF0000, 0, 0, 40, 100);
-  object tri = loadOBJ("OBJ/tri.obj", 0xFF0000, 0, 0, 200, 10);
+  // object quad = loadOBJ("OBJ/texTest.obj", 0xFF0000, 0, 0, 40, 100);
+  object tri = loadOBJ("OBJ/tri.obj", 0xFF0000, 0, 0, 120, 100);
 
-  objects[nObj++] = quad;
-  // objects[nObj++] = tri;
+  // objects[nObj++] = quad;
+  objects[nObj++] = tri;
   // objects[nObj++] = room;
   objects[nObj++] = cube;
   // objects[nObj++] = sphere;
@@ -160,7 +160,7 @@ void update_time()
   clock_gettime(CLOCK_REALTIME, &t1);
   elapsed_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec) / 1000000000.0;
   game_time += elapsed_time;
-  printf("fps: %5u\n", (int)(1 / elapsed_time));
+  // printf("fps: %5u\n", (int)(1 / elapsed_time));
   clock_gettime(CLOCK_REALTIME, &t0);
 }
 
@@ -314,13 +314,16 @@ void render_scene()
     
     // if(i == 0){
     //   triangle tri = *(allTris[0].tri);
-    //   triangle cam_tri = toCameraBasisTriangle(tri);
-    //   triangle screen_tri = projectTriangle(cam_tri);
-    //   printf("world space pos: %2.1lf, %2.1lf, %2.1lf\n", tri.a.x, tri.a.y, tri.a.z);
-    //   printf("eye space pos: %2.1lf, %2.1lf, %2.1lf\n", cam_tri.a.x, cam_tri.a.y, cam_tri.a.z);
-    //   printf("screen space pos: %2.1lf, %2.1lf, %2.1lf\n", screen_tri.a.x, screen_tri.a.y, screen_tri.a.z);
-    //   triangle new_cam_tri = screenToEyeSpace(screen_tri);
-    //   printf("new eye space pos: %2.1lf, %2.1lf, %2.1lf\n", new_cam_tri.a.x, new_cam_tri.a.y, new_cam_tri.a.z);
+    //   point a = tri.a;
+    //   point cam_a = toCameraBasis(a);
+    //   point screen_a = projectPoint(cam_a);
+    //   printf("world space pos: %2.1lf, %2.1lf, %2.1lf\n", a.x, a.y, a.z);
+    //   printf("eye space pos: %2.1lf, %2.1lf, %2.1lf\n", cam_a.x, cam_a.y, cam_a.z);
+    //   printf("screen space pos: %2.1lf, %2.1lf, %2.1lf\n", screen_a.x, screen_a.y, screen_a.z);
+    //   point new_cam_a = screenToCameraSpace(screen_a);
+    //   point new_world_a = camToWorldSpace(new_cam_a);
+    //   printf("new eye space pos: %2.1lf, %2.1lf, %2.1lf\n", new_cam_a.x, new_cam_a.y, new_cam_a.z);
+    //   printf("new world space pos: %2.1lf, %2.1lf, %2.1lf\n\n", new_world_a.x, new_world_a.y, new_world_a.z);
     // }
     if (!*allTris[i].render)
       continue;
@@ -332,7 +335,7 @@ void render_scene()
     clipped_tris_z[0] = cam_tri;
     unsigned int nTrisZ = 1;
     int i = 0;
-    const int NEAR_PLANE_Z = 30;
+    const int NEAR_PLANE_Z = 40;
     clipEdge((point){0, 0, NEAR_PLANE_Z}, (point){WIDTH, HEIGHT, NEAR_PLANE_Z}, clipped_tris_z, &nTrisZ, &i, 'z');
 
     for (int j = 0; j < nTrisZ; j++)
@@ -364,7 +367,6 @@ void render_scene()
           {
             triangle t = clipped_tris[c];
             //t = triToWorldSpace(t);
-            unsigned int colors[3];
             // for(int i = 0; i < 3; i++){
             //   point corner;
             //   if(i == 0) corner = t.a;
@@ -385,7 +387,7 @@ void render_scene()
             //   colors[i] = color;
             //   //printf("color[%d]:%x\n", i, colors[i]);
             // }
-            rasterizeTriangle(renderer, clipped_tris[c], surf, colors);
+            rasterizeTriangle(renderer, clipped_tris[c], surf);
           }
           else
           {

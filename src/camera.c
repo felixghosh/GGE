@@ -45,11 +45,30 @@ point toCameraBasis(point p){
   return rotated_pyx;
 }
 
+point camToWorldSpace(point p){
+  double xr = p.x;
+  double yr = cos(camera_angle_x)*p.y - sin(camera_angle_x)*p.z;
+  double zr = sin(camera_angle_x)*p.y + cos(camera_angle_x)*p.z;
+  point rotated_px = {xr, yr, zr};
+  xr = cos(camera_angle_y)*rotated_px.x + sin(camera_angle_y)*rotated_px.z;
+  yr = yr;
+  zr = -sin(camera_angle_y)*rotated_px.x + cos(camera_angle_y)*rotated_px.z;
+  xr = xr + camera_pos.x;
+  yr = yr + camera_pos.y;
+  zr = zr + camera_pos.z;
+  return (point){xr, yr, zr};
+}
+
 triangle toCameraBasisTriangle(triangle tri){
   point a_cam = toCameraBasis(tri.a);
   point b_cam = toCameraBasis(tri.b);
   point c_cam = toCameraBasis(tri.c);
-  return (triangle){a_cam, b_cam, c_cam, tri.color, tri.texA, tri.texB, tri.texC};
+  return (triangle){
+    a_cam, b_cam, c_cam,
+    tri.color,
+    tri.texA, tri.texB, tri.texC,
+    tri.normA, tri.normB, tri.normC
+    };
 }
 
 point projectPoint(point p){
@@ -63,9 +82,9 @@ point projectPoint(point p){
 
 triangle projectTriangle(triangle tri){
   double xp1, yp1, xp2, yp2, xp3, yp3;
-  point a_cam = tri.a;//toCameraBasis(tri.a);
-  point b_cam = tri.b;//toCameraBasis(tri.b);
-  point c_cam = tri.c;//toCameraBasis(tri.c);
+  point a_cam = tri.a;
+  point b_cam = tri.b;
+  point c_cam = tri.c;
 
   xp1 = camera_dist * a_cam.x / a_cam.z + WIDTH/2;
   yp1 = camera_dist * a_cam.y / a_cam.z + WIDTH/2;
@@ -79,14 +98,13 @@ triangle projectTriangle(triangle tri){
     {xp2, yp2, b_cam.z},
     {xp3, yp3, c_cam.z},
     tri.color,
-    tri.texA,
-    tri.texB,
-    tri.texC
+    tri.texA, tri.texB, tri.texC,
+    tri.normA, tri.normB, tri.normC
   };
   return projected_tri;
 }
 
-triangle screenToEyeSpace(triangle tri){
+triangle screenToCameraSpaceTriangle(triangle tri){
   double xp1, yp1, xp2, yp2, xp3, yp3;
 
   double denominator = 1/camera_dist;
@@ -98,12 +116,26 @@ triangle screenToEyeSpace(triangle tri){
   xp3 =  (tri.c.x - c)*(tri.c.z) * denominator;
   yp3 =  (tri.c.y - c)*(tri.c.z) * denominator;
 
-  triangle eyeTri = {
+  triangle camTri = {
     {xp1, yp1, tri.a.z},
     {xp2, yp2, tri.b.z},
     {xp3, yp3, tri.c.z},
-    tri.color
+    tri.color,
+    tri.texA, tri.texB, tri.texC,
+    tri.normA, tri.normB, tri.normC
   };
 
-  return eyeTri;
+  return camTri;
+}
+
+point screenToCameraSpace(point p){
+  double x, y;
+  double denominator = 1/camera_dist;
+  double c = (WIDTH/2);
+  x = (p.x - c)*(p.z) * denominator;
+  y = (p.y - c)*(p.z) * denominator;
+  
+  point camPoint = {x, y, p.z};
+
+  return camPoint;
 }

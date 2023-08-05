@@ -15,6 +15,9 @@ typedef struct triangle{
   point texA;
   point texB;
   point texC;
+  point normA;
+  point normB;
+  point normC;
 } triangle;
 
 

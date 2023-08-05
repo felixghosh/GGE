@@ -78,20 +78,20 @@ void load_objects()
   objects = malloc(MAXOBJ * sizeof(object));
   // object teapot = loadOBJ("OBJ/teapot.obj", 0xDF2332, 0, 0, 30, 10);
   object cube = loadOBJ("OBJ/cube_normals.obj", 0xDF3F32, 0, 0, 100, 20);
-  // object sphere = loadOBJ("OBJ/sphere_normals.obj", 0xDF3F32, -20, -20, 20, 300);
-  // object monkey = loadOBJ("OBJ/monkey.obj", 0x2323DF, 0, -30, 40, 10);
+  object sphere = loadOBJ("OBJ/sphere.obj", 0xDF3F32, 200, -20, 400, 200);
+  object monkey = loadOBJ("OBJ/monkey.obj", 0x2323DF, 0, -30, 30, 200);
   // object quad = loadOBJ("OBJ/quad.obj", 0x23D33F, 0, 0, 40, 10);
   // object dog = loadOBJ("OBJ/dog.obj", 0x23D33F, 0, 0, 40, 10);
   // object get = loadOBJ("OBJ/get.obj", 0x23D33F, 0, 0, 80, 10);
-  // object room = loadOBJ("OBJ/room3.obj", 0x32F48D, 0, 20, 200, 100);
+  object room = loadOBJ("OBJ/room.obj", 0x32F48D, 0, 800, 200, 600);
   // object rifle = loadOBJ("OBJ/rifle.obj", 0x636393, (WIDTH)*0.004, (HEIGHT)*0.015, -7, 10);
   // object quad = loadOBJ("OBJ/texTest.obj", 0xFF0000, 0, 0, 40, 100);
   object tri = loadOBJ("OBJ/tri.obj", 0xFF0000, 0, 0, 120, 100);
 
   // objects[nObj++] = quad;
-  objects[nObj++] = tri;
-  // objects[nObj++] = room;
-  objects[nObj++] = cube;
+  // objects[nObj++] = tri;
+  objects[nObj++] = room;
+  // objects[nObj++] = cube;
   // objects[nObj++] = sphere;
   // objects[nObj++] = monkey;
   // objects[nObj++] = quad;
@@ -110,12 +110,13 @@ void load_lights()
   lights = malloc(sizeof(light) * MAXLIGHT);
   // lights[nLights++] = (light){(point){0, 0, 0,}, 0};  //MUZZLE FLASH
   lights[nLights++] = (light){(point){100.0, -100.0, -100.0}, 300};
+  // lights[nLights++] = (light){(point){-300.0, 0.0, 10.0}, 300};
   lights[nLights++] = (light){(point){-500.0, 10.0, 500.0}, 30.0};
   lights[nLights++] = (light){(point){500.0, 10.0, 500.0}, 30.0};
   lights[nLights++] = (light){(point){500.0, 10.0, -500.0}, 30.0};
   lights[nLights++] = (light){(point){-500.0, 10.0, -500.0}, 30.0};
 
-  lights[nLights++] = (light){(point){0.0, -1000.0, 0.0}, 100};
+  lights[nLights++] = (light){(point){0.0, -1000.0, 0.0}, 1500};
 }
 
 void readTris(node node)
@@ -160,7 +161,7 @@ void update_time()
   clock_gettime(CLOCK_REALTIME, &t1);
   elapsed_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec) / 1000000000.0;
   game_time += elapsed_time;
-  // printf("fps: %5u\n", (int)(1 / elapsed_time));
+  printf("fps: %5u\n", (int)(1 / elapsed_time));
   clock_gettime(CLOCK_REALTIME, &t0);
 }
 
@@ -280,7 +281,9 @@ void handle_input()
   }
   if (keystates[SDL_SCANCODE_LSHIFT])
   {
-  
+    x_vel *= 4;
+    y_vel *= 4;
+    z_vel *= 4;
   }
   if (keystates[SDL_SCANCODE_M])
   { // m

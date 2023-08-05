@@ -384,7 +384,7 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf){
             point world_space_coord = camToWorldSpace(screenToCameraSpace(screen_space_coord));
 
             double lightness = 0.0;
-            double ambient = 0.2;             
+            double ambient = 0.1;             
             for (int i = 0; i < nLights; i++)
             {
               point light_direction = normalizeVector(subtractPoints(world_space_coord, lights[i].p));
@@ -411,7 +411,7 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf){
             point world_space_coord = camToWorldSpace(screenToCameraSpace(screen_space_coord));
 
             double lightness = 0.0;
-            double ambient = 0.2;             
+            double ambient = 0.1;             
             for (int i = 0; i < nLights; i++)
             {
               point light_direction = normalizeVector(subtractPoints(world_space_coord, lights[i].p));
@@ -444,7 +444,7 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf){
             point world_space_coord = camToWorldSpace(screenToCameraSpace(screen_space_coord));
 
             double lightness = 0.0;
-            double ambient = 0.2;             
+            double ambient = 0.1;             
             for (int i = 0; i < nLights; i++)
             {
               point light_direction = normalizeVector(subtractPoints(world_space_coord, lights[i].p));
@@ -471,7 +471,7 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf){
             point world_space_coord = camToWorldSpace(screenToCameraSpace(screen_space_coord));
 
             double lightness = 0.0;
-            double ambient = 0.2;             
+            double ambient = 0.1;             
             for (int i = 0; i < nLights; i++)
             {
               point light_direction = normalizeVector(subtractPoints(world_space_coord, lights[i].p));

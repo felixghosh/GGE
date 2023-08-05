@@ -161,7 +161,8 @@ point calcNormal(triangle tri){
 
 point normalizeVector(point p){
   double Length = sqrt(p.x*p.x + p.y*p.y + p.z*p.z);
-  p.x /= Length; p.y /= Length; p.z /= Length;
+  double denominator = 1.0/Length;
+  p.x *= denominator; p.y *= denominator; p.z *= denominator;
   return p;
 }
 

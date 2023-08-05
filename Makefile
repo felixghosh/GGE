@@ -1,17 +1,17 @@
 default:
-	gcc -O3 src/main.c src/media.c src/engine.c src/lin_alg.c src/camera.c -lm -lpthread -lSDL2 -lSDL2_ttf -lSDL2_mixer
+	gcc -O3 src/main.c src/media.c src/engine.c src/lin_alg.c src/camera.c -lm -lpthread -lSDL2 -lSDL2_ttf -lSDL2_mixer -I inc
 	./a.out
 
 fullscreen:
-	gcc -O3 src/main.c src/media.c src/engine.c src/lin_alg.c src/camera.c -lm -lpthread -lSDL2 -lSDL2_ttf -lSDL2_mixer
+	gcc -O3 src/main.c src/media.c src/engine.c src/lin_alg.c src/camera.c -lm -lpthread -lSDL2 -lSDL2_ttf -lSDL2_mixer -I inc
 	./a.out -f
 
 debug:
-	gcc -g src/main.c src/media.c src/engine.c src/lin_alg.c src/camera.c -lm -lpthread -lSDL2 -lSDL2_ttf -lSDL2_mixer
+	gcc -g src/main.c src/media.c src/engine.c src/lin_alg.c src/camera.c -lm -lpthread -lSDL2 -lSDL2_ttf -lSDL2_mixer -I inc
 	./a.out
 
 prof:
-	gcc -pg src/main.c src/media.c src/engine.c src/lin_alg.c src/camera.c -lm -lpthread -lSDL2 -lSDL2_ttf -lSDL2_mixer
+	gcc -pg src/main.c src/media.c src/engine.c src/lin_alg.c src/camera.c -lm -lpthread -lSDL2 -lSDL2_ttf -lSDL2_mixer -I inc
 	./a.out
 
 x11:

@@ -16,6 +16,8 @@
 #include "light.h"
 #include "engine.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 point camera_pos = {0.0, 0.0, 0.0};
 
@@ -47,12 +49,18 @@ triangle camera_basis = { //Currently not used
   0
 };
 
-unsigned int texture[3][3] = 
-{{0xff0000,0x00ff00, 0x0000ff}, 
- {0xffff00,0x00ffff, 0xff00ff},
- {0xff9933,0x99ff33, 0x3399ff}};
+// unsigned int texture[3][3] = 
+// {{0xff0000,0x00ff00, 0x0000ff}, 
+//  {0xffff00,0x00ffff, 0xff00ff},
+//  {0xff9933,0x99ff33, 0x3399ff}};
+
+unsigned char* texture;
+
+int texture_width, texture_height, nrChannels;
+
 
 unsigned int* load_texture(unsigned int width, unsigned int height, char* filepath){
+  
   
 }
 
@@ -192,6 +200,12 @@ point interpolatePoint(point a, point b, point c, point bcc){
 }
 
 unsigned int sampleTexture(double u, double v, int len){
+  u = u >= 1.0 ? 1.0 - 1.0/texture_height : u;
+  v = v >= 1.0 ? 1.0 - 1.0/texture_width : v;
+  u = u < 0.0 ? 0.0 : u;
+  v = v < 0.0 ? 0.0 : v;
+
+  v = 1.0 - v;
   unsigned int r, g, b, rshift, gshift, rValue, gValue, bValue;
   int u_index = (int)(u*len);
   int v_index = (int)(v*len);
@@ -203,10 +217,13 @@ unsigned int sampleTexture(double u, double v, int len){
   rshift = 16;
   gshift = 8;
 
-  rValue = (texture[v_index][u_index]) & r;
-  gValue = (texture[v_index][u_index]) & g;
-  bValue = (texture[v_index][u_index]) & b;
+  // rValue = (texture[texture_width*3 + (int)(v*texture_width)*3+0]<<rshift) & r;
+  // gValue = (texture[texture_width*3 + (int)(v*texture_width)*3+1]<<gshift) & g; 
+  // bValue = (texture[texture_width*3 + (int)(v*texture_width)*3+2]) & b;
 
+  rValue = (texture[(int)(u*texture_height)*texture_width*3+(int)(v*texture_width)*3+0]<<rshift) & r;
+  gValue = (texture[(int)(u*texture_height)*texture_width*3+(int)(v*texture_width)*3+1]<<gshift) & g; 
+  bValue = (texture[(int)(u*texture_height)*texture_width*3+(int)(v*texture_width)*3+2]) & b;
   return rValue + gValue + bValue;
 }
 
@@ -239,32 +256,33 @@ void drawTriangle(SDL_Renderer* renderer, triangle tri){
 
 void initialize_engine(bool fullscreen){
     if(SDL_Init(SDL_INIT_EVERYTHING) < 0)
-            printf("SDL could not be initialized! %s\n", SDL_GetError());
-        else
-            printf("SDL video system is initialized and ready to go!\n");
-        
-        SDL_CreateWindowAndRenderer(WIDTH, HEIGHT, SDL_WINDOW_SHOWN, &screen, &renderer);
-        if(!screen)
-            printf("InitSetup failed to create window\n");
+        printf("SDL could not be initialized! %s\n", SDL_GetError());
+    else
+        printf("SDL video system is initialized and ready to go!\n");
+    
+    SDL_CreateWindowAndRenderer(WIDTH, HEIGHT, SDL_WINDOW_SHOWN, &screen, &renderer);
+    if(!screen)
+        printf("InitSetup failed to create window\n");
 
-        SDL_SetWindowTitle(screen, "GGE");
-        if(fullscreen)
-          SDL_SetWindowFullscreen(screen, SDL_WINDOW_FULLSCREEN);
-        
-        //Initialize SDL_ttf
-        if(TTF_Init() == -1){
-          printf("TTF could not be initialized! SDL_ttf Error: %s\n", TTF_GetError());
-        }
+    SDL_SetWindowTitle(screen, "GGE");
+    if(fullscreen)
+      SDL_SetWindowFullscreen(screen, SDL_WINDOW_FULLSCREEN);
+    
+    //Initialize SDL_ttf
+    if(TTF_Init() == -1){
+      printf("TTF could not be initialized! SDL_ttf Error: %s\n", TTF_GetError());
+    }
 
-        //Initialize SDL_mixer
-        if( Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 512 ) < 0 )
-        {
-            printf( "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError());
-        }
+    //Initialize SDL_mixer
+    if( Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 512 ) < 0 )
+    {
+        printf( "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError());
+    }
 
-        if(!load_media()){
-          printf("Could not load all media!\n");
-        }
+    if(!load_media()){
+      printf("Could not load all media!\n");
+    }
+    texture = stbi_load("textures/test.jpg", &texture_width, &texture_height, &nrChannels, STBI_rgb);
 }
 
 void terminate_engine(){
@@ -384,7 +402,7 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf){
             point world_space_coord = camToWorldSpace(screenToCameraSpace(screen_space_coord));
 
             double lightness = 0.0;
-            double ambient = 0.1;             
+            double ambient = 0.9;             
             for (int i = 0; i < nLights; i++)
             {
               point light_direction = normalizeVector(subtractPoints(world_space_coord, lights[i].p));
@@ -411,7 +429,7 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf){
             point world_space_coord = camToWorldSpace(screenToCameraSpace(screen_space_coord));
 
             double lightness = 0.0;
-            double ambient = 0.1;             
+            double ambient = 0.9;             
             for (int i = 0; i < nLights; i++)
             {
               point light_direction = normalizeVector(subtractPoints(world_space_coord, lights[i].p));
@@ -444,7 +462,7 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf){
             point world_space_coord = camToWorldSpace(screenToCameraSpace(screen_space_coord));
 
             double lightness = 0.0;
-            double ambient = 0.1;             
+            double ambient = 0.9;             
             for (int i = 0; i < nLights; i++)
             {
               point light_direction = normalizeVector(subtractPoints(world_space_coord, lights[i].p));
@@ -471,7 +489,7 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf){
             point world_space_coord = camToWorldSpace(screenToCameraSpace(screen_space_coord));
 
             double lightness = 0.0;
-            double ambient = 0.1;             
+            double ambient = 0.9;             
             for (int i = 0; i < nLights; i++)
             {
               point light_direction = normalizeVector(subtractPoints(world_space_coord, lights[i].p));

@@ -41,6 +41,9 @@ double resScale = 1;
 double camera_angle_y = 0.0;
 double camera_angle_x = 0.0;
 
+double tex_width_denom;
+double tex_height_denom;
+
 
 triangle camera_basis = { //Currently not used
   {1.0, 0.0, 0.0},
@@ -184,6 +187,13 @@ point interpolateNormal(point normals[3], point bcc){
   return (point){x, y, z};
 }
 
+point interpolateWorldspace(triangle tri, point bcc){
+  double x = tri.wsa.x*bcc.x + tri.wsb.x*bcc.y + tri.wsc.x*bcc.z;
+  double y = tri.wsa.y*bcc.x + tri.wsb.y*bcc.y + tri.wsc.y*bcc.z;
+  double z = tri.wsa.z*bcc.x + tri.wsb.z*bcc.y + tri.wsc.z*bcc.z;
+  return (point){x, y, z};
+}
+
 point interpolatePoint(point a, point b, point c, point bcc){
   double x0, x1, x2, y0, y1, y2, z0, z1, z2;
   x0 = a.x * bcc.x;
@@ -200,17 +210,13 @@ point interpolatePoint(point a, point b, point c, point bcc){
 }
 
 unsigned int sampleTexture(double u, double v, int len){
-  u = u >= 1.0 ? 1.0 - 1.0/texture_height : u;
-  v = v >= 1.0 ? 1.0 - 1.0/texture_width : v;
+  u = u >= 1.0 ? 1.0 - tex_height_denom : u;
+  v = v >= 1.0 ? 1.0 - tex_width_denom : v;
   u = u < 0.0 ? 0.0 : u;
   v = v < 0.0 ? 0.0 : v;
-
   v = 1.0 - v;
+
   unsigned int r, g, b, rshift, gshift, rValue, gValue, bValue;
-  int u_index = (int)(u*len);
-  int v_index = (int)(v*len);
-  u_index = u_index == len ? len-1 : u_index;
-  v_index = v_index == len ? len-1 : v_index;
   r = 0x00FF0000;
   g = 0x0000FF00;
   b = 0x000000FF;
@@ -221,9 +227,9 @@ unsigned int sampleTexture(double u, double v, int len){
   // gValue = (texture[texture_width*3 + (int)(v*texture_width)*3+1]<<gshift) & g; 
   // bValue = (texture[texture_width*3 + (int)(v*texture_width)*3+2]) & b;
 
-  rValue = (texture[(int)(u*texture_height)*texture_width*3+(int)(v*texture_width)*3+0]<<rshift) & r;
-  gValue = (texture[(int)(u*texture_height)*texture_width*3+(int)(v*texture_width)*3+1]<<gshift) & g; 
-  bValue = (texture[(int)(u*texture_height)*texture_width*3+(int)(v*texture_width)*3+2]) & b;
+  rValue = (texture[(int)(u*texture_height)*texture_width*nrChannels+(int)(v*texture_width)*nrChannels+0]<<rshift) & r;
+  gValue = (texture[(int)(u*texture_height)*texture_width*nrChannels+(int)(v*texture_width)*nrChannels+1]<<gshift) & g; 
+  bValue = (texture[(int)(u*texture_height)*texture_width*nrChannels+(int)(v*texture_width)*nrChannels+2]) & b;
   return rValue + gValue + bValue;
 }
 
@@ -282,7 +288,9 @@ void initialize_engine(bool fullscreen){
     if(!load_media()){
       printf("Could not load all media!\n");
     }
-    texture = stbi_load("textures/test.jpg", &texture_width, &texture_height, &nrChannels, STBI_rgb);
+    texture = stbi_load("textures/test3.jpg", &texture_width, &texture_height, &nrChannels, STBI_rgb);
+    tex_width_denom = 1.0 / texture_width;
+    tex_height_denom = 1.0 / texture_height;
 }
 
 void terminate_engine(){
@@ -321,7 +329,7 @@ void set_pixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
 
 void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf){
   point normals[3] = {normalizeVector(tri.normA), normalizeVector(tri.normB), normalizeVector(tri.normC)};
-  // printTriangle((triangle){normals[0], normals[1], normals[2]});
+  
   //sort points by height
   int i ;
   point p[3];
@@ -337,24 +345,6 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf){
   sortPoints(p, 0, 1);
   sortPoints(p, 1, 2);
   sortPoints(p, 0, 1);
-  // point p1 = (point){-3, -2.0, 200.0};
-  // p1 = projectPoint(toCameraBasis(p1));
-  // point b1 = calcBCC(p1, tri);
-  // point b2 = calcPCBCC(p1, tri);
-  // point tc1 = interpolateTexCoords(tri, b1);
-  // unsigned int c1 = sampleTexture(tc1.x, tc1.y, 2);
-  // point p2 = (point){-3.0, -2.0, 200.0};
-  // p2 = projectPoint(toCameraBasis(p2));
-  // point b2 = calcBCC(p2, tri);
-  // point tc2 = interpolateTexCoords(tri, b2);
-  // unsigned int c2 = sampleTexture(tc2.x, tc2.y, 2);
-  // printf("bcc x: %2.2lf, y: %2.2lf, z: %2.2lf\n", b1.x, b1.y, b1.z);
-  // printf("bcc2 x: %2.2lf, y: %2.2lf, z: %2.2lf\n", b2.x, b2.y, b2.z);
-  // printf("u: %2.2lf, v: %2.2lf\n", tc1.x, tc1.y);
-  // printf("2u: %2.2lf, v: %2.2lf\n", tc2.x, tc2.y);
-  // printf("color: %6x\n", c1);
-  // printf("2color: %6x\n", c2);
-  // printf("u: %lf v: %lf\n", tri.texA, tri.texB);
   
   if(p[0].y == p[2].y)
     return;
@@ -389,7 +379,6 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf){
     for(i; i < dy_short; i++){
       if((slope_short[i]) - (slope_long[i]) < 0){
         for(int k  = slope_long[i]; k > slope_short[i]; k--){
-          // point bcc = calcBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
           point bcc = calcPCBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
           double frag_z = interpolateZ(tri, bcc);
           if(depth_buffer[k][(i+(int)p[0].y)] > frag_z){
@@ -398,11 +387,10 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf){
             unsigned int texture_color = sampleTexture(texCoords.x, texCoords.y, 3);
             unsigned int interpolated_color = interpolateColor(cols, bcc);
             point N = interpolateNormal(normals, bcc);
-            point screen_space_coord = (point){k, (i+(int)p[0].y), frag_z};
-            point world_space_coord = camToWorldSpace(screenToCameraSpace(screen_space_coord));
+            point world_space_coord = interpolateWorldspace(tri, bcc);
 
             double lightness = 0.0;
-            double ambient = 0.9;             
+            double ambient = 0.3;             
             for (int i = 0; i < nLights; i++)
             {
               point light_direction = normalizeVector(subtractPoints(world_space_coord, lights[i].p));
@@ -417,7 +405,6 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf){
         }
       } else{
         for(int k  = slope_long[i]; k <= slope_short[i]; k++){
-          // point bcc = calcBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
           point bcc = calcPCBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
           double frag_z = interpolateZ(tri, bcc);
           if(depth_buffer[k][(i+(int)p[0].y)] > frag_z){
@@ -425,11 +412,11 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf){
             point texCoords = interpolateTexCoords(tri, bcc);
             unsigned int texture_color = sampleTexture(texCoords.x, texCoords.y, 3);
             unsigned int interpolated_color = interpolateColor(cols, bcc);
-            point N = interpolateNormal(normals, bcc);point screen_space_coord = (point){k, (i+(int)p[0].y), frag_z};
-            point world_space_coord = camToWorldSpace(screenToCameraSpace(screen_space_coord));
+            point N = interpolateNormal(normals, bcc);
+            point world_space_coord = interpolateWorldspace(tri, bcc);
 
             double lightness = 0.0;
-            double ambient = 0.9;             
+            double ambient = 0.3;             
             for (int i = 0; i < nLights; i++)
             {
               point light_direction = normalizeVector(subtractPoints(world_space_coord, lights[i].p));
@@ -450,7 +437,6 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf){
     for(i; i < dy_long; i++){
       if((slope_last[i - origin]) - (slope_long[i]) < 0){
         for(int k = slope_long[i]; k > slope_last[i - origin]; k--){
-          // point bcc = calcBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
           point bcc = calcPCBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
           double frag_z = interpolateZ(tri, bcc);
           if(depth_buffer[k][(i+(int)p[0].y)] > frag_z){
@@ -458,11 +444,11 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf){
             point texCoords = interpolateTexCoords(tri, bcc);
             unsigned int texture_color = sampleTexture(texCoords.x, texCoords.y, 3);
             unsigned int interpolated_color = interpolateColor(cols, bcc);
-            point N = interpolateNormal(normals, bcc);point screen_space_coord = (point){k, (i+(int)p[0].y), frag_z};
-            point world_space_coord = camToWorldSpace(screenToCameraSpace(screen_space_coord));
+            point N = interpolateNormal(normals, bcc);
+            point world_space_coord = interpolateWorldspace(tri, bcc);
 
             double lightness = 0.0;
-            double ambient = 0.9;             
+            double ambient = 0.3;             
             for (int i = 0; i < nLights; i++)
             {
               point light_direction = normalizeVector(subtractPoints(world_space_coord, lights[i].p));
@@ -477,7 +463,6 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf){
         }
       }else{
         for(int k = slope_long[i]; k <= slope_last[i - origin]; k++){
-          // point bcc = calcBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
           point bcc = calcPCBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
           double frag_z = interpolateZ(tri, bcc);
           if(depth_buffer[k][(i+(int)p[0].y)] > frag_z){  
@@ -485,11 +470,11 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf){
             point texCoords = interpolateTexCoords(tri, bcc);
             unsigned int texture_color = sampleTexture(texCoords.x, texCoords.y, 3);
             unsigned int interpolated_color = interpolateColor(cols, bcc);
-            point N = interpolateNormal(normals, bcc);point screen_space_coord = (point){k, (i+(int)p[0].y), frag_z};
-            point world_space_coord = camToWorldSpace(screenToCameraSpace(screen_space_coord));
+            point N = interpolateNormal(normals, bcc);
+            point world_space_coord = interpolateWorldspace(tri, bcc);
 
             double lightness = 0.0;
-            double ambient = 0.9;             
+            double ambient = 0.3;             
             for (int i = 0; i < nLights; i++)
             {
               point light_direction = normalizeVector(subtractPoints(world_space_coord, lights[i].p));
@@ -624,7 +609,10 @@ object loadOBJ(const char* filePath, unsigned int color, double x, double y, dou
       texCoords[tex[2]],
       normals[norm[0]],
       normals[norm[1]],
-      normals[norm[2]]
+      normals[norm[2]],
+      vertices[values[0]],
+      vertices[values[1]],
+      vertices[values[2]]
       };
       triangle tri = tris[i];
       // printf("norms: (%2.1lf, %2.1lf, %2.1lf)\n", tri.normA.x, tri.normA.y, tri.normA.z);
@@ -753,18 +741,21 @@ void clipEdge(point p1, point p2, triangle* clipped_tris, unsigned int* nTris, i
     point norm1, norm2;
     norm1 = interpolateNormal(normals, bcc1);
     norm2 = interpolateNormal(normals, bcc2);
+    point ws1, ws2;
+    ws1 = interpolateWorldspace(tri, bcc1);
+    ws2 = interpolateWorldspace(tri, bcc2);
 
     if(firstOut == 0){
-      clipped_tris[*index] = (triangle){intersect1, points[(firstOut+1)%3], points[(firstOut+2)%3], tri.color, tex1, tri.texB, tri.texC, norm1, tri.normB, tri.normC};
-      clipped_tris[(*nTris)++] = (triangle){intersect1, points[(firstOut+2)%3], intersect2, tri.color, tex1, tri.texC, tex2, norm1, tri.normC, norm2};
+      clipped_tris[*index] = (triangle){intersect1, points[(firstOut+1)%3], points[(firstOut+2)%3], tri.color, tex1, tri.texB, tri.texC, norm1, tri.normB, tri.normC, ws1, tri.wsb, tri.wsc};
+      clipped_tris[(*nTris)++] = (triangle){intersect1, points[(firstOut+2)%3], intersect2, tri.color, tex1, tri.texC, tex2, norm1, tri.normC, norm2, ws1, tri.wsc, ws2};
     }
     else if(firstOut == 1){
-      clipped_tris[*index] = (triangle){intersect1, points[(firstOut+1)%3], points[(firstOut+2)%3], tri.color, tex1, tri.texC, tri.texA, norm1, tri.normC, tri.normA};
-      clipped_tris[(*nTris)++] = (triangle){intersect1, points[(firstOut+2)%3], intersect2, tri.color, tex1, tri.texA, tex2, norm1, tri.normA, norm2};
+      clipped_tris[*index] = (triangle){intersect1, points[(firstOut+1)%3], points[(firstOut+2)%3], tri.color, tex1, tri.texC, tri.texA, norm1, tri.normC, tri.normA, ws1, tri.wsc, tri.wsa};
+      clipped_tris[(*nTris)++] = (triangle){intersect1, points[(firstOut+2)%3], intersect2, tri.color, tex1, tri.texA, tex2, norm1, tri.normA, norm2, ws1, tri.wsa, ws2};
     }
     else{
-      clipped_tris[*index] = (triangle){intersect1, points[(firstOut+1)%3], points[(firstOut+2)%3], tri.color, tex1, tri.texA, tri.texB, norm1, tri.normA, tri.normB};
-      clipped_tris[(*nTris)++] = (triangle){intersect1, points[(firstOut+2)%3], intersect2, tri.color, tex1, tri.texB, tex2, norm1, tri.normB, norm2};
+      clipped_tris[*index] = (triangle){intersect1, points[(firstOut+1)%3], points[(firstOut+2)%3], tri.color, tex1, tri.texA, tri.texB, norm1, tri.normA, tri.normB, ws1, tri.wsa, tri.wsb};
+      clipped_tris[(*nTris)++] = (triangle){intersect1, points[(firstOut+2)%3], intersect2, tri.color, tex1, tri.texB, tex2, norm1, tri.normB, norm2, ws1, tri.wsb, ws2};
     }
 
     
@@ -801,6 +792,9 @@ void clipEdge(point p1, point p2, triangle* clipped_tris, unsigned int* nTris, i
     point norm1, norm2;
     norm1 = interpolateNormal(normals, bcc1);
     norm2 = interpolateNormal(normals, bcc2);
+    point ws1, ws2;
+    ws1 = interpolateWorldspace(tri, bcc1);
+    ws2 = interpolateWorldspace(tri, bcc2);
 
     point texA, texB, texC;
 
@@ -808,19 +802,19 @@ void clipEdge(point p1, point p2, triangle* clipped_tris, unsigned int* nTris, i
       texA = tri.texA;
       texB = tex1;
       texC = tex2;
-      clipped_tris[*index] = (triangle){points[firstIn], intersect1, intersect2, tri.color, texA, texB, texC, tri.normA, norm1, norm2};
+      clipped_tris[*index] = (triangle){points[firstIn], intersect1, intersect2, tri.color, texA, texB, texC, tri.normA, norm1, norm2, tri.wsa, ws1, ws2};
     }
     else if(firstIn == 1){
       texA = tex2;
       texB = tri.texB;
       texC = tex1;
-      clipped_tris[*index] = (triangle){intersect2, points[firstIn], intersect1, tri.color, texA, texB, texC, norm2, tri.normB, norm1};
+      clipped_tris[*index] = (triangle){intersect2, points[firstIn], intersect1, tri.color, texA, texB, texC, norm2, tri.normB, norm1, ws2, tri.wsb, ws1};
     }
     else{
       texA = tex1;
       texB = tex2;
       texC = tri.texC;
-      clipped_tris[*index] = (triangle){intersect1, intersect2, points[firstIn], tri.color, texA, texB, texC, norm1, norm2, tri.normC};
+      clipped_tris[*index] = (triangle){intersect1, intersect2, points[firstIn], tri.color, texA, texB, texC, norm1, norm2, tri.normC, ws1, ws2, tri.wsc};
     }
     
   } else if(nOutside == 3){

@@ -77,13 +77,13 @@ void load_objects()
 {
   objects = malloc(MAXOBJ * sizeof(object));
   // object teapot = loadOBJ("OBJ/teapot.obj", 0xDF2332, 0, 0, 30, 10);
-  object cube = loadOBJ("OBJ/cube_normals.obj", 0xDF3F32, 0, 0, 100, 20);
+  object cube = loadOBJ("OBJ/cube_normals.obj", 0xDF3F32, 0, 0, 400, 30);
   object sphere = loadOBJ("OBJ/sphere.obj", 0xDF3F32, 400, -200, 500, 300);
   object monkey = loadOBJ("OBJ/monkey.obj", 0x2323DF, 0, -30, 30, 200);
-  object quad = loadOBJ("OBJ/quad.obj", 0x23D33F, 0, 0, 200, 100);
+  object quad = loadOBJ("OBJ/quad.obj", 0x23D33F, 0, 0, 0, 100);
   // object dog = loadOBJ("OBJ/dog.obj", 0x23D33F, 0, 0, 40, 10);
   // object get = loadOBJ("OBJ/get.obj", 0x23D33F, 0, 0, 80, 10);
-  object room = loadOBJ("OBJ/room.obj", 0x32F48D, 0, 800, 200, 600);
+  object room = loadOBJ("OBJ/room.obj", 0x32F48D, 0, 200, 200, 600);
   // object rifle = loadOBJ("OBJ/rifle.obj", 0x636393, (WIDTH)*0.004, (HEIGHT)*0.015, -7, 10);
   // object quad = loadOBJ("OBJ/texTest.obj", 0xFF0000, 0, 0, 40, 100);
   object tri = loadOBJ("OBJ/tri.obj", 0xFF0000, 0, 0, 120, 100);
@@ -94,8 +94,7 @@ void load_objects()
   // objects[nObj++] = cube;
   // objects[nObj++] = sphere;
   // objects[nObj++] = monkey;
-  // objects[nObj++] = quad;
-  //  objects[nObj++] = dog;
+  // objects[nObj++] = dog;
   // objects[nObj++] = get;
   // objects[nObj++] = teapot;
   // objects[nObj-1] = rotateObjectX(objects[nObj-1], 3.14/2, objects[nObj-1].pos.x, objects[nObj-1].pos.y, objects[nObj-1].pos.z);
@@ -109,12 +108,12 @@ void load_lights()
 {
   lights = malloc(sizeof(light) * MAXLIGHT);
   // lights[nLights++] = (light){(point){0, 0, 0,}, 0};  //MUZZLE FLASH
-  lights[nLights++] = (light){(point){100.0, -100.0, -100.0}, 500};
-  // // lights[nLights++] = (light){(point){-300.0, 0.0, 10.0}, 300};
-  // lights[nLights++] = (light){(point){-500.0, 10.0, 500.0}, 30.0};
-  // lights[nLights++] = (light){(point){500.0, 10.0, 500.0}, 30.0};
-  // lights[nLights++] = (light){(point){500.0, 10.0, -500.0}, 30.0};
-  // lights[nLights++] = (light){(point){-500.0, 10.0, -500.0}, 30.0};
+  // lights[nLights++] = (light){(point){100.0, -100.0, -100.0}, 100};
+  // lights[nLights++] = (light){(point){0.0, 0.0, 40.0}, 1000};
+  // lights[nLights++] = (light){(point){-500.0, 10.0, 500.0}, 300.0};
+  // lights[nLights++] = (light){(point){500.0, 10.0, 500.0}, 300.0};
+  // lights[nLights++] = (light){(point){500.0, 10.0, -500.0}, 300.0};
+  // lights[nLights++] = (light){(point){-500.0, 10.0, -500.0}, 300.0};
 
   // lights[nLights++] = (light){(point){0.0, -1000.0, 0.0}, 1500};
 }
@@ -161,7 +160,7 @@ void update_time()
   clock_gettime(CLOCK_REALTIME, &t1);
   elapsed_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec) / 1000000000.0;
   game_time += elapsed_time;
-  // printf("fps: %5u\n", (int)(1 / elapsed_time));
+  printf("fps: %5u\n", (int)(1 / elapsed_time));
   clock_gettime(CLOCK_REALTIME, &t0);
 }
 
@@ -309,13 +308,11 @@ void render_scene()
   SDL_Rect clear = {0, 0, WIDTH, HEIGHT};
   SDL_FillRect(surf, &clear, 0);
 
-  // sort triangles for painters algorithm
-  // qsort(allTris, totalTris, sizeof(tri_map), cmpfunc);
-
   for (int i = 0; i < totalTris; i++)
   {
     if (!*allTris[i].render)
       continue;
+
     triangle tri = *(allTris[i].tri);
     triangle cam_tri = toCameraBasisTriangle(tri);
 

@@ -67,7 +67,8 @@ triangle toCameraBasisTriangle(triangle tri){
     a_cam, b_cam, c_cam,
     tri.color,
     tri.texA, tri.texB, tri.texC,
-    tri.normA, tri.normB, tri.normC
+    tri.normA, tri.normB, tri.normC,
+    tri.a, tri.b, tri.c
     };
 }
 
@@ -99,7 +100,8 @@ triangle projectTriangle(triangle tri){
     {xp3, yp3, c_cam.z},
     tri.color,
     tri.texA, tri.texB, tri.texC,
-    tri.normA, tri.normB, tri.normC
+    tri.normA, tri.normB, tri.normC,
+    tri.wsa, tri.wsb, tri.wsc
   };
   return projected_tri;
 }

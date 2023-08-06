@@ -16,7 +16,10 @@ triangle translateTriangle(triangle tri, double x, double y, double z){
     {tri.c.x + x, tri.c.y + y, tri.c.z + z},
     tri.color,
     tri.texA, tri.texB, tri.texC,
-    tri.normA, tri.normB, tri.normC
+    tri.normA, tri.normB, tri.normC,
+    {tri.a.x + x, tri.a.y + y, tri.a.z + z},
+    {tri.b.x + x, tri.b.y + y, tri.b.z + z},
+    {tri.c.x + x, tri.c.y + y, tri.c.z + z}
   };
   return translated_tri;
 }
@@ -74,7 +77,10 @@ triangle rotateTriX(triangle tri, double angle, double x, double y, double z){
     {x3, y3, z3},
     tri.color,
     tri.texA, tri.texB, tri.texC,
-    normA, normB, normC
+    normA, normB, normC,
+    {x1, y1, z1},
+    {x2, y2, z2},
+    {x3, y3, z3}
   };
   rotated_tri = translateTriangle(rotated_tri, x, y, z);
   return rotated_tri;
@@ -101,7 +107,10 @@ triangle rotateTriY(triangle tri, double angle, double x, double y, double z){
     {x3, y3, z3},
     tri.color,
     tri.texA, tri.texB, tri.texC,
-    normA, normB, normC
+    normA, normB, normC,
+    {x1, y1, z1},
+    {x2, y2, z2},
+    {x3, y3, z3}
   };
   rotated_tri = translateTriangle(rotated_tri, x, y, z);
   return rotated_tri;
@@ -128,7 +137,10 @@ triangle rotateTriZ(triangle tri, double angle, double x, double y, double z){
     {x3, y3, z3},
     tri.color,
     tri.texA, tri.texB, tri.texC,
-    normA, normB, normC
+    normA, normB, normC,
+    {x1, y1, z1},
+    {x2, y2, z2},
+    {x3, y3, z3}
   };
   rotated_tri = translateTriangle(rotated_tri, x, y, z);
   return rotated_tri;
@@ -162,7 +174,9 @@ point calcNormal(triangle tri){
 point normalizeVector(point p){
   double Length = sqrt(p.x*p.x + p.y*p.y + p.z*p.z);
   double denominator = 1.0/Length;
-  p.x *= denominator; p.y *= denominator; p.z *= denominator;
+  p.x *= denominator;
+  p.y *= denominator;
+  p.z *= denominator;
   return p;
 }
 

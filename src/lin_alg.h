@@ -18,6 +18,9 @@ typedef struct triangle{
   point normA;
   point normB;
   point normC;
+  point wsa;
+  point wsb;
+  point wsc;
 } triangle;
 
 

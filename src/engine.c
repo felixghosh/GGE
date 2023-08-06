@@ -381,11 +381,11 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf, 
 
             double lightness = 0.0;
             double ambient = 0.3;             
-            for (int i = 0; i < nLights; i++)
+            for (int l = 0; l < nLights; l++)
             {
-              point light_direction = normalizeVector(subtractPoints(world_space_coord, lights[i].p));
-              double light_dist = vectorLength(subtractPoints(world_space_coord, lights[i].p));
-              double partial_light = (lights[i].intensity / pow(light_dist, 1.1)) * dotProduct(N, light_direction);
+              point light_direction = normalizeVector(subtractPoints(lights[l].p, world_space_coord));
+              double light_dist = vectorLength(subtractPoints(world_space_coord, lights[l].p));
+              double partial_light = (lights[l].intensity / pow(light_dist, 1.1)) * dotProduct(N, light_direction);
               partial_light = partial_light < 0 ? 0 : partial_light;
               lightness += partial_light;
             }
@@ -413,11 +413,11 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf, 
 
             double lightness = 0.0;
             double ambient = 0.3;             
-            for (int i = 0; i < nLights; i++)
+            for (int l = 0; l < nLights; l++)
             {
-              point light_direction = normalizeVector(subtractPoints(world_space_coord, lights[i].p));
-              double light_dist = vectorLength(subtractPoints(world_space_coord, lights[i].p));
-              double partial_light = (lights[i].intensity / pow(light_dist, 1.1)) * dotProduct(N, light_direction);
+              point light_direction = normalizeVector(subtractPoints(lights[l].p, world_space_coord));
+              double light_dist = vectorLength(subtractPoints(world_space_coord, lights[l].p));
+              double partial_light = (lights[l].intensity / pow(light_dist, 1.1)) * dotProduct(N, light_direction);
               partial_light = partial_light < 0 ? 0 : partial_light;
               lightness += partial_light;
             }
@@ -451,11 +451,11 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf, 
 
             double lightness = 0.0;
             double ambient = 0.3;             
-            for (int i = 0; i < nLights; i++)
+            for (int l = 0; l < nLights; l++)
             {
-              point light_direction = normalizeVector(subtractPoints(world_space_coord, lights[i].p));
-              double light_dist = vectorLength(subtractPoints(world_space_coord, lights[i].p));
-              double partial_light = (lights[i].intensity / pow(light_dist, 1.1)) * dotProduct(N, light_direction);
+              point light_direction = normalizeVector(subtractPoints(lights[l].p, world_space_coord));
+              double light_dist = vectorLength(subtractPoints(world_space_coord, lights[l].p));
+              double partial_light = (lights[l].intensity / pow(light_dist, 1.1)) * dotProduct(N, light_direction);
               partial_light = partial_light < 0 ? 0 : partial_light;
               lightness += partial_light;
             }
@@ -483,11 +483,11 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf, 
 
             double lightness = 0.0;
             double ambient = 0.3;             
-            for (int i = 0; i < nLights; i++)
+            for (int l = 0; l < nLights; l++)
             {
-              point light_direction = normalizeVector(subtractPoints(world_space_coord, lights[i].p));
-              double light_dist = vectorLength(subtractPoints(world_space_coord, lights[i].p));
-              double partial_light = (lights[i].intensity / pow(light_dist, 1.1)) * dotProduct(N, light_direction);
+              point light_direction = normalizeVector(subtractPoints(lights[l].p, world_space_coord));
+              double light_dist = vectorLength(subtractPoints(world_space_coord, lights[l].p));
+              double partial_light = (lights[l].intensity / pow(light_dist, 1.1)) * dotProduct(N, light_direction);
               partial_light = partial_light < 0 ? 0 : partial_light;
               lightness += partial_light;
             }
@@ -576,9 +576,9 @@ object loadOBJ(const char* filePath, unsigned int color, double x, double y, dou
     getline(&buf, &buf_size, fp);
     endptr = buf;
     double values[3];
-    values[0] = strtod(endptr+2, &endptr);
-    values[1] = strtod(endptr+1, &endptr);
-    values[2] = strtod(endptr+1, &endptr);
+    values[0] = strtod(endptr+2, &endptr)*-1.0;
+    values[1] = strtod(endptr+1, &endptr)*-1.0;
+    values[2] = strtod(endptr+1, &endptr)*-1.0;
     // printf("norm %lf\n", values[0]);
     // printf("norm %lf\n", values[1]); 
     // printf("norm %lf\n", values[2]); 

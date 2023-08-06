@@ -77,8 +77,8 @@ void load_objects()
 {
   objects = malloc(MAXOBJ * sizeof(object));
   // object teapot = loadOBJ("OBJ/teapot.obj", 0xDF2332, 0, 0, 30, 10, NULL);
-  // object cube = loadOBJ("OBJ/cube_normals.obj", 0xDF3F32, 0, 0, 400, 30, NULL);
-  // object sphere = loadOBJ("OBJ/sphere.obj", 0xDF3F32, 400, -200, 500, 300, NULL);
+  object cube = loadOBJ("OBJ/cube_normals.obj", 0xDF3F32, 0, 0, 400, 30, NULL);
+  object sphere = loadOBJ("OBJ/sphere.obj", 0xDF3F32, 400, -200, 500, 300, NULL);
   object monkey = loadOBJ("OBJ/monkey.obj", 0x2323DF, 0, -30, 30, 200, NULL);
   object quad = loadOBJ("OBJ/quad.obj", 0x23D33F, 0, 0, 40, 100, "textures/test3.jpg");
   // object dog = loadOBJ("OBJ/dog.obj", 0x23D33F, 0, 0, 40, 10, NULL);
@@ -86,12 +86,12 @@ void load_objects()
   object room = loadOBJ("OBJ/room.obj", 0x32F48D, 0, 200, 200, 600, "textures/test2.jpg");
   // object rifle = loadOBJ("OBJ/rifle.obj", 0x636393, (WIDTH)*0.004, (HEIGHT)*0.015, -7, 10, NULL);
   // object quad = loadOBJ("OBJ/texTest.obj", 0xFF0000, 0, 0, 40, 100, NULL);
-  // object tri = loadOBJ("OBJ/tri.obj", 0xFF0000, 0, 0, 120, 100, NULL);
+  object tri = loadOBJ("OBJ/tri.obj", 0xFF0000, 0, 0, 120, 100, NULL);
 
   objects[nObj++] = room;
-  objects[nObj++] = quad;
+  // objects[nObj++] = quad;
   // objects[nObj++] = tri;
-  // objects[nObj++] = cube;
+  objects[nObj++] = cube;
   // objects[nObj++] = sphere;
   // objects[nObj++] = monkey;
   // objects[nObj++] = dog;
@@ -109,7 +109,7 @@ void load_lights()
   lights = malloc(sizeof(light) * MAXLIGHT);
   // lights[nLights++] = (light){(point){0, 0, 0,}, 0};  //MUZZLE FLASH
   // lights[nLights++] = (light){(point){100.0, -100.0, -100.0}, 100};
-  lights[nLights++] = (light){(point){0.0, 0.0, -170.0}, 500};
+  lights[nLights++] = (light){(point){0.0, 0.0, -170.0}, 1500};
   // lights[nLights++] = (light){(point){-500.0, 10.0, 500.0}, 300.0};
   // lights[nLights++] = (light){(point){500.0, 10.0, 500.0}, 300.0};
   // lights[nLights++] = (light){(point){500.0, 10.0, -500.0}, 300.0};
@@ -132,7 +132,7 @@ void update_time()
   clock_gettime(CLOCK_REALTIME, &t1);
   elapsed_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec) / 1000000000.0;
   game_time += elapsed_time;
-  printf("fps: %5u\n", (int)(1 / elapsed_time));
+  // printf("fps: %5u\n", (int)(1 / elapsed_time));
   clock_gettime(CLOCK_REALTIME, &t0);
 }
 
@@ -265,9 +265,6 @@ void handle_input()
 void update_game_logic()
 {
   update_player_movement();
-
-  // printf("%2.1lf, %2.1lf, %2.1lf\n", camera_dir.x, camera_dir.y, camera_dir.z);
-  // printf("%2.1lf %2.1lf\n", camera_angle_x, camera_angle_y);
 }
 
 void render_scene()
@@ -290,9 +287,9 @@ void render_scene()
       triangle *clipped_tris_z = malloc(2 * sizeof(triangle));
       clipped_tris_z[0] = cam_tri;
       unsigned int nTrisZ = 1;
-      int i = 0;
+      int index = 0;
       const int NEAR_PLANE_Z = 10;
-      clipEdge((point){0, 0, NEAR_PLANE_Z}, (point){WIDTH, HEIGHT, NEAR_PLANE_Z}, clipped_tris_z, &nTrisZ, &i, 'z');
+      clipEdge((point){0, 0, NEAR_PLANE_Z}, (point){WIDTH, HEIGHT, NEAR_PLANE_Z}, clipped_tris_z, &nTrisZ, &index, 'z');
 
       for (int j = 0; j < nTrisZ; j++)
       {
@@ -314,13 +311,29 @@ void render_scene()
           {
             if (!wireframe)
             {
-              triangle t = clipped_tris[c];
+
               rasterizeTriangle(renderer, clipped_tris[c], surf, obj);
+              
             }
             else
             {
               SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
-              drawTriangle(renderer, clipped_tris[c]);
+              triangle tri_draw = clipped_tris[c];
+              drawTriangle(renderer, tri_draw);
+              SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
+              point norm1 = addPoints(tri_draw.wsa, scaleVector((normalizeVector(tri_draw.normA)), 50.0));
+              point norm2 = addPoints(tri_draw.wsb, scaleVector((normalizeVector(tri_draw.normB)), 50.0));
+              point norm3 = addPoints(tri_draw.wsc, scaleVector((normalizeVector(tri_draw.normC)), 50.0));
+              norm1 = toCameraBasis(norm1);
+              norm2 = toCameraBasis(norm2);
+              norm3 = toCameraBasis(norm3);
+              norm1 = projectPoint(norm1);
+              norm2 = projectPoint(norm2);
+              norm3 = projectPoint(norm3);
+              point p = (point){20.0, 20.0, 0.0};
+              SDL_RenderDrawLine(renderer, (int)norm1.x, (int)norm1.y, (int)tri_draw.a.x, (int)tri_draw.a.y);
+              SDL_RenderDrawLine(renderer, (int)norm2.x, (int)norm2.y, (int)tri_draw.b.x, (int)tri_draw.b.y);
+              SDL_RenderDrawLine(renderer, (int)norm3.x, (int)norm3.y, (int)tri_draw.c.x, (int)tri_draw.c.y);
             }
           }
           free(clipped_tris);

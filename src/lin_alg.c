@@ -68,9 +68,9 @@ triangle rotateTriX(triangle tri, double angle, double x, double y, double z){
   z1 = sin(angle)*tri.a.y + cos(angle)*tri.a.z;
   z2 = sin(angle)*tri.b.y + cos(angle)*tri.b.z;
   z3 = sin(angle)*tri.c.y + cos(angle)*tri.c.z;
-  point normA = rotatePointX(tri.normA, angle, x, y, z);
-  point normB = rotatePointX(tri.normB, angle, x, y, z);
-  point normC = rotatePointX(tri.normC, angle, x, y, z);
+  point normA = rotatePointX(tri.normA, angle, 0.0, 0.0, 0.0);
+  point normB = rotatePointX(tri.normB, angle, 0.0, 0.0, 0.0);
+  point normC = rotatePointX(tri.normC, angle, 0.0, 0.0, 0.0);
   triangle rotated_tri = {
     {x1, y1, z1},
     {x2, y2, z2},
@@ -98,9 +98,9 @@ triangle rotateTriY(triangle tri, double angle, double x, double y, double z){
   z1 = -sin(angle)*tri.a.x + cos(angle)*tri.a.z;
   z2 = -sin(angle)*tri.b.x + cos(angle)*tri.b.z;
   z3 = -sin(angle)*tri.c.x + cos(angle)*tri.c.z;
-  point normA = rotatePointY(tri.normA, angle, x, y, z);
-  point normB = rotatePointY(tri.normB, angle, x, y, z);
-  point normC = rotatePointY(tri.normC, angle, x, y, z);
+  point normA = rotatePointY(tri.normA, angle, 0.0, 0.0, 0.0);
+  point normB = rotatePointY(tri.normB, angle, 0.0, 0.0, 0.0);
+  point normC = rotatePointY(tri.normC, angle, 0.0, 0.0, 0.0);
   triangle rotated_tri = {
     {x1, y1, z1},
     {x2, y2, z2},
@@ -128,9 +128,9 @@ triangle rotateTriZ(triangle tri, double angle, double x, double y, double z){
   z1 = tri.a.z;
   z2 = tri.b.z;
   z3 = tri.c.z;
-  point normA = rotatePointZ(tri.normA, angle, x, y, z);
-  point normB = rotatePointZ(tri.normB, angle, x, y, z);
-  point normC = rotatePointZ(tri.normC, angle, x, y, z);
+  point normA = rotatePointZ(tri.normA, angle, 0.0, 0.0, 0.0);
+  point normB = rotatePointZ(tri.normB, angle, 0.0, 0.0, 0.0);
+  point normC = rotatePointZ(tri.normC, angle, 0.0, 0.0, 0.0);
   triangle rotated_tri = {
     {x1, y1, z1},
     {x2, y2, z2},

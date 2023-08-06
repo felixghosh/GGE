@@ -76,21 +76,21 @@ void free_objects()
 void load_objects()
 {
   objects = malloc(MAXOBJ * sizeof(object));
-  // object teapot = loadOBJ("OBJ/teapot.obj", 0xDF2332, 0, 0, 30, 10);
-  object cube = loadOBJ("OBJ/cube_normals.obj", 0xDF3F32, 0, 0, 400, 30);
-  object sphere = loadOBJ("OBJ/sphere.obj", 0xDF3F32, 400, -200, 500, 300);
-  object monkey = loadOBJ("OBJ/monkey.obj", 0x2323DF, 0, -30, 30, 200);
-  object quad = loadOBJ("OBJ/quad.obj", 0x23D33F, 0, 0, 0, 100);
-  // object dog = loadOBJ("OBJ/dog.obj", 0x23D33F, 0, 0, 40, 10);
-  // object get = loadOBJ("OBJ/get.obj", 0x23D33F, 0, 0, 80, 10);
-  object room = loadOBJ("OBJ/room.obj", 0x32F48D, 0, 200, 200, 600);
-  // object rifle = loadOBJ("OBJ/rifle.obj", 0x636393, (WIDTH)*0.004, (HEIGHT)*0.015, -7, 10);
-  // object quad = loadOBJ("OBJ/texTest.obj", 0xFF0000, 0, 0, 40, 100);
-  object tri = loadOBJ("OBJ/tri.obj", 0xFF0000, 0, 0, 120, 100);
+  // object teapot = loadOBJ("OBJ/teapot.obj", 0xDF2332, 0, 0, 30, 10, NULL);
+  // object cube = loadOBJ("OBJ/cube_normals.obj", 0xDF3F32, 0, 0, 400, 30, NULL);
+  // object sphere = loadOBJ("OBJ/sphere.obj", 0xDF3F32, 400, -200, 500, 300, NULL);
+  // object monkey = loadOBJ("OBJ/monkey.obj", 0x2323DF, 0, -30, 30, 200, NULL);
+  object quad = loadOBJ("OBJ/quad.obj", 0x23D33F, 0, 0, 40, 100, "textures/test.jpg");
+  // object dog = loadOBJ("OBJ/dog.obj", 0x23D33F, 0, 0, 40, 10, NULL);
+  // object get = loadOBJ("OBJ/get.obj", 0x23D33F, 0, 0, 80, 10, NULL);
+  object room = loadOBJ("OBJ/room.obj", 0x32F48D, 0, 200, 200, 600, "textures/test2.jpg");
+  // object rifle = loadOBJ("OBJ/rifle.obj", 0x636393, (WIDTH)*0.004, (HEIGHT)*0.015, -7, 10, NULL);
+  // object quad = loadOBJ("OBJ/texTest.obj", 0xFF0000, 0, 0, 40, 100, NULL);
+  // object tri = loadOBJ("OBJ/tri.obj", 0xFF0000, 0, 0, 120, 100, NULL);
 
+  objects[nObj++] = room;
   objects[nObj++] = quad;
   // objects[nObj++] = tri;
-  // objects[nObj++] = room;
   // objects[nObj++] = cube;
   // objects[nObj++] = sphere;
   // objects[nObj++] = monkey;
@@ -109,7 +109,7 @@ void load_lights()
   lights = malloc(sizeof(light) * MAXLIGHT);
   // lights[nLights++] = (light){(point){0, 0, 0,}, 0};  //MUZZLE FLASH
   // lights[nLights++] = (light){(point){100.0, -100.0, -100.0}, 100};
-  // lights[nLights++] = (light){(point){0.0, 0.0, 40.0}, 1000};
+  lights[nLights++] = (light){(point){0.0, 0.0, -170.0}, 500};
   // lights[nLights++] = (light){(point){-500.0, 10.0, 500.0}, 300.0};
   // lights[nLights++] = (light){(point){500.0, 10.0, 500.0}, 300.0};
   // lights[nLights++] = (light){(point){500.0, 10.0, -500.0}, 300.0};
@@ -263,7 +263,7 @@ void handle_input()
   }
   if (keystates[SDL_SCANCODE_O])
   { // o
-    for (int j = 0; j < nObj; j++)
+    for (int j = 1; j < nObj; j++)
     {
       objects[j] = rotateObjectX(objects[j], 0.007 * elapsed_time * TIME_CONST, 0, 0, 40);
       objects[j] = rotateObjectY(objects[j], 0.013 * elapsed_time * TIME_CONST, 0, 0, 40);
@@ -314,6 +314,7 @@ void render_scene()
       continue;
 
     triangle tri = *(allTris[i].tri);
+    object obj = *(allTris[i].obj);
     triangle cam_tri = toCameraBasisTriangle(tri);
 
     // CLIPPING AGAINST CAMERA Z-PLANE
@@ -345,7 +346,7 @@ void render_scene()
           if (!wireframe)
           {
             triangle t = clipped_tris[c];
-            rasterizeTriangle(renderer, clipped_tris[c], surf);
+            rasterizeTriangle(renderer, clipped_tris[c], surf, obj);
           }
           else
           {

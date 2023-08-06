@@ -26,6 +26,10 @@ typedef struct object{
   triangle* tris;
   unsigned int nFaces;
   point pos;
+  unsigned char* texture;
+  int texture_width;
+  int texture_height; 
+  int nrChannels;
 } object;
 
 typedef struct node{
@@ -81,9 +85,9 @@ void terminate_engine();
 
 void sortPoints(point points[], int a, int b);
 
-void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf);
+void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf, object obj);
 
-object loadOBJ(const char* filePath, unsigned int color, double x, double y, double z, double scale);
+object loadOBJ(const char* filePath, unsigned int color, double x, double y, double z, double scale, const char* texture_path);
 
 void drawText(SDL_Renderer* renderer, const char* message, int x, int y, int width, int height, unsigned int color, int pt);
 

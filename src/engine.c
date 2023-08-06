@@ -57,15 +57,10 @@ triangle camera_basis = { //Currently not used
 //  {0xffff00,0x00ffff, 0xff00ff},
 //  {0xff9933,0x99ff33, 0x3399ff}};
 
-unsigned char* texture;
+// unsigned char* texture;
 
-int texture_width, texture_height, nrChannels;
+// int texture_width, texture_height, nrChannels;
 
-
-unsigned int* load_texture(unsigned int width, unsigned int height, char* filepath){
-  
-  
-}
 
 
 object translateObject(object obj, double x, double y, double z){
@@ -209,9 +204,9 @@ point interpolatePoint(point a, point b, point c, point bcc){
   return (point){(x0+x1+x2), (y0+y1+y2), (z0+z1+z2)};
 }
 
-unsigned int sampleTexture(double u, double v, int len){
-  u = u >= 1.0 ? 1.0 - tex_height_denom : u;
-  v = v >= 1.0 ? 1.0 - tex_width_denom : v;
+unsigned int sampleTexture(double u, double v, unsigned char* texture, int texture_width, int texture_height){
+  u = u >= 1.0 ? 1.0 - 1.0/texture_height : u;
+  v = v >= 1.0 ? 1.0 - 1.0/texture_width : v;
   u = u < 0.0 ? 0.0 : u;
   v = v < 0.0 ? 0.0 : v;
   v = 1.0 - v;
@@ -227,9 +222,9 @@ unsigned int sampleTexture(double u, double v, int len){
   // gValue = (texture[texture_width*3 + (int)(v*texture_width)*3+1]<<gshift) & g; 
   // bValue = (texture[texture_width*3 + (int)(v*texture_width)*3+2]) & b;
 
-  rValue = (texture[(int)(u*texture_height)*texture_width*nrChannels+(int)(v*texture_width)*nrChannels+0]<<rshift) & r;
-  gValue = (texture[(int)(u*texture_height)*texture_width*nrChannels+(int)(v*texture_width)*nrChannels+1]<<gshift) & g; 
-  bValue = (texture[(int)(u*texture_height)*texture_width*nrChannels+(int)(v*texture_width)*nrChannels+2]) & b;
+  rValue = (texture[(int)(u*texture_height)*texture_width*3+(int)(v*texture_width)*3+0]<<rshift) & r;
+  gValue = (texture[(int)(u*texture_height)*texture_width*3+(int)(v*texture_width)*3+1]<<gshift) & g; 
+  bValue = (texture[(int)(u*texture_height)*texture_width*3+(int)(v*texture_width)*3+2]) & b;
   return rValue + gValue + bValue;
 }
 
@@ -288,9 +283,6 @@ void initialize_engine(bool fullscreen){
     if(!load_media()){
       printf("Could not load all media!\n");
     }
-    texture = stbi_load("textures/test3.jpg", &texture_width, &texture_height, &nrChannels, STBI_rgb);
-    tex_width_denom = 1.0 / texture_width;
-    tex_height_denom = 1.0 / texture_height;
 }
 
 void terminate_engine(){
@@ -327,7 +319,7 @@ void set_pixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
   *target_pixel = pixel;
 }
 
-void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf){
+void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf, object obj){
   point normals[3] = {normalizeVector(tri.normA), normalizeVector(tri.normB), normalizeVector(tri.normC)};
   
   //sort points by height
@@ -384,8 +376,14 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf){
           if(depth_buffer[k][(i+(int)p[0].y)] > frag_z){
             depth_buffer[k][(i+(int)p[0].y)] = frag_z;
             point texCoords = interpolateTexCoords(tri, bcc);
-            unsigned int texture_color = sampleTexture(texCoords.x, texCoords.y, 3);
-            unsigned int interpolated_color = interpolateColor(cols, bcc);
+            unsigned int chosen_color;
+            if(obj.texture != NULL){
+              unsigned int texture_color = sampleTexture(texCoords.x, texCoords.y, obj.texture, obj.texture_width, obj.texture_height);
+              chosen_color = texture_color;
+            } else{
+              chosen_color = tri.color;
+            }
+            
             point N = interpolateNormal(normals, bcc);
             point world_space_coord = interpolateWorldspace(tri, bcc);
 
@@ -399,7 +397,7 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf){
               partial_light = partial_light < 0 ? 0 : partial_light;
               lightness += partial_light;
             }
-            unsigned int color = colorLightness(lightness + ambient, texture_color);
+            unsigned int color = colorLightness(lightness + ambient, chosen_color);
             set_pixel(surf, k, (i+(int)p[0].y), color);
           }
         }
@@ -410,8 +408,14 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf){
           if(depth_buffer[k][(i+(int)p[0].y)] > frag_z){
             depth_buffer[k][(i+(int)p[0].y)] = frag_z;
             point texCoords = interpolateTexCoords(tri, bcc);
-            unsigned int texture_color = sampleTexture(texCoords.x, texCoords.y, 3);
-            unsigned int interpolated_color = interpolateColor(cols, bcc);
+            unsigned int chosen_color;
+            if(obj.texture != NULL){
+              unsigned int texture_color = sampleTexture(texCoords.x, texCoords.y, obj.texture, obj.texture_width, obj.texture_height);
+              chosen_color = texture_color;
+            } else{
+              chosen_color = tri.color;
+            }
+
             point N = interpolateNormal(normals, bcc);
             point world_space_coord = interpolateWorldspace(tri, bcc);
 
@@ -425,7 +429,7 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf){
               partial_light = partial_light < 0 ? 0 : partial_light;
               lightness += partial_light;
             }
-            unsigned int color = colorLightness(lightness + ambient, texture_color);
+            unsigned int color = colorLightness(lightness + ambient, chosen_color);
             set_pixel(surf, k, (i+(int)p[0].y), color);
           }
         }
@@ -442,8 +446,14 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf){
           if(depth_buffer[k][(i+(int)p[0].y)] > frag_z){
             depth_buffer[k][(i+(int)p[0].y)] = frag_z;
             point texCoords = interpolateTexCoords(tri, bcc);
-            unsigned int texture_color = sampleTexture(texCoords.x, texCoords.y, 3);
-            unsigned int interpolated_color = interpolateColor(cols, bcc);
+            unsigned int chosen_color;
+            if(obj.texture != NULL){
+              unsigned int texture_color = sampleTexture(texCoords.x, texCoords.y, obj.texture, obj.texture_width, obj.texture_height);
+              chosen_color = texture_color;
+            } else{
+              chosen_color = tri.color;
+            }
+            
             point N = interpolateNormal(normals, bcc);
             point world_space_coord = interpolateWorldspace(tri, bcc);
 
@@ -457,7 +467,7 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf){
               partial_light = partial_light < 0 ? 0 : partial_light;
               lightness += partial_light;
             }
-            unsigned int color = colorLightness(lightness + ambient, texture_color);
+            unsigned int color = colorLightness(lightness + ambient, chosen_color);
             set_pixel(surf, k, (i+(int)p[0].y), color);
           }
         }
@@ -468,8 +478,14 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf){
           if(depth_buffer[k][(i+(int)p[0].y)] > frag_z){  
             depth_buffer[k][(i+(int)p[0].y)] = frag_z;
             point texCoords = interpolateTexCoords(tri, bcc);
-            unsigned int texture_color = sampleTexture(texCoords.x, texCoords.y, 3);
-            unsigned int interpolated_color = interpolateColor(cols, bcc);
+            unsigned int chosen_color;
+            if(obj.texture != NULL){
+              unsigned int texture_color = sampleTexture(texCoords.x, texCoords.y, obj.texture, obj.texture_width, obj.texture_height);
+              chosen_color = texture_color;
+            } else{
+              chosen_color = tri.color;
+            }
+            
             point N = interpolateNormal(normals, bcc);
             point world_space_coord = interpolateWorldspace(tri, bcc);
 
@@ -483,7 +499,7 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf){
               partial_light = partial_light < 0 ? 0 : partial_light;
               lightness += partial_light;
             }
-            unsigned int color = colorLightness(lightness + ambient, texture_color);
+            unsigned int color = colorLightness(lightness + ambient, chosen_color);
             set_pixel(surf, k, (i+(int)p[0].y), color);
           }
         }
@@ -492,7 +508,7 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf){
   }
 }
 
-object loadOBJ(const char* filePath, unsigned int color, double x, double y, double z, double scale){
+object loadOBJ(const char* filePath, unsigned int color, double x, double y, double z, double scale, const char* texture_path){
   unsigned long int nVertices = 0;
   unsigned long int nCoords = 0;
   unsigned long int nNormals = 0;
@@ -613,12 +629,17 @@ object loadOBJ(const char* filePath, unsigned int color, double x, double y, dou
       vertices[values[0]],
       vertices[values[1]],
       vertices[values[2]]
-      };
-      triangle tri = tris[i];
-      // printf("norms: (%2.1lf, %2.1lf, %2.1lf)\n", tri.normA.x, tri.normA.y, tri.normA.z);
+    };
+    triangle tri = tris[i];
+  }
+  int texture_width, texture_height, nrChannels;
+  unsigned char* texture = NULL;
+  if(texture_path != NULL){
+    printf("Loading object with texture at %s\n", texture_path);
+    texture = stbi_load(texture_path, &texture_width, &texture_height, &nrChannels, STBI_rgb);
   }
   free(buf);
-  object obj = {tris, nFaces, (point){x,y,z}};
+  object obj = {tris, nFaces, (point){x,y,z}, texture, texture_width, texture_height, nrChannels};
   return obj;
 }
 

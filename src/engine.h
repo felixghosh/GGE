@@ -39,12 +39,6 @@ typedef struct node{
   unsigned int nChildren;
 } node;
 
-typedef struct tri_map{
-  triangle* tri;
-  object* obj;
-  bool* render;
-} tri_map;
-
 extern SDL_Window* screen;
 extern SDL_Renderer* renderer;
 extern SDL_Event evt;

@@ -11,7 +11,6 @@ typedef enum game_state
   BASE
 } game_state;
 
-tri_map *allTris;
 object *objects;
 light *lights;
 game_state current_state;
@@ -62,11 +61,12 @@ void pitchPlayer(double rad)
 
 void free_objects()
 {
-  for (int j = 0; j < nObj; j++)
+  for (int j = 0; j < nObj; j++){
     free(objects[j].tris);
+  }
+    
   free(objects);
   free(lights);
-  free(allTris);
 
   nObj = 0;
   nLights = 0;
@@ -79,8 +79,8 @@ void load_objects()
   // object teapot = loadOBJ("OBJ/teapot.obj", 0xDF2332, 0, 0, 30, 10, NULL);
   // object cube = loadOBJ("OBJ/cube_normals.obj", 0xDF3F32, 0, 0, 400, 30, NULL);
   // object sphere = loadOBJ("OBJ/sphere.obj", 0xDF3F32, 400, -200, 500, 300, NULL);
-  // object monkey = loadOBJ("OBJ/monkey.obj", 0x2323DF, 0, -30, 30, 200, NULL);
-  object quad = loadOBJ("OBJ/quad.obj", 0x23D33F, 0, 0, 40, 100, "textures/test.jpg");
+  object monkey = loadOBJ("OBJ/monkey.obj", 0x2323DF, 0, -30, 30, 200, NULL);
+  object quad = loadOBJ("OBJ/quad.obj", 0x23D33F, 0, 0, 40, 100, "textures/test3.jpg");
   // object dog = loadOBJ("OBJ/dog.obj", 0x23D33F, 0, 0, 40, 10, NULL);
   // object get = loadOBJ("OBJ/get.obj", 0x23D33F, 0, 0, 80, 10, NULL);
   object room = loadOBJ("OBJ/room.obj", 0x32F48D, 0, 200, 200, 600, "textures/test2.jpg");
@@ -126,34 +126,6 @@ void readTris(node node)
     readTris(node.children[i]);
 }
 
-void mapTris(node node, unsigned long int *index, bool *render)
-{
-  for (int i = 0; i < node.obj->nFaces; i++)
-    allTris[(*index)++] = (tri_map){&(node.obj->tris[i]), node.obj, render};
-  for (int i = 0; i < node.nChildren; i++)
-    mapTris(node.children[i], index, render);
-}
-
-void load_tri_map()
-{
-  allTris = malloc(totalTris * sizeof(tri_map));
-  bool *render = malloc(sizeof(bool));
-  *render = true;
-  unsigned long index = 0;
-  for (int i = 0; i < nObj; i++)
-  {
-    for (int j = 0; j < objects[i].nFaces; j++)
-    {
-      allTris[index++] = (tri_map){&(objects[i].tris[j]), &(objects[i]), render};
-    }
-  }
-  if (index != totalTris)
-  {
-    printf("ERROR INDEX DOESNT MATCH TOTALTRIS!\nindex %lu, totalTris %lu\n", index, totalTris);
-    exit(1);
-  }
-  printf("All objects loaded. Total triangles: %lu \n", totalTris);
-}
 
 void update_time()
 {
@@ -308,56 +280,55 @@ void render_scene()
   SDL_Rect clear = {0, 0, WIDTH, HEIGHT};
   SDL_FillRect(surf, &clear, 0);
 
-  for (int i = 0; i < totalTris; i++)
-  {
-    if (!*allTris[i].render)
-      continue;
+  for (int i = 0; i < nObj; i++){
+    object obj = objects[i];
+    for(int t = 0; t < obj.nFaces; t++){
+      triangle tri = obj.tris[t];
+      triangle cam_tri = toCameraBasisTriangle(tri);
 
-    triangle tri = *(allTris[i].tri);
-    object obj = *(allTris[i].obj);
-    triangle cam_tri = toCameraBasisTriangle(tri);
+      // CLIPPING AGAINST CAMERA Z-PLANE
+      triangle *clipped_tris_z = malloc(2 * sizeof(triangle));
+      clipped_tris_z[0] = cam_tri;
+      unsigned int nTrisZ = 1;
+      int i = 0;
+      const int NEAR_PLANE_Z = 10;
+      clipEdge((point){0, 0, NEAR_PLANE_Z}, (point){WIDTH, HEIGHT, NEAR_PLANE_Z}, clipped_tris_z, &nTrisZ, &i, 'z');
 
-    // CLIPPING AGAINST CAMERA Z-PLANE
-    triangle *clipped_tris_z = malloc(2 * sizeof(triangle));
-    clipped_tris_z[0] = cam_tri;
-    unsigned int nTrisZ = 1;
-    int i = 0;
-    const int NEAR_PLANE_Z = 10;
-    clipEdge((point){0, 0, NEAR_PLANE_Z}, (point){WIDTH, HEIGHT, NEAR_PLANE_Z}, clipped_tris_z, &nTrisZ, &i, 'z');
-
-    for (int j = 0; j < nTrisZ; j++)
-    {
-      triangle projected_tri = projectTriangle(clipped_tris_z[j]);
-      point projected_normal = calcNormal(projected_tri);
-      projected_normal = normalizeVector(projected_normal);
-
-      // Check normal (backface culling)
-      if (projected_normal.z > 0)
+      for (int j = 0; j < nTrisZ; j++)
       {
-        // CLIPPING AGAINST SCREEN BORDERS
-        unsigned int nTris = 1;
-        triangle *clipped_tris = malloc(16 * sizeof(triangle));
-        clipped_tris[0] = projected_tri;
-        clipTriangle(clipped_tris, &nTris); 
-          
-        // RENDERING
-        for (int c = 0; c < nTris; c++)
+        triangle projected_tri = projectTriangle(clipped_tris_z[j]);
+        point projected_normal = calcNormal(projected_tri);
+        projected_normal = normalizeVector(projected_normal);
+
+        // Check normal (backface culling)
+        if (projected_normal.z > 0)
         {
-          if (!wireframe)
+          // CLIPPING AGAINST SCREEN BORDERS
+          unsigned int nTris = 1;
+          triangle *clipped_tris = malloc(16 * sizeof(triangle));
+          clipped_tris[0] = projected_tri;
+          clipTriangle(clipped_tris, &nTris); 
+            
+          // RENDERING
+          for (int c = 0; c < nTris; c++)
           {
-            triangle t = clipped_tris[c];
-            rasterizeTriangle(renderer, clipped_tris[c], surf, obj);
+            if (!wireframe)
+            {
+              triangle t = clipped_tris[c];
+              rasterizeTriangle(renderer, clipped_tris[c], surf, obj);
+            }
+            else
+            {
+              SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
+              drawTriangle(renderer, clipped_tris[c]);
+            }
           }
-          else
-          {
-            SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
-            drawTriangle(renderer, clipped_tris[c]);
-          }
+          free(clipped_tris);
         }
-        free(clipped_tris);
       }
+      free(clipped_tris_z);
     }
-    free(clipped_tris_z);
+    
   }
   if (!wireframe)
   {
@@ -405,7 +376,6 @@ int main(int argc, char *argv[])
     {
     case INIT:
       load_objects();
-      load_tri_map();
       load_lights();
       current_state = BASE;
       break;

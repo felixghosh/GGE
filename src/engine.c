@@ -124,14 +124,6 @@ node rotateNodeZ(node node, double angle, double x, double y, double z){
   return node;
 }
 
-int cmpfunc (const void * a, const void * b) {
-   tri_map* tma = (tri_map*)a;
-   tri_map* tmb = (tri_map*)b;
-   triangle* pa = tma->tri;
-   triangle* pb = tmb->tri;
-   return (vectorLength(subtractPoints(calcCenter(*pb), camera_pos)) - vectorLength(subtractPoints(calcCenter(*pa), camera_pos)));
-}
-
 double radToDeg(double rad){
   double deg = (rad * 360.0) / (2*M_PI);
   return deg;

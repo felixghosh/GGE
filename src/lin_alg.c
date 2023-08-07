@@ -235,34 +235,18 @@ point calcBCC(point p, triangle t){
   w = w < 0.0 ? 0.0 : w;
   w = w > 1.0 ? 1.0 : w;
   w = isnan(w) ? 0.0 : w;
-  // printf("p: %2.2lf, %2.2lf, %2.2lf\n", p.x, p.y, p.z);
-  // printf("Area: %lf\n", area);
-  // printf("u: %2.2lf, v: %2.2lf, w: %2.2lf\n", u, v, w);
-  // sleep(10);
-  
 
-  
-  // double area = calcTriArea(t);
-  // double divisor = 1 / (2*area);
-  // double u = edgeFunc(p, p0, p2) * divisor;
-  // double v = edgeFunc(p, p1, p0) * divisor;
-  // double w = 1.0 - u - v;
- 
   return (point){u, v, w};
 }
 
-point calcPCBCC(point p, triangle t){
-  point p0 = t.a;
-  point p1 = t.b;
-  point p2 = t.c;
-
+point calcPCBCC(point p, triangle t, double* params){
   double h_w0 = -t.a.z;
   double h_w1 = -t.b.z;
   double h_w2 = -t.c.z;
   
-  double e0 = edgeFunc(p, p2, p1);
-  double e1 = edgeFunc(p, p0, p2);
-  double e2 = edgeFunc(p, p1, p0);
+  double e0 = edgeFunc(p, t.b, params[0], params[1]);
+  double e1 = edgeFunc(p, t.c, params[2], params[3]);
+  double e2 = edgeFunc(p, t.a, params[4], params[5]);
 
   double f0 = e0 / h_w0;
   double f1 = e1 / h_w1;
@@ -299,21 +283,15 @@ double calcTriArea(triangle t){
   double a = sqrt(pow((p0.x - p1.x), 2) + pow((p0.x - p1.y), 2));
   double b = sqrt(pow((p1.x - p2.x), 2) + pow((p1.x - p2.y), 2));
   double c = sqrt(pow((p2.x - p0.x), 2) + pow((p2.x - p0.y), 2));
-  // printf("abc(%5.2lf,%5.2lf,%5.2lf)\n", a, b, c);
 
   double area = ((a+b+c)*(-a+b+c)*(a-b+c)*(a+b-c));
   area = area < 0 ? -area : area;
   area = 0.25*sqrt(area);
-  // printf("area:%5.2lf\n", area);
   return area;
 }
 
-double edgeFunc(point p, point p1, point p0){
-  double a = -(p1.y - p0.y);
-  double b = p1.x- p0.x;
-
+double edgeFunc(point p, point p0, double a, double b){
   return a * (p.x - p0.x) + b * (p.y - p0.y);
-
 }
 
 void printTriangle(triangle tri){

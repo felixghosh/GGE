@@ -61,11 +61,11 @@ double vectorLength(point p);
 
 point calcBCC(point p, triangle t);
 
-point calcPCBCC(point p, triangle t);
+point calcPCBCC(point p, triangle t, double* params);
 
 double calcTriArea(triangle t);
 
-double edgeFunc(point p, point p1, point p0);
+double edgeFunc(point p, point p0, double a, double b);
 
 void printTriangle(triangle tri);
 

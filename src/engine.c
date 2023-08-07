@@ -311,7 +311,25 @@ void set_pixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
   *target_pixel = pixel;
 }
 
+void calcEdgeFuncParams(triangle tri, double* arr){
+  point p0 = tri.a;
+  point p1 = tri.b;
+  point p2 = tri.c;
+
+  arr[0] = -(p2.y - p1.y);
+  arr[1] = p2.x- p1.x;
+  arr[2] = -(p0.y - p2.y);
+  arr[3] = p0.x- p2.x;
+  arr[4] = -(p1.y - p0.y);
+  arr[5] = p1.x- p0.x;
+}
+
 void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf, object obj){
+
+  double edgeFuncParams[6];
+
+  calcEdgeFuncParams(tri, edgeFuncParams);
+
   point normals[3] = {normalizeVector(tri.normA), normalizeVector(tri.normB), normalizeVector(tri.normC)};
   
   //sort points by height
@@ -363,7 +381,7 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf, 
     for(i; i < dy_short; i++){
       if((slope_short[i]) - (slope_long[i]) < 0){
         for(int k  = slope_long[i]; k > slope_short[i]; k--){
-          point bcc = calcPCBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
+          point bcc = calcPCBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri, edgeFuncParams);
           double frag_z = interpolateZ(tri, bcc);
           if(depth_buffer[k][(i+(int)p[0].y)] > frag_z){
             depth_buffer[k][(i+(int)p[0].y)] = frag_z;
@@ -395,7 +413,7 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf, 
         }
       } else{
         for(int k  = slope_long[i]; k <= slope_short[i]; k++){
-          point bcc = calcPCBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
+          point bcc = calcPCBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri, edgeFuncParams);
           double frag_z = interpolateZ(tri, bcc);
           if(depth_buffer[k][(i+(int)p[0].y)] > frag_z){
             depth_buffer[k][(i+(int)p[0].y)] = frag_z;
@@ -433,7 +451,7 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf, 
     for(i; i < dy_long; i++){
       if((slope_last[i - origin]) - (slope_long[i]) < 0){
         for(int k = slope_long[i]; k > slope_last[i - origin]; k--){
-          point bcc = calcPCBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
+          point bcc = calcPCBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri, edgeFuncParams);
           double frag_z = interpolateZ(tri, bcc);
           if(depth_buffer[k][(i+(int)p[0].y)] > frag_z){
             depth_buffer[k][(i+(int)p[0].y)] = frag_z;
@@ -465,7 +483,7 @@ void rasterizeTriangle(SDL_Renderer* renderer, triangle tri, SDL_Surface* surf, 
         }
       }else{
         for(int k = slope_long[i]; k <= slope_last[i - origin]; k++){
-          point bcc = calcPCBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri);
+          point bcc = calcPCBCC((point){(double)k, (double)(i+p[0].y), (double)0.0}, tri, edgeFuncParams);
           double frag_z = interpolateZ(tri, bcc);
           if(depth_buffer[k][(i+(int)p[0].y)] > frag_z){  
             depth_buffer[k][(i+(int)p[0].y)] = frag_z;
@@ -680,6 +698,9 @@ void clipEdge(point p1, point p2, triangle* clipped_tris, unsigned int* nTris, i
   point normals[3] = {tri.normA, tri.normB, tri.normC};
   double value;
 
+  double edgeFuncParams[6];
+  calcEdgeFuncParams(tri, edgeFuncParams);
+
   if(axis == 'x'){
     value = p1.x;
   } else if(axis == 'y'){
@@ -739,8 +760,8 @@ void clipEdge(point p1, point p2, triangle* clipped_tris, unsigned int* nTris, i
 
   
     if(axis != 'z'){
-      bcc1 = calcPCBCC(intersect1, tri);
-      bcc2 = calcPCBCC(intersect2, tri);
+      bcc1 = calcPCBCC(intersect1, tri, edgeFuncParams);
+      bcc2 = calcPCBCC(intersect2, tri, edgeFuncParams);
       intersect1.z = interpolateZ(tri, bcc1);
       intersect2.z = interpolateZ(tri, bcc2);
     } else{
@@ -788,8 +809,8 @@ void clipEdge(point p1, point p2, triangle* clipped_tris, unsigned int* nTris, i
 
   
     if(axis != 'z'){
-      bcc1 = calcPCBCC(intersect1, tri);
-      bcc2 = calcPCBCC(intersect2, tri);
+      bcc1 = calcPCBCC(intersect1, tri, edgeFuncParams);
+      bcc2 = calcPCBCC(intersect2, tri, edgeFuncParams);
       intersect1.z = tri.a.z * bcc1.x + tri.b.z * bcc1.y + tri.c.z * bcc1.z;
       intersect2.z = tri.a.z * bcc2.x + tri.b.z * bcc2.y + tri.c.z * bcc2.z;
     } else{

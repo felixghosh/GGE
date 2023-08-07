@@ -77,7 +77,7 @@ void load_objects()
 {
   objects = malloc(MAXOBJ * sizeof(object));
   // object teapot = loadOBJ("OBJ/teapot.obj", 0xDF2332, 0, 0, 30, 10, NULL);
-  object cube = loadOBJ("OBJ/cube_normals.obj", 0xDF3F32, 0, 0, 400, 30, NULL);
+  object cube = loadOBJ("OBJ/cube_normals.obj", 0xDF3F32, 0, 0, 400, 30, "textures/test.png");
   object sphere = loadOBJ("OBJ/sphere.obj", 0xDF3F32, 400, -200, 500, 300, NULL);
   object monkey = loadOBJ("OBJ/monkey.obj", 0x2323DF, 0, -30, 30, 200, NULL);
   object quad = loadOBJ("OBJ/quad.obj", 0x23D33F, 0, 0, 40, 100, "textures/test3.jpg");
@@ -89,10 +89,10 @@ void load_objects()
   object tri = loadOBJ("OBJ/tri.obj", 0xFF0000, 0, 0, 120, 100, NULL);
 
   objects[nObj++] = room;
-  // objects[nObj++] = quad;
+  objects[nObj++] = quad;
   // objects[nObj++] = tri;
-  objects[nObj++] = cube;
-  // objects[nObj++] = sphere;
+  // objects[nObj++] = cube;
+  objects[nObj++] = sphere;
   // objects[nObj++] = monkey;
   // objects[nObj++] = dog;
   // objects[nObj++] = get;
@@ -109,7 +109,7 @@ void load_lights()
   lights = malloc(sizeof(light) * MAXLIGHT);
   // lights[nLights++] = (light){(point){0, 0, 0,}, 0};  //MUZZLE FLASH
   // lights[nLights++] = (light){(point){100.0, -100.0, -100.0}, 100};
-  lights[nLights++] = (light){(point){0.0, 0.0, -170.0}, 1500};
+  lights[nLights++] = (light){(point){0.0, 0.0, -1000.0}, 1500};
   // lights[nLights++] = (light){(point){-500.0, 10.0, 500.0}, 300.0};
   // lights[nLights++] = (light){(point){500.0, 10.0, 500.0}, 300.0};
   // lights[nLights++] = (light){(point){500.0, 10.0, -500.0}, 300.0};
@@ -132,7 +132,7 @@ void update_time()
   clock_gettime(CLOCK_REALTIME, &t1);
   elapsed_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec) / 1000000000.0;
   game_time += elapsed_time;
-  // printf("fps: %5u\n", (int)(1 / elapsed_time));
+  printf("fps: %5u\n", (int)(1 / elapsed_time));
   clock_gettime(CLOCK_REALTIME, &t0);
 }
 

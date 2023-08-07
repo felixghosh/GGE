@@ -156,6 +156,7 @@ void handle_input()
       }
       else if (keypressed == SDLK_i)
       { // i
+        //Toggle debug state
         debug = !debug;
       }
     }
@@ -258,6 +259,7 @@ void handle_input()
   }
   if (keystates[SDL_SCANCODE_M])
   { // m
+    //Debug printing key
     printf("Camera direction : (%f, %f, %f)\n", camera_dir.x, camera_dir.y, camera_dir.z);
   }
 }
@@ -353,7 +355,7 @@ void render_scene()
 
 void render_ui()
 {
-  drawText(renderer, "GGE v0.0.1", WIDTH - 65, HEIGHT - 20, 60, 16, 0xFFFFFF, 12);
+  drawText(renderer, "GGE v0.1.0", WIDTH - 65, HEIGHT - 20, 60, 16, 0xFFFFFF, 12);
 }
 
 void clear_screen()

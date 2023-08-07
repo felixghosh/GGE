@@ -554,8 +554,6 @@ object loadOBJ(const char* filePath, unsigned int color, double x, double y, dou
     nFaces++;
   nVertices--;
 
-  // printf("nvert:%d nface:%d nnorm:%d\n", nVertices, nFaces, nNormals);
-
   rewind(fp);
 
   point* vertices = malloc(nVertices * sizeof(point));
@@ -565,9 +563,7 @@ object loadOBJ(const char* filePath, unsigned int color, double x, double y, dou
     double values[3];
     for(int i = 0; i < 3; i++){
       values[i] = scale*strtod(endptr+1, &endptr);
-      // printf("%lf\n", values[i]);
     }
-    // printf("\n");
     vertices[i] = (point){-values[0] + x, -values[1] + y, -values[2] + z};
   }
   
@@ -581,8 +577,6 @@ object loadOBJ(const char* filePath, unsigned int color, double x, double y, dou
     double values[2];
     values[0] = strtod(endptr+2, &endptr);
     values[1] = strtod(endptr+1, &endptr);
-    // printf("tex %lf\n", values[0]);
-    // printf("tex %lf\n", values[1]); 
     texCoords[i] = (point){values[0], values[1], 0.0};
   }
 
@@ -597,15 +591,8 @@ object loadOBJ(const char* filePath, unsigned int color, double x, double y, dou
     values[0] = strtod(endptr+2, &endptr)*-1.0;
     values[1] = strtod(endptr+1, &endptr)*-1.0;
     values[2] = strtod(endptr+1, &endptr)*-1.0;
-    // printf("norm %lf\n", values[0]);
-    // printf("norm %lf\n", values[1]); 
-    // printf("norm %lf\n", values[2]); 
     
     normals[i] = normalizeVector((point){values[0], values[1], values[2]});
-    // printf("norm %lf\n", normals[i].x);
-    // printf("norm %lf\n", normals[i].y); 
-    // printf("norm %lf\n", normals[i].z);
-    // printf("\n"); 
   }
 
   getline(&buf, &buf_size, fp);
@@ -621,8 +608,6 @@ object loadOBJ(const char* filePath, unsigned int color, double x, double y, dou
       values[i] = strtol(endptr+1, &endptr, 10) - 1;
       tex[i] = strtol(endptr+1, &endptr, 10) - 1;
       norm[i] = strtol(endptr+1, &endptr, 10) - 1;
-      // printf("val %ld\n", values[i]);
-      // printf("tex %ld\n", tex[i]); 
     }
       
     tris[i] = (triangle){
@@ -713,17 +698,14 @@ void clipEdge(point p1, point p2, triangle* clipped_tris, unsigned int* nTris, i
   int inside[3] = {1,1,1};
   if(axis == 'z'){
     if((p2.z - p1.z)*(tri.a.y - p1.y)-(p2.y - p1.y)*(tri.a.z - p1.z) > 0){
-      //printf("OUTSIDE!\n");
       nOutside++;
       inside[0] = 0;
     }
     if((p2.z - p1.z)*(tri.b.y - p1.y)-(p2.y - p1.y)*(tri.b.z - p1.z) > 0){
-      //printf("OUTSIDE!\n");
       nOutside++;
       inside[1] = 0;
     }
     if((p2.z - p1.z)*(tri.c.y - p1.y)-(p2.y - p1.y)*(tri.c.z - p1.z) > 0){
-      //printf("OUTSIDE!\n");
       nOutside++;
       inside[2] = 0;
     }
